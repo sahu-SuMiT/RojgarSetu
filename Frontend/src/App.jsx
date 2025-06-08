@@ -43,6 +43,11 @@ import CollegePlacementAnalysis from './college_components/PlacementAnalysis';
 import CompanySupport from './company_components/Support';
 import CompanyPlacementAnalysis from './company_components/PlacementAnalysis';
 
+
+// Landing page component
+import Index_Website from "./pages/Index_Website";
+import Contact from "./pages/Contact";
+
 // Layout for authenticated pages
 const AppLayout = ({ user, onLogout, sidebarOpen, toggleSidebar }) => {
   return (
@@ -207,9 +212,10 @@ const App = () => {
         // }
       >
         {/* <Route index element={<Dashboard user={user} />} /> */}
-        <Route path="/*" element={<Login />} />
+        <Route path="/*" element={<Index_Website />} />
 
 
+        <Route path="/login_panel" element={<Login />} />
         <Route path="dashboard" element={<Dashboard user={user} />} />
         <Route path="profile" element={<Profile user={user} />} />
         <Route path="jobs" element={<Jobs />} />
@@ -252,6 +258,10 @@ const App = () => {
         {/* Profile Routes */}
         <Route path="/student/:studentId" element={<StudentProfile />} />
         <Route path="/college/:collegeId/student/:studentId" element={<CollegeProfile />} />
+
+
+        {/* Landing website */}
+        <Route path="/contact" element={<Contact />} />
       </Route>
 
       {/* Catch all: redirect to dashboard or auth */}

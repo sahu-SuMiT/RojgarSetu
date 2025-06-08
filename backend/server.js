@@ -72,7 +72,9 @@ app.use(express.urlencoded({ extended: true }));
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
-  'http://localhost:5174'
+  'http://localhost:5174',
+  'https://campusadmin-y4hh.vercel.app/',
+  'https://campusadmin.vercel.app/'
 ];
 app.use(cors({
   origin: function(origin, callback) {
