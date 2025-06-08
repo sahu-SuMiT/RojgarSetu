@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 require('dotenv').config({ path: '../.env' });
-const CollegeStudent = require('../models/CollegeStudent.model');
+const CollegeStudent = require('../models/collegeStudent.model');
 
 const main = async () => {
     await mongoose.connect(`${process.env.MONGO_URI}`, { 

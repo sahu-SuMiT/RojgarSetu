@@ -3,7 +3,7 @@ const Application = require('../models/Application');
 const College = require('../models/College');
 const Company = require('../models/Company');
 const Role = require('../models/Role');
-const CollegeStudent = require('../models/CollegeStudent.model');
+const CollegeStudent = require('../models/collegeStudent.model');
 const mongoose = require('mongoose');
 const { application } = require('express');
 

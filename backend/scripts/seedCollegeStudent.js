@@ -1,7 +1,7 @@
 require('dotenv').config({path:'../.env'});
 console.log('MONGO_URI:', process.env.MONGO_URI);
 const mongoose = require('mongoose');
-const CollegeStudent = require('../models/CollegeStudent.model');
+const CollegeStudent = require('../models/collegeStudent.model');
 const College = require('../models/College');
 
 // Connect to MongoDB

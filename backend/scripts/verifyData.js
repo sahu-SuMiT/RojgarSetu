@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const Job = require('../models/Job');
 const Internship = require('../models/Internship');
 const Interview = require('../models/Interview');
-const CollegeStudent = require('../models/CollegeStudent.model');
+const CollegeStudent = require('../models/collegeStudent.model');
 const Company = require('../models/Company');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/campus_connect';

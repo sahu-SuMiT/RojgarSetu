@@ -16,7 +16,7 @@ const authRoutes = require('./routes/authRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 
 // College and Company models
-const CollegeStudent = require('./models/CollegeStudent.model');
+const CollegeStudent = require('./models/collegeStudent.model');
 const Role = require('./models/Role');
 const Company = require('./models/Company');
 const Application = require('./models/Application');
