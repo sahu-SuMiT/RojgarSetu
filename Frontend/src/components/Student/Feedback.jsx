@@ -3,7 +3,7 @@ import {
   Star, Building2, Users, Calendar, Filter, Search, Plus, Eye, MessageSquare, ThumbsUp, Trash2, X, Check
 } from 'lucide-react';
 
-const API_BASE = "http://localhost:5000/api/feedback";
+const API_BASE = "https://campusadmin.onrender.com/api/feedback";
 
 const FeedbackCenter = () => {
   const [activeTab, setActiveTab] = useState('received');

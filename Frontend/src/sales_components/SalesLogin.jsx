@@ -10,7 +10,7 @@ const SalesLogin = () => {
       color="#8B5CF6"
       title="Sales Login"
       description="Sign in to access your sales dashboard"
-      apiEndpoint="http://localhost:5000/api/sales/email"
+      apiEndpoint="https://campusadmin.onrender.com/api/sales/email"
       redirectPath="/sales-dashboard"
     />
   );

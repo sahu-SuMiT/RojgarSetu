@@ -14,7 +14,7 @@ const Support = () => {
   useEffect(() => {
     const companyId = localStorage.getItem('companyId');
     if (companyId) {
-      axios.get(`http://localhost:5000/api/company/${companyId}`)
+      axios.get(`https://campusadmin.onrender.com/api/company/${companyId}`)
         .then(res => {
           setCompany(res.data);
         })

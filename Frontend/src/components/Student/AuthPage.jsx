@@ -55,8 +55,8 @@ export const AuthPage = ({ onAuthSuccess }) => {
     try {
       const endpoint =
         currentView === "login"
-          ? "http://localhost:5000/api/auth/login"
-          : "http://localhost:5000/api/auth/signup";
+          ? "https://campusadmin.onrender.com/api/auth/login"
+          : "https://campusadmin.onrender.com/api/auth/signup";
       const payload =
         currentView === "login"
           ? { email: formData.email, password: formData.password }

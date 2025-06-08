@@ -125,7 +125,7 @@ const App = () => {
     const checkAuthStatus = async () => {
       try {
         // Make a request to a backend route that requires authentication
-        const res = await fetch('http://localhost:5000/api/dashboard', {
+        const res = await fetch('https://campusadmin.onrender.com/api/dashboard', {
           credentials: 'include',
         });
         if (res.ok) {

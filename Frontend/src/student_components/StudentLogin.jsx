@@ -10,7 +10,7 @@ const StudentLogin = () => {
       color="#3B82F6"
       title="Student Login"
       description="Sign in to access your student dashboard"
-      apiEndpoint="http://localhost:5000/api/college-students/email"
+      apiEndpoint="https://campusadmin.onrender.com/api/college-students/email"
       redirectPath="/student-dashboard"
     />
   );

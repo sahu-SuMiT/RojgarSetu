@@ -39,7 +39,7 @@ const Applications = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch('http://localhost:5000/api/applications/my', {
+        const response = await fetch('https://campusadmin.onrender.com/api/applications/my', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();

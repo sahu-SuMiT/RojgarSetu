@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Target } from 'lucide-react';
 
-const API_URL = "http://localhost:5000"; 
+const API_URL = "https://campusadmin.onrender.com"; 
 
 const Profile = () => {
   const [profileData, setProfileData] = useState(null);
