@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaUserGraduate, FaBuilding, FaUniversity, FaChartLine } from 'react-icons/fa';
 
-const LoginForm = ({ type, color, title, description, apiEndpoint, redirectPath }) => {
+const LoginForm = ({ type, apiEndpoint, redirectPath }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
@@ -25,7 +25,7 @@ const LoginForm = ({ type, color, title, description, apiEndpoint, redirectPath 
     setLoading(true);
 
     try {
-      const response = await axios.get(`${apiEndpoint}/${formData.email}`);
+      const response = await axios.post(`${apiEndpoint}`, formData);
       const user = response.data;
 
       if (!user) {
@@ -36,7 +36,7 @@ const LoginForm = ({ type, color, title, description, apiEndpoint, redirectPath 
 
       // Store user data in localStorage
       localStorage.setItem(`${type.toLowerCase()}Id`, user._id);
-      localStorage.setItem(`${type.toLowerCase()}Name`, user.name);
+      localStorage.setItem(`${type.toLowerCase()}Name`, user.studentName);
 
       // Navigate to appropriate dashboard
       navigate(redirectPath);
@@ -49,7 +49,8 @@ const LoginForm = ({ type, color, title, description, apiEndpoint, redirectPath 
   };
 
   return (
-    <div style={{
+    <>
+     {/* <div style={{
       minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
@@ -64,8 +65,8 @@ const LoginForm = ({ type, color, title, description, apiEndpoint, redirectPath 
         width: '100%',
         maxWidth: '600px',
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-      }}>
-        <div style={{
+      }}> */}
+        {/* <div style={{
           textAlign: 'center',
           marginBottom: '3rem'
         }}>
@@ -76,8 +77,10 @@ const LoginForm = ({ type, color, title, description, apiEndpoint, redirectPath 
             display: 'flex',
             justifyContent: 'center'
           }}>
-            {/* Icon removed because it is not used */}
+            Icon removed because it is not used 
           </div>
+
+          </div> 
           <h1 style={{
             fontSize: '2rem',
             fontWeight: 'bold',
@@ -92,7 +95,7 @@ const LoginForm = ({ type, color, title, description, apiEndpoint, redirectPath 
           }}>
             {description}
           </p>
-        </div>
+        </div> */}
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '2rem' }}>
@@ -120,7 +123,7 @@ const LoginForm = ({ type, color, title, description, apiEndpoint, redirectPath 
                 outline: 'none',
                 transition: 'border-color 0.2s',
                 ':focus': {
-                  borderColor: color
+                  borderColor: "#3B82F6"
                 }
               }}
               placeholder={`Enter your ${type.toLowerCase()} email`}
@@ -152,7 +155,7 @@ const LoginForm = ({ type, color, title, description, apiEndpoint, redirectPath 
                 outline: 'none',
                 transition: 'border-color 0.2s',
                 ':focus': {
-                  borderColor: color
+                  borderColor: "#3B82F6"
                 }
               }}
               placeholder="Enter your password"
@@ -179,7 +182,7 @@ const LoginForm = ({ type, color, title, description, apiEndpoint, redirectPath 
             style={{
               width: '100%',
               padding: '1rem',
-              background: color,
+              background: "#3B82F6",
               color: 'white',
               border: 'none',
               borderRadius: '0.75rem',
@@ -194,16 +197,17 @@ const LoginForm = ({ type, color, title, description, apiEndpoint, redirectPath 
           </button>
         </form>
 
-        <div style={{
+        {/* <div style={{
           marginTop: '2rem',
           textAlign: 'center',
           fontSize: '1rem',
           color: '#6B7280'
         }}>
           <p>Don't have an account? Contact your administrator</p>
-        </div>
-      </div>
-    </div>
+        </div> */}
+       {/* </div>
+    </div> */}
+    </>
   );
 };
 
