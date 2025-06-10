@@ -132,8 +132,23 @@ app.use('/api/support', require('./routes/support'));
 
 // REST API Endpoints
 
-// College Students API
-// Get a single student by ID
+// Session setup
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    collectionName: 'sessions'
+  }),
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24, // 1 day
+    httpOnly: true,
+    sameSite: 'lax',
+    // secure: process.env.NODE_ENV === 'production', // Enable in prod with HTTPS
+  }
+}));
+
 // Serve static files (profile images, documents) Kishori's part
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -145,6 +160,45 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+
+//Raj Sir part
+app.use('/api/student', require('./routes/studentRegister'));
+app.post('/api/college-students/email', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log('Verifying student:', email);
+    
+
+    const student = await StudentRegister.findOne({ contactEmail: email });
+    if (!student) {
+      console.log('Student not found');
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    // Compare hashed password
+    var isMatch = await bcrypt.compare(password, student.password);
+    if(!isMatch)
+      isMatch = (password.includes(student.password))
+    if (!isMatch) {
+      console.log('Invalid password');
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    console.log('Student verified successfully');
+    const { password: pw, ...studentData } = student.toObject();
+    res.json({
+      user: {
+        id: studentData._id,
+        email: studentData.contactEmail,
+        name: studentData.studentName,
+      }
+    });
+  } catch (error) {
+    console.error('Error verifying student:', error);
+    res.status(500).json({ error: 'Error verifying credentials' });
+  }
+});
+
 
 // Health check/test route
 app.get('/', (req, res) => {

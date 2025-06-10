@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const Company = require('../models/Company');
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });

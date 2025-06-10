@@ -183,7 +183,7 @@ const ViewJobs = () => {
   const locations = ['All', ...new Set(roles.map(role => role.location).filter(Boolean))];
   const types = ['All', ...new Set(roles.map(role => role.jobType).filter(Boolean))];
 
-  return (
+    return (
     <>
       <style>{`
         .demand-role-card {
@@ -253,8 +253,8 @@ const ViewJobs = () => {
             <SearchBar />
         </div>
         <div style={{ padding: '24px' }}>
-            <div style={{ 
-              display: 'flex', 
+      <div style={{ 
+        display: 'flex',
               justifyContent: 'space-between', 
               alignItems: 'center',
               marginBottom: '24px' 
@@ -264,7 +264,7 @@ const ViewJobs = () => {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                style={{
+              style={{
                   padding: '8px 16px',
                     borderRadius: '8px',
                   border: '1px solid #e5e7eb',
@@ -281,7 +281,7 @@ const ViewJobs = () => {
 
             {/* Filters */}
             <div style={{ 
-              display: 'flex', 
+                display: 'flex',
               gap: '16px', 
               marginBottom: '24px',
               flexWrap: 'wrap'
@@ -449,25 +449,25 @@ const ViewJobs = () => {
                       gap: 12,
                     }}
                   >
-                    <button
+          <button
                               onClick={() => handleApplyClick(role)}
-                      style={{
+            style={{
                                 background: '#059669',
                         color: '#fff',
-                        border: 'none',
+              border: 'none',
                         borderRadius: 6,
                         padding: '7px 18px',
                         fontWeight: 600,
                         fontSize: '1rem',
                                 boxShadow: '0 2px 8px #05966933',
-                        cursor: 'pointer',
+              cursor: 'pointer',
                         transition: 'background 0.18s, box-shadow 0.18s',
-                      }}
+            }}
                               onMouseOver={e => (e.currentTarget.style.background = '#047857')}
                               onMouseOut={e => (e.currentTarget.style.background = '#059669')}
-                    >
+          >
                               Apply For Students
-                    </button>
+          </button>
                           </div>
                         </div>
                       </div>
@@ -479,34 +479,34 @@ const ViewJobs = () => {
 
             {/* Student Selection Modal */}
             {showStudentModal && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-                background: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}>
-            <div style={{
-              background: '#fff',
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000
+      }}>
+        <div style={{
+          background: '#fff',
               borderRadius: '12px',
               width: '90%',
               maxWidth: '800px',
-                  maxHeight: '90vh',
-              display: 'flex',
-              flexDirection: 'column',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-            }}>
+        }}>
                   {/* Modal Header */}
-              <div style={{ 
+          <div style={{
                     padding: '12px 16px',
                     borderBottom: '1px solid #e5e7eb',
-                display: 'flex', 
-                justifyContent: 'space-between', 
+            display: 'flex',
+            justifyContent: 'space-between',
                     alignItems: 'center'
                   }}>
                   <h3 style={{ 
@@ -517,26 +517,26 @@ const ViewJobs = () => {
                   }}>
                       Select Students for {selectedJob?.jobTitle} at {selectedJob?.companyId?.name || 'Techori'}
                   </h3>
-                <button
+            <button
                   onClick={() => {
                         setShowStudentModal(false);
                     setSelectedStudents([]);
                         setSelectedJob(null);
                   }}
-                  style={{
+              style={{
                     background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
+                border: 'none',
+                cursor: 'pointer',
                         padding: '4px',
                         color: '#6b7280',
                         transition: 'color 0.2s'
-                      }}
+              }}
                       onMouseOver={e => e.currentTarget.style.color = '#1f2937'}
                       onMouseOut={e => e.currentTarget.style.color = '#6b7280'}
-                    >
+            >
                       <FaTimes size={18} />
-                </button>
-              </div>
+            </button>
+          </div>
               
                   {/* Modal Content */}
               <div style={{ 
@@ -594,43 +594,43 @@ const ViewJobs = () => {
 
                       {/* Search Input */}
                       <div style={{ position: 'relative', flex: 1 }}>
-                        <FaSearch style={{ 
-                          position: 'absolute', 
-                          left: '12px', 
-                          top: '50%', 
-                          transform: 'translateY(-50%)',
-                          color: '#9ca3af'
-                        }} />
-                      <input
-                        type="text"
-                          placeholder="Search students..."
-                        value={studentSearchTerm}
-                        onChange={(e) => setStudentSearchTerm(e.target.value)}
-                        style={{
-                            width: '100%',
-                            padding: '8px 16px 8px 40px',
+             <FaSearch style={{ 
+                position: 'absolute', 
+                left: '12px', 
+                top: '50%', 
+                transform: 'translateY(-50%)',
+                color: '#9ca3af'
+              }} />
+            <input
+              type="text"
+              placeholder="Search students..."
+              value={studentSearchTerm}
+              onChange={(e) => setStudentSearchTerm(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 16px 8px 40px',
                           borderRadius: '6px',
-                            border: '1px solid #e5e7eb',
+                border: '1px solid #e5e7eb',
                             background: '#fff',
                             fontSize: '0.875rem'
-                          }}
-                        />
-                  </div>
+              }}
+            />
+          </div>
                 </div>
 
                     {/* Student List */}
-                    <div style={{ 
+          <div style={{
                       flex: 1,
-                      overflowY: 'auto',
+            overflowY: 'auto',
                       paddingRight: '4px'
                     }}>
                       {filteredStudents.map(student => (
-                          <div
-                            key={student._id}
-                            style={{
+                    <div
+                      key={student._id}
+                      style={{
                               padding: '12px',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
                             marginBottom: '8px',
                             cursor: 'pointer',
                             background: selectedStudents.includes(student._id) ? '#f0fdf4' : '#fff',
@@ -649,9 +649,9 @@ const ViewJobs = () => {
                             height: '20px', 
                             border: '2px solid #059669',
                             borderRadius: '4px',
-                                display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                             background: selectedStudents.includes(student._id) ? '#059669' : 'transparent',
                             flexShrink: 0,
                             marginTop: '2px',
@@ -666,7 +666,7 @@ const ViewJobs = () => {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                                   <div style={{ 
-                                    fontWeight: 600, 
+                              fontWeight: 600,
                                     color: '#1f2937',
                                 fontSize: '0.95rem',
                                 whiteSpace: 'nowrap',
@@ -702,15 +702,15 @@ const ViewJobs = () => {
                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <FaChartLine style={{ color: '#6366f1', fontSize: '0.8rem' }} />
                                 <span>CGPA: {student.cgpa || 'N/A'}</span>
-                                  </div>
+                            </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <FaClock style={{ color: '#6366f1', fontSize: '0.8rem' }} />
                                 <span>Grad: {student.graduationYear ? highlightText(student.graduationYear, studentSearchTerm) : 'N/A'}</span>
-                                </div>
-                              </div>
+                          </div>
+                        </div>
                               
                                   {student.skills && student.skills.length > 0 && (
-                              <div style={{ marginTop: '6px' }}>
+                          <div style={{ marginTop: '6px' }}>
                                       <div style={{ 
                                   fontSize: '0.75rem', 
                                         color: '#6b7280',
@@ -719,32 +719,32 @@ const ViewJobs = () => {
                                         Skills:
                                       </div>
                                 <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                  {student.skills.map((skill, index) => (
-                                          <span
-                                            key={index}
-                                            style={{
+                              {student.skills.map((skill, index) => (
+                                <span
+                                  key={index}
+                                  style={{
                                         background: '#f3f4f6',
                                         padding: '2px 6px',
-                                              borderRadius: '4px',
-                                        fontSize: '0.7rem',
+                                    borderRadius: '4px',
+                                    fontSize: '0.7rem',
                                         color: '#4b5563',
                                               fontWeight: 500
-                                            }}
-                                          >
+                                  }}
+                                >
                                       {highlightText(skill, studentSearchTerm)}
-                                          </span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                                         ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                      </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
+            </div>
+          </div>
 
                   {/* Modal Footer */}
-                                    <div style={{ 
+            <div style={{ 
                     padding: '12px 16px',
                     borderTop: '1px solid #e5e7eb',
                 display: 'flex', 
@@ -757,34 +757,34 @@ const ViewJobs = () => {
                     setSelectedStudents([]);
                         setSelectedJob(null);
                   }}
-                  style={{
-                        padding: '6px 12px',
+                          style={{
+                            padding: '6px 12px',
                     borderRadius: '6px',
-                        border: '1px solid #e5e7eb',
-                        background: '#fff',
-                        color: '#4b5563',
-                    cursor: 'pointer',
+                            border: '1px solid #e5e7eb',
+                            background: '#fff',
+                            color: '#4b5563',
+                            cursor: 'pointer',
                         fontSize: '0.875rem',
                         fontWeight: 500
-                      }}
+                          }}
                       onMouseOver={e => {
                         e.currentTarget.style.background = '#f9fafb';
-                        e.currentTarget.style.borderColor = '#d1d5db';
-                      }}
+                            e.currentTarget.style.borderColor = '#d1d5db';
+                          }}
                       onMouseOut={e => {
                         e.currentTarget.style.background = '#fff';
-                        e.currentTarget.style.borderColor = '#e5e7eb';
-                      }}
-                >
-                  Cancel
-                </button>
-                <button
+                            e.currentTarget.style.borderColor = '#e5e7eb';
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
                       onClick={handleSubmitApplications}
                   disabled={selectedStudents.length === 0}
-                  style={{
-                        padding: '6px 12px',
+                          style={{
+                            padding: '6px 12px',
                     borderRadius: '6px',
-                        border: 'none',
+                            border: 'none',
                         background: selectedStudents.length === 0 ? '#e5e7eb' : '#059669',
                         color: selectedStudents.length === 0 ? '#9ca3af' : '#fff',
                     cursor: selectedStudents.length === 0 ? 'not-allowed' : 'pointer',
@@ -803,8 +803,8 @@ const ViewJobs = () => {
                   }}
                 >
                       Apply for {selectedStudents.length} Student{selectedStudents.length !== 1 ? 's' : ''}
-                </button>
-              </div>
+                      </button>
+                </div>
             </div>
           </div>
         )}

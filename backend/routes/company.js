@@ -24,8 +24,8 @@ const {emailTransport} = require('../config/email');
 // app.post('/api/company/register/initiate') ......Post, Initiate company registration: send OTP
 // app.post('/api/company/register/verify') .....post Verify OTP and and set password during company registration
 // app.post('/api/company/:companyid/employees') .....post Add employee to company (supports both company admin and employee addition)
-// app.get('/api/company/applications/:companyid') .....get Optimized endpoint for company applications with all related data
-// app.get('/api/company/:companyid/interviews') .....Optimized endpoint for company scheduled interviews with all related data
+// app.get('/api/company/:companyid/applications/complete') .....get Optimized endpoint for company applications with all related data
+// app.get('/api/company/:companyid/interviews/complete') .....Optimized endpoint for company scheduled interviews with all related data
 
 router.post('auth', async (req, res) => {
   const { email, password } = req.body;

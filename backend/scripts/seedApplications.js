@@ -3,13 +3,13 @@ const Application = require('../models/Application');
 const College = require('../models/College');
 const Company = require('../models/Company');
 const Role = require('../models/Role');
-const CollegeStudent = require('../models/collegeStudent.model');
+const CollegeStudent = require('../models/CollegeStudent.model');
 const mongoose = require('mongoose');
 const { application } = require('express');
 
 const main = async () => {
-  await mongoose.connect(`${process.env.MONGO_URI}`, { useNewUrlParser: true, useUnifiedTopology: true });
-  console.log(`Connected to ${process.env.MONGO_URI}`);
+  await mongoose.connect(`${process.env.MONGODB_URI}`, { useNewUrlParser: true, useUnifiedTopology: true });
+  console.log(`Connected to ${process.env.MONGODB_URI}`);
 };
 
 main();
