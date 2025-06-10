@@ -70,68 +70,34 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // CORS setup
-// const allowedOrigins = [
-//   'http://localhost:3000',
-//   'http://localhost:5173',
-//   'http://localhost:5174',
-//   'https://campusadmin-y4hh.vercel.app/',
-//   'https://campusadmin.vercel.app/'
-// ];
-// app.use(cors({
-//   origin: function(origin, callback) {
-//     // Allow requests with no origin (like mobile apps, curl requests)
-//     if (!origin) return callback(null, true);
-//     if (allowedOrigins.indexOf(origin) !== -1) {
-//       return callback(null, true);
-//     } else {
-//       return callback(new Error('CORS not allowed from this origin'), false);
-//     }
-//   },
-//   credentials: true,
-//   optionsSuccessStatus: 200,
-// }));
-
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:5174',
   'https://campusadmin-y4hh.vercel.app',
-  'https://campusadmin.vercel.app', // Remove trailing slash
+  'https://campusadmin.vercel.app',
   'https://campusconnect-sumit-sahus-projects-83ef9bf1.vercel.app',
   'https://campusconnect-git-main-sumit-sahus-projects-83ef9bf1.vercel.app',
-  'https://campusconnect-dk9xkuzk0-sumit-sahus-projects-83ef9bf1.vercel.app',
+  'https://campusconnect-dk9xkuzk0-sumit-sahus-projects-83ef9bf1.vercel.app'
 ];
-
-// Include process.env.REACT_URL if defined
-if (process.env.REACT_URL) {
-  allowedOrigins.push(process.env.REACT_URL);
-}
-
+if (process.env.REACT_URL) allowedOrigins.push(process.env.REACT_URL);
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (e.g., mobile apps, curl)
     if (!origin) return callback(null, true);
-    
-    // Normalize origins by removing trailing slashes for comparison
     const normalizedOrigin = origin.replace(/\/$/, '');
     const normalizedAllowedOrigins = allowedOrigins.map(o => o.replace(/\/$/, ''));
-    
     if (normalizedAllowedOrigins.includes(normalizedOrigin)) {
       return callback(null, true);
     }
     return callback(new Error(`CORS not allowed for origin: ${origin}`), false);
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Explicitly allow methods
-  allowedHeaders: ['Content-Type', 'Authorization'], // Allow common headers
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   optionsSuccessStatus: 200,
 }));
-
-// Debug logging to verify origins
 console.log('CORS Allowed Origins:', allowedOrigins);
-
-// Explicitly handle OPTIONS for debugging
-app.options('*', cors());
+// app.options('*', cors());
 
 // Connect to MongoDB
 
