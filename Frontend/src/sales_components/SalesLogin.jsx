@@ -11,7 +11,7 @@ const SalesLogin = () => {
       title="Sales Login"
       description="Sign in to access your sales dashboard"
       apiEndpoint="https://campusadmin.onrender.com/api/sales/email"
-      redirectPath="/sales-dashboard"
+      redirectPath="https://campusadmin.vercel.app/Sales"
     />
   );
 };

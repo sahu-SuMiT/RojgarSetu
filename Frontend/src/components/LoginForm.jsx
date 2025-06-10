@@ -25,7 +25,7 @@ const handleSubmit = async (e) => {
   setLoading(true);
 
   try {
-    const response = await axios.post(`http://localhost:5000/api/v1/user/login`, formData);
+    const response = await axios.post(`https://campusadmin.onrender.com/api/v1/user/login`, formData);
     const { token, user } = response.data;
 
     if (!token || !user) {
@@ -40,7 +40,7 @@ const handleSubmit = async (e) => {
     localStorage.setItem("userName", `${user.firstName} ${user.lastName}`);
 
     // Redirect to sales dashboard
-    navigate("/sales-dashboard");
+    navigate("https://campusadmin.vercel.app/Sales");
   } catch (err) {
     console.error('Login error:', err);
     setError(err.response?.data?.msg || 'Error during login. Please try again.');
