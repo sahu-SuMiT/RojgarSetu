@@ -19,7 +19,7 @@ const ViewJobs = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState('All');
   const [selectedType, setSelectedType] = useState('All');
-  // const [selectedExperience, setSelectedExperience] = useState('All');
+  const [selectedExperience, setSelectedExperience] = useState('All');
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [students, setStudents] = useState([]);
@@ -41,7 +41,7 @@ const ViewJobs = () => {
         setCollegeId(id);
         setCollegeName(name);
         await fetchRoles();
-      } catch {
+      } catch (error) {
         setError('Failed to initialize data');
       }
     };
@@ -55,7 +55,7 @@ const ViewJobs = () => {
       const response = await axios.get(`${apiUrl}/api/roles`);
       setRoles(Array.isArray(response.data) ? response.data : []);
       setLoading(false);
-    } catch {
+    } catch (err) {
       setError('Failed to fetch roles');
       setRoles([]);
       setLoading(false);
@@ -64,7 +64,7 @@ const ViewJobs = () => {
 
   const fetchStudents = async () => {
     try {
-      const response = await axios.get(`${apiUrl}/api/college-students/college/${collegeId}`);
+      const response = await axios.get(`${apiUrl}/api/students/college/${collegeId}`);
       setStudents(response.data);
     } catch (err) {
       console.error('Failed to fetch students:', err);
@@ -114,6 +114,7 @@ const ViewJobs = () => {
         applicationFromCollege: collegeId,
         applicationToCompany: selectedJob.companyId._id,
         roleId: selectedJob._id,
+        roleName: selectedJob.jobTitle,
         students: selectedStudents.map(studentId => ({
           studentId: studentId,
           status: 'applied' // Set default status to applied for new applications

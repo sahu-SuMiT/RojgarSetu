@@ -7,7 +7,7 @@ import { FaChevronRight, FaTicketAlt, FaChartLine, FaUserGraduate } from 'react-
 import axios from 'axios';
 const apiUrl = import.meta.env.VITE_API_URL;
 
-const DashboardCompany = () => {
+const Dashboard = () => {
   const [showFilter, setShowFilter] = useState(false);
   const [selectedRole, setSelectedRole] = useState('all');
   const [sortByMarks, setSortByMarks] = useState(false);
@@ -45,7 +45,7 @@ const DashboardCompany = () => {
         });
 
         // Fetch applications
-        const applicationsRes = await axios.get(`${apiUrl}/api/company/${companyId}/applications`);
+        const applicationsRes = await axios.get(`${apiUrl}/api/applications/company/${companyId}`);
         setApplications(applicationsRes.data);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -377,4 +377,4 @@ const DashboardCompany = () => {
   );
 };
 
-export default DashboardCompany; 
+export default Dashboard; 

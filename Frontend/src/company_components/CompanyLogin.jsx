@@ -154,7 +154,7 @@ const CompanyLogin = () => {
     setRegisterSuccess('');
 
     try {
-      const res = await axios.post(`${apiUrl}/api/register/check-otp`, {
+      const res = await axios.post(`${apiUrl}/api/auth/register/check-otp`, {
         email: registerData.contactEmail,
         otp: otp,
         type: 'company'
@@ -187,7 +187,7 @@ const CompanyLogin = () => {
     setRegisterSuccess('');
 
     try {
-      await axios.post(`${apiUrl}/api/${registerType}/register/initiate`, {
+      const res = await axios.post(`${apiUrl}/api/${registerType}/register/initiate`, {
         ...registerData,
         type: registerType
       });
@@ -249,7 +249,7 @@ const CompanyLogin = () => {
         return;
       }
 
-      await axios.post(`${apiUrl}/api/company/register/verify`, {
+      const res = await axios.post(`${apiUrl}/api/company/register/verify`, {
         email: registerData.contactEmail,
         otp: otpInputs.join(''),
         password: password,

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-// import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { FaChevronRight, FaTicketAlt, FaChartLine, FaBuilding, FaUserGraduate, FaCalendarAlt, FaClock, FaSearch, FaTrash } from 'react-icons/fa';
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
-// import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import calculateCampusScore from '../utils/calculateCampusScore';
 const apiUrl = import.meta.env.VITE_API_URL;
 const ScheduledApplications = () => {
@@ -18,10 +18,10 @@ const ScheduledApplications = () => {
   const [confirmingDelete, setConfirmingDelete] = useState(null);
   const [showAllStudents, setShowAllStudents] = useState(null);
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
-  // const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  // const [errorMessage, setErrorMessage] = useState(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
   const [studentDetails, setStudentDetails] = useState({});
-  // const location = useLocation();
+  const location = useLocation();
 
   // Helper function to highlight text
   const highlightText = (text, searchTerm) => {
@@ -51,12 +51,12 @@ const ScheduledApplications = () => {
     try {
       setLoading(true);
       // Use the new optimized endpoint
-      const response = await axios.get(`${apiUrl}/api/college/${id}/applications/complete`);
-      if (response.data && response.data.applications) {
-        setApplications(response.data.applications);
+      const response = await axios.get(`${apiUrl}/api/applications/college/${id}`);
+      if (response.data) {
+        setApplications(response.data);
         // Store student details from the response
         const studentDetailsMap = {};
-        response.data.applications.forEach(app => {
+        response.data.forEach(app => {
           app.students.forEach(student => {
             if (student.studentId) {
               studentDetailsMap[student.studentId._id] = student.studentId;
@@ -472,7 +472,6 @@ const ScheduledApplications = () => {
                     <div style={{
                       padding: '4px 12px',
                       borderRadius: '999px',
-                      background: '#f3f4f6',
                       fontSize: '0.875rem',
                       fontWeight: 500,
                       backgroundColor: application.status === 'active' ? '#d1fae5' : application.status === 'closed' ? '#fee2e2' : '#f3f4f6',

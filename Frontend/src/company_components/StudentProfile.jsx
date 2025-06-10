@@ -25,7 +25,7 @@ const StudentProfile = () => {
         const response = await axios.get(`${apiUrl}/api/college-students/${studentId}`);
         setStudentData(response.data);
         setLoading(false);
-      } catch {
+      } catch (err) {
         setError('Error fetching data');
         setLoading(false);
       }
@@ -84,7 +84,7 @@ const StudentProfile = () => {
       await axios.put(`${apiUrl}/api/college-students/${studentId}`, updated);
       setStudentData(updated);
       setIsEditing(false);
-    } catch {
+    } catch (err) {
       alert('Error saving profile');
     }
   };

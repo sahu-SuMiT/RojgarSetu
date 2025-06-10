@@ -3,7 +3,7 @@ const router = express.Router();
 const Interview = require('../models/Interview');
 const Employee = require('../models/Employee')
 const Application = require('../models/Application')
-const CollegeStudent = require('../models/collegeStudent.model')
+const CollegeStudent = require('../models/CollegeStudent.model')
 const nodemailer = require('nodemailer');
 const getZoomAccessToken = require('../utils/zoomOAuth')
 const axios = require('axios');
@@ -23,6 +23,19 @@ const emailTransport = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS
   }
 });
+
+//...........
+// app.get('/api/interviews') ..... Get all interviews
+// app.post('/api/interviews') ..... Create new interview with Zoom meeting
+// app.put('/api/interviews/:id') ..... Update interview details
+// app.delete('/api/interviews/:id') ..... Delete interview
+// app.get('/api/interviews/student/:studentId') ..... Get interviews by student
+// app.get('/api/interviews/company/:companyId') ..... Get interviews by company
+// app.post('/api/interviews/:id/accept') ..... Accept candidate after interview
+// app.post('/api/interviews/:id/cancel') ..... Cancel scheduled interview
+// app.post('/api/interviews/:id/reject') ..... Reject candidate after interview
+// app.delete('/api/interviews/clean-rejected') ..... Clean rejected interviews(need to implement in frontend)
+
 router.get('/', async (req, res) => {
   try {
     const interviews = await Interview.find()
@@ -281,6 +294,55 @@ router.post('/:id/accept', async (req, res) => {
   } catch (error) {
     console.error('Error accepting candidate:', error);
     res.status(500).json({ message: 'Error accepting candidate', error: error.message });
+  }
+});
+router.post('/:id/cancel', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { studentEmail, emailTitle, emailBody } = req.body;
+
+    // Find the interview
+    const interview = await Interview.findById(id)
+      .populate('interviewee', 'name email')
+      .populate('companyId', 'name');
+
+    if (!interview) {
+      return res.status(404).json({ message: 'Interview not found' });
+    }
+
+    // Send acceptance email
+    await emailTransport.sendMail({
+      from: process.env.EMAIL_SENDER,
+      to: studentEmail,
+      subject: emailTitle,
+      html: emailBody
+    });
+
+    // Update interview status
+    interview.status = 'cancelled';
+    await interview.save();
+
+    // Find and update the application
+    const application = await Application.findOne({
+      'students.studentId': interview.interviewee._id,
+      'students.interview': interview._id
+    });
+
+    if (application) {
+      const studentIndex = application.students.findIndex(
+        s => s.studentId.toString() === interview.interviewee._id.toString()
+      );
+      
+      if (studentIndex !== -1) {
+        application.students[studentIndex].status = 'interview-cancelled';
+        await application.save();
+      }
+    }
+
+    res.json({ message: 'Interview Cancelled', interview });
+  } catch (error) {
+    console.error('Error Cancelling Interview:', error);
+    res.status(500).json({ message: 'Error Cancelling Interview', error: error.message });
   }
 });
 

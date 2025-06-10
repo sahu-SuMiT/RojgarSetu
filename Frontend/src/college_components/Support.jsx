@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { FaChevronRight, FaTicketAlt, FaChartLine, FaPaperPlane, FaUserGraduate } from 'react-icons/fa';
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
-// import axios from 'axios';
+import axios from 'axios';
 
 const Support = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  // const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [collegeId, setCollegeId] = useState(null);
   const [collegeName, setCollegeName] = useState('');
@@ -60,7 +60,7 @@ const Support = () => {
             : msg
         ));
       }, 1000);
-    } catch {
+    } catch (err) {
       setError('Failed to send message. Please try again.');
     }
   };

@@ -7,14 +7,14 @@ import axios from 'axios';
 const Support = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  // const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [company, setCompany] = useState(null);
 
   useEffect(() => {
     const companyId = localStorage.getItem('companyId');
     if (companyId) {
-      axios.get(`https://campusadmin.onrender.com/api/company/${companyId}`)
+      axios.get(`http://localhost:5000/api/company/${companyId}`)
         .then(res => {
           setCompany(res.data);
         })
@@ -67,7 +67,7 @@ const Support = () => {
             : msg
         ));
       }, 1000);
-    } catch {
+    } catch (err) {
       setError('Failed to send message. Please try again.');
     }
   };

@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { FaChevronRight, FaTicketAlt, FaChartLine, FaDownload, FaUserGraduate } from 'react-icons/fa';
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
-// import axios from 'axios';
+import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-// const apiUrl = import.meta.env.VITE_API_URL;
+const apiUrl = import.meta.env.VITE_API_URL;
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 const PlacementAnalysis = () => {
@@ -82,7 +82,7 @@ const PlacementAnalysis = () => {
 
       setPlacementData(mockData);
       setLoading(false);
-    } catch {
+    } catch (err) {
       setError('Failed to fetch placement data');
       setLoading(false);
     }
