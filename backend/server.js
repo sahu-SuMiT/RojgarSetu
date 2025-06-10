@@ -128,6 +128,7 @@ app.use('/api/roles', require('./routes/roles'));
 app.use('/api/employees',require('./routes/employees'));
 app.use('/api/colleges', require('./routes/colleges'));
 app.use('/api/students', require('./routes/students'))
+app.use('/api/support', require('./routes/support'));
 
 // REST API Endpoints
 
