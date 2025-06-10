@@ -19,34 +19,36 @@ const LoginForm = ({ type, apiEndpoint, redirectPath }) => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setLoading(true);
 
-    try {
-      const response = await axios.post(`${apiEndpoint}`, formData);
-      const user = response.data;
+  try {
+    const response = await axios.post(`http://localhost:5000/api/v1/user/login`, formData);
+    const { token, user } = response.data;
 
-      if (!user) {
-        setError(`${type} not found`);
-        setLoading(false);
-        return;
-      }
-
-      // Store user data in localStorage
-      localStorage.setItem(`${type.toLowerCase()}Id`, user._id);
-      localStorage.setItem(`${type.toLowerCase()}Name`, user.studentName);
-
-      // Navigate to appropriate dashboard
-      navigate(redirectPath);
-    } catch (err) {
-      console.error('Login error:', err);
-      setError(err.response?.data?.error || 'Error during login. Please try again.');
-    } finally {
+    if (!token || !user) {
+      setError('Invalid credentials.');
       setLoading(false);
+      return;
     }
-  };
+
+    // Save token and user info
+    localStorage.setItem("token", token);
+    localStorage.setItem("userRole", user.role);
+    localStorage.setItem("userName", `${user.firstName} ${user.lastName}`);
+
+    // Redirect to sales dashboard
+    navigate("/sales-dashboard");
+  } catch (err) {
+    console.error('Login error:', err);
+    setError(err.response?.data?.msg || 'Error during login. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <>
