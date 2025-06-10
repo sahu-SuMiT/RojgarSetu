@@ -3,7 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 
 // Import your models
-const CollegeStudent = require('../models/CollegeStudent.model');
+const CollegeStudent = require('../models/collegeStudent.model');
 const Job = require('../models/Job');
 const Internship = require('../models/Internship');
 const Interview = require('../models/Interview');

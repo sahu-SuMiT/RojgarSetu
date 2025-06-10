@@ -2,7 +2,7 @@ require('dotenv').config({path: '../.env'});
 const mongoose = require('mongoose');
 const Job = require('../models/Job');
 const Internship = require('../models/Internship');
-const CollegeStudent = require('../models/CollegeStudent.model');
+const CollegeStudent = require('../models/collegeStudent.model');
 const College = require('../models/College');
 const Company = require('../models/Company');
 const Interview = require('../models/Interview');
