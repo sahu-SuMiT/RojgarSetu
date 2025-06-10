@@ -1,10 +1,7 @@
 // Zoom API configuration (support both Vite and CRA)
-// const ZOOM_API_KEY = import.meta.env ? import.meta.env.VITE_REACT_APP_ZOOM_API_KEY : process.env.REACT_APP_ZOOM_API_KEY;
-// const ZOOM_API_SECRET = import.meta.env ? import.meta.env.VITE_REACT_APP_ZOOM_API_SECRET : process.env.REACT_APP_ZOOM_API_SECRET;
-// const ZOOM_USER_ID = import.meta.env ? import.meta.env.VITE_REACT_APP_ZOOM_USER_ID : process.env.REACT_APP_ZOOM_USER_ID;
-const ZOOM_API_KEY = import.meta.env.VITE_REACT_APP_ZOOM_API_KEY;
-const ZOOM_API_SECRET = import.meta.env.VITE_REACT_APP_ZOOM_API_SECRET;
-const ZOOM_USER_ID = import.meta.env.VITE_REACT_APP_ZOOM_USER_ID;
+const ZOOM_API_KEY = import.meta.env ? import.meta.env.VITE_REACT_APP_ZOOM_API_KEY : process.env.REACT_APP_ZOOM_API_KEY;
+const ZOOM_API_SECRET = import.meta.env ? import.meta.env.VITE_REACT_APP_ZOOM_API_SECRET : process.env.REACT_APP_ZOOM_API_SECRET;
+const ZOOM_USER_ID = import.meta.env ? import.meta.env.VITE_REACT_APP_ZOOM_USER_ID : process.env.REACT_APP_ZOOM_USER_ID;
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -12,21 +9,20 @@ import SearchBar from '../SearchBar';
 import Sidebar from '../Sidebar';
 import { FaChevronRight, FaCalendarAlt, FaClock, FaVideo, FaTimes, FaSpinner, FaTicketAlt, FaChartLine, FaUserGraduate, FaCheck, FaTrash, FaEye, FaCopy, FaFileAlt, FaExternalLinkAlt } from 'react-icons/fa';
 import axios from 'axios';
-import { toast } from 'react-toastify';
 import './ScheduledInterviews.css';
 import '../index.css'; // Ensure global styles are applied
-// import calculateCampusScore from '../utils/calculateCampusScore';
+import calculateCampusScore from '../utils/calculateCampusScore';
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const ScheduledInterviews = () => {
   const [showFilter, setShowFilter] = useState(false);
   const [selectedRole, setSelectedRole] = useState('all');
   const [sortByMarks, setSortByMarks] = useState(false);
-  // const [editingId, setEditingId] = useState(null);
-  // const [editForm, setEditForm] = useState({
-  //   status: '',
-  //   avgScore: ''
-  // });
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({
+    status: '',
+    avgScore: ''
+  });
   const [showAll, setShowAll] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
@@ -57,10 +53,10 @@ const ScheduledInterviews = () => {
   });
   const [studentScores, setStudentScores] = useState({});
   const [showProfileModal, setShowProfileModal] = useState(false);
-  // const [selectedStudentProfile, setSelectedStudentProfile] = useState(null);
-  // const [profileLoading, setProfileLoading] = useState(false);
-  // const [profileError, setProfileError] = useState(null);
-  // const [hoveredInterview, setHoveredInterview] = useState(null);
+  const [selectedStudentProfile, setSelectedStudentProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState(null);
+  const [hoveredInterview, setHoveredInterview] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [interviewToMarkDone, setInterviewToMarkDone] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -84,7 +80,7 @@ const ScheduledInterviews = () => {
     searchQuery: '',
     searchBy: 'candidate' // 'candidate', 'interviewer', 'position', 'status'
   });
-  // const [showLink, setShowLink] = useState({});
+  const [showLink, setShowLink] = useState({});
   const [copiedLink, setCopiedLink] = useState(null);
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [selectedLink, setSelectedLink] = useState(null);
@@ -97,12 +93,12 @@ const ScheduledInterviews = () => {
     { id: 'manager', name: 'Manager' }
   ];
 
-  // const statusOptions = [
-  //   'Scheduled',
-  //   'Completed',
-  //   'Cancelled',
-  //   'Rescheduled'
-  // ];
+  const statusOptions = [
+    'Scheduled',
+    'Completed',
+    'Cancelled',
+    'Rescheduled'
+  ];
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => ({
@@ -202,33 +198,33 @@ const ScheduledInterviews = () => {
     setCurrentPage(1);
   };
 
-  // const handleEdit = (interview) => {
-  //   setEditingId(interview.id);
-  //   setEditForm({
-  //     status: interview.status,
-  //     avgScore: interview.avgScore
-  //   });
-  // };
+  const handleEdit = (interview) => {
+    setEditingId(interview.id);
+    setEditForm({
+      status: interview.status,
+      avgScore: interview.avgScore
+    });
+  };
 
-  // const handleSave = (id) => {
-  //   setScheduledInterviews(interviews =>
-  //     interviews.map(interview =>
-  //       interview.id === id
-  //         ? { ...interview, ...editForm }
-  //         : interview
-  //     )
-  //   );
-  //   setEditingId(null);
-  // };
+  const handleSave = (id) => {
+    setScheduledInterviews(interviews =>
+      interviews.map(interview =>
+        interview.id === id
+          ? { ...interview, ...editForm }
+          : interview
+      )
+    );
+    setEditingId(null);
+  };
 
-  // const handleCancel = () => {
-  //   setEditingId(null);
-  // };
+  const handleCancel = () => {
+    setEditingId(null);
+  };
 
-  // const handleScheduleInterview = (candidate) => {
-  //   setSelectedCandidate(candidate);
-  //   setShowScheduleForm(true);
-  // };
+  const handleScheduleInterview = (candidate) => {
+    setSelectedCandidate(candidate);
+    setShowScheduleForm(true);
+  };
 
   const createZoomMeeting = async (meetingDetails) => {
     try {
@@ -312,24 +308,24 @@ const ScheduledInterviews = () => {
   };
 
   // Update interview (edit)
-  // const handleEditInterview = async (id, updatedFields) => {
-  //   try {
-  //     const res = await axios.put(`${apiUrl}/api/interviews/${id}`, updatedFields);
-  //     setScheduledInterviews(prev => prev.map(i => i._id === id ? res.data : i));
-  //   } catch (error) {
-  //     console.error('Error updating interview:', error);
-  //   }
-  // };
+  const handleEditInterview = async (id, updatedFields) => {
+    try {
+      const res = await axios.put(`${apiUrl}/api/interviews/${id}`, updatedFields);
+      setScheduledInterviews(prev => prev.map(i => i._id === id ? res.data : i));
+    } catch (error) {
+      console.error('Error updating interview:', error);
+    }
+  };
 
   // Delete interview
-  // const handleDeleteInterview = async (id) => {
-  //   try {
-  //     await axios.delete(`${apiUrl}/api/interviews/${id}`);
-  //     setScheduledInterviews(prev => prev.filter(i => i._id !== id));
-  //   } catch (error) {
-  //     console.error('Error deleting interview:', error);
-  //   }
-  // };
+  const handleDeleteInterview = async (id) => {
+    try {
+      await axios.delete(`${apiUrl}/api/interviews/${id}`);
+      setScheduledInterviews(prev => prev.filter(i => i._id !== id));
+    } catch (error) {
+      console.error('Error deleting interview:', error);
+    }
+  };
 
   // Format date helper function
   const formatDate = (dateString) => {
@@ -356,41 +352,41 @@ const ScheduledInterviews = () => {
   };
 
   // Handle giving feedback
-  // const handleGiveFeedback = async (interviewId, event) => {
-  //   const interview = scheduledInterviews.find(i => i._id === interviewId);
-  //   setSelectedInterview(interview);
-  //   setSelectedAction(null);
-  //   setFeedbackForm({
-  //     technicalScore: '',
-  //     communicationScore: '',
-  //     problemSolvingScore: '',
-  //     overallScore: '',
-  //     comments: ''
-  //   });
+  const handleGiveFeedback = async (interviewId, event) => {
+    const interview = scheduledInterviews.find(i => i._id === interviewId);
+    setSelectedInterview(interview);
+    setSelectedAction(null);
+    setFeedbackForm({
+      technicalScore: '',
+      communicationScore: '',
+      problemSolvingScore: '',
+      overallScore: '',
+      comments: ''
+    });
 
-  //   // Calculate position for the popup
-  //   const button = event.currentTarget;
-  //   const buttonRect = button.getBoundingClientRect();
-  //   const popupWidth = 300;
-  //   const popupHeight = 280;
-  //   const spacing = 10;
+    // Calculate position for the popup
+    const button = event.currentTarget;
+    const buttonRect = button.getBoundingClientRect();
+    const popupWidth = 300;
+    const popupHeight = 280;
+    const spacing = 10;
 
-  //   let left = buttonRect.left - popupWidth - spacing;
-  //   let top = buttonRect.top - (popupHeight / 2) + (buttonRect.height / 2);
+    let left = buttonRect.left - popupWidth - spacing;
+    let top = buttonRect.top - (popupHeight / 2) + (buttonRect.height / 2);
 
-  //   if (left < 0) {
-  //     left = buttonRect.right + spacing;
-  //   }
+    if (left < 0) {
+      left = buttonRect.right + spacing;
+    }
 
-  //   if (top < 0) {
-  //     top = 0;
-  //   } else if (top + popupHeight > window.innerHeight) {
-  //     top = window.innerHeight - popupHeight;
-  //   }
+    if (top < 0) {
+      top = 0;
+    } else if (top + popupHeight > window.innerHeight) {
+      top = window.innerHeight - popupHeight;
+    }
 
-  //   setFeedbackFormPosition({ top, left });
-  //   setShowFeedbackForm(true);
-  // };
+    setFeedbackFormPosition({ top, left });
+    setShowFeedbackForm(true);
+  };
 
   // Close feedback form when clicking outside
   useEffect(() => {
@@ -450,22 +446,22 @@ const ScheduledInterviews = () => {
   };
 
   // Handle closing interview
-  // const handleCloseInterview = async (interviewId) => {
-  //   try {
-  //     const response = await axios.put(`${apiUrl}/api/interviews/${interviewId}`, {
-  //       status: 'cancelled'
-  //     });
+  const handleCloseInterview = async (interviewId) => {
+    try {
+      const response = await axios.put(`${apiUrl}/api/interviews/${interviewId}`, {
+        status: 'cancelled'
+      });
 
-  //     setScheduledInterviews(prev => 
-  //       prev.map(interview => 
-  //         interview._id === interviewId ? response.data : interview
-  //       )
-  //     );
-  //   } catch (error) {
-  //     console.error('Error closing interview:', error);
-  //     setError('Failed to close interview');
-  //   }
-  // };
+      setScheduledInterviews(prev => 
+        prev.map(interview => 
+          interview._id === interviewId ? response.data : interview
+        )
+      );
+    } catch (error) {
+      console.error('Error closing interview:', error);
+      setError('Failed to close interview');
+    }
+  };
 
   // Navigation items with company ID
   const navItems = [
@@ -484,16 +480,16 @@ const ScheduledInterviews = () => {
     initials: company?.name ? company.name.substring(0, 2).toUpperCase() : 'CA'
   };
 
-  // const fetchStudentDetails = async (studentId) => {
-  //   try {
-  //     const res = await axios.get(`${apiUrl}/api/student/${studentId}`);
-  //     setSelectedStudentProfile(res.data);
-  //     setShowProfileModal(true);
-  //   } catch (err) {
-  //     console.error('Error fetching student profile:', err);
-  //     setProfileError('Failed to fetch student profile');
-  //   }
-  // };
+  const fetchStudentDetails = async (studentId) => {
+    try {
+      const res = await axios.get(`${apiUrl}/api/student/${studentId}`);
+      setSelectedStudentProfile(res.data);
+      setShowProfileModal(true);
+    } catch (err) {
+      console.error('Error fetching student profile:', err);
+      setProfileError('Failed to fetch student profile');
+    }
+  };
 
   const handleViewProfile = async (studentId) => {
     try {
@@ -588,7 +584,7 @@ ${company?.name || 'The Hiring Team'}`);
       });
 
       // Update interview status
-      await axios.put(`${apiUrl}/api/interviews/${interviewToCancel._id}`, {
+      const response = await axios.put(`${apiUrl}/api/interviews/${interviewToCancel._id}`, {
         status: 'cancelled'
       });
 
@@ -665,7 +661,7 @@ ${company?.name || 'The Hiring Team'}`);
       });
 
       // Update interview status
-      await axios.put(`${apiUrl}/api/interviews/${interviewToAccept._id}`, {
+      const response = await axios.put(`${apiUrl}/api/interviews/${interviewToAccept._id}`, {
         status: 'accepted'
       });
 
@@ -711,7 +707,7 @@ ${company?.name || 'The Hiring Team'}`);
       });
 
       // Update interview status
-      await axios.put(`${apiUrl}/api/interviews/${interviewToReject._id}`, {
+      const response = await axios.put(`${apiUrl}/api/interviews/${interviewToReject._id}`, {
         status: 'rejected'
       });
 
@@ -749,7 +745,7 @@ ${company?.name || 'The Hiring Team'}`);
   const handleConductInterview = async (interviewId) => {
     try {
       // Update interview status to in-progress
-      await axios.put(`${apiUrl}/api/interviews/${interviewId}`, {
+      const response = await axios.put(`${apiUrl}/api/interviews/${interviewId}`, {
         status: 'in-progress'
       });
 
@@ -776,18 +772,18 @@ ${company?.name || 'The Hiring Team'}`);
     }
   };
 
-  // const handleCleanRejected = async () => {
-  //   if (window.confirm('Are you sure you want to delete all rejected interviews? This action cannot be undone.')) {
-  //     try {
-  //       await axios.delete(`${apiUrl}/api/interviews/clean-rejected`);
-  //       setScheduledInterviews(scheduledInterviews.filter(interview => interview.status !== 'rejected'));
-  //       toast.success('Successfully cleaned rejected interviews');
-  //     } catch (error) {
-  //       console.error('Error cleaning rejected interviews:', error);
-  //       toast.error('Failed to clean rejected interviews');
-  //     }
-  //   }
-  // };
+  const handleCleanRejected = async () => {
+    if (window.confirm('Are you sure you want to delete all rejected interviews? This action cannot be undone.')) {
+      try {
+        await axios.delete(`${apiUrl}/api/interviews/clean-rejected`);
+        setScheduledInterviews(scheduledInterviews.filter(interview => interview.status !== 'rejected'));
+        toast.success('Successfully cleaned rejected interviews');
+      } catch (error) {
+        console.error('Error cleaning rejected interviews:', error);
+        toast.error('Failed to clean rejected interviews');
+      }
+    }
+  };
 
   const handleCopyLink = (link) => {
     navigator.clipboard.writeText(link);
@@ -795,12 +791,12 @@ ${company?.name || 'The Hiring Team'}`);
     setTimeout(() => setCopiedLink(null), 2000);
   };
 
-  // const toggleLinkVisibility = (interviewId) => {
-  //   setShowLink(prev => ({
-  //     ...prev,
-  //     [interviewId]: !prev[interviewId]
-  //   }));
-  // };
+  const toggleLinkVisibility = (interviewId) => {
+    setShowLink(prev => ({
+      ...prev,
+      [interviewId]: !prev[interviewId]
+    }));
+  };
 
   const handleViewLink = (link) => {
     setSelectedLink(link);
@@ -1128,26 +1124,7 @@ ${company?.name || 'The Hiring Team'}`);
                   </button>
                   <button 
                     className="confirm-button"
-                    onClick={async () => {
-                      if (!interviewToMarkDone) return;
-                      try {
-                        // Update interview status to completed
-                        const response = await axios.put(`${apiUrl}/api/interviews/${interviewToMarkDone._id}`, {
-                          status: 'completed',
-                          isDone: true
-                        });
-                        setScheduledInterviews(prev => 
-                          prev.map(interview => 
-                            interview._id === interviewToMarkDone._id ? response.data : interview
-                          )
-                        );
-                        setShowConfirmModal(false);
-                        setInterviewToMarkDone(null);
-                      } catch (error) {
-                        console.error('Error marking interview as done:', error);
-                        setError('Failed to mark interview as completed');
-                      }
-                    }}
+                    onClick={confirmMarkAsDone}
                     style={{
                       padding: '8px 16px',
                       border: 'none',

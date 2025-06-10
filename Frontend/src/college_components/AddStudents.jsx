@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   FaUserGraduate, 
@@ -16,7 +16,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 const AddStudents = () => {
   const { collegeId } = useParams();
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
   const [college, setCollege] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -57,7 +57,7 @@ const AddStudents = () => {
         const response = await axios.get(`${apiUrl}/api/colleges/${collegeId}`);
         setCollege(response.data);
         setLoading(false);
-      } catch {
+      } catch (err) {
         setError('Error loading college information');
         setLoading(false);
       }
@@ -108,7 +108,7 @@ const AddStudents = () => {
         college: collegeId
       }));
 
-      await axios.post(`${apiUrl}/api/college-students/bulk`, studentsWithCollege);
+      await axios.post(`${apiUrl}/api/students/bulk`, studentsWithCollege);
       setSuccess(true);
       setStudents([{
         name: '',

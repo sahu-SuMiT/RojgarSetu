@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { FaChevronRight, FaTicketAlt, FaChartLine, FaUserGraduate, FaPlus, FaEdit, FaTrash, FaTimes } from 'react-icons/fa';
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
@@ -6,6 +7,7 @@ import axios from 'axios';
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const ManageEmployees = () => {
+  const { companyId } = useParams();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -144,7 +146,7 @@ const ManageEmployees = () => {
 
   const handleDeleteConfirm = async (employeeId) => {
     try {
-      await axios.delete(`${apiUrl}/api/employees/${employeeId}`);
+      await axios.delete(`${apiUrl}/api/employees/${employeeId}/company/${companyId}`);
       setEmployees(employees.filter(emp => emp._id !== employeeId));
       setDeletingEmployeeId(null);
     } catch (err) {

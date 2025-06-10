@@ -73,7 +73,7 @@ const PostJobForm = () => {
         setRoles(sortedRoles);
         setLoading(false);
       })
-      .catch(() => {
+      .catch(err => {
         setError('Error fetching roles');
         setLoading(false);
       });
@@ -115,7 +115,7 @@ const PostJobForm = () => {
       setEditValidationErrors({});
       setSuccessMessage('Role updated successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
-    } catch {
+    } catch (err) {
       setError('Error updating role');
     }
   };

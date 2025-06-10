@@ -92,7 +92,7 @@ const ViewApplications = () => {
     setProfileError(null);
     try {
       // Using the new endpoint
-      await axios.get(`${apiUrl}/api/student/${studentId}`);
+      const res = await axios.get(`${apiUrl}/api/students/${studentId}`);
       const completeProfile = await fetchCompleteStudentProfile(studentId);
       setSelectedStudentProfile(completeProfile);
       setShowProfileModal(true);
@@ -107,7 +107,7 @@ const ViewApplications = () => {
   // Add new function to fetch complete student profile for campus score
   const fetchCompleteStudentProfile = async (studentId) => {
     try {
-      const res = await axios.get(`${apiUrl}/api/student/${studentId}`);
+      const res = await axios.get(`${apiUrl}/api/students/${studentId}`);
       // Also fetch internships, jobs and interview data
       const [internshipsRes, interviewsRes, jobsRes] = await Promise.all([
         axios.get(`${apiUrl}/api/internships/student/${studentId}`),
@@ -129,7 +129,7 @@ const ViewApplications = () => {
 
   const handleScheduleInterviewModal = async () => {
     try {
-      await axios.post(`${apiUrl}/api/interviews`, {
+      const response = await axios.post(`${apiUrl}/api/interviews`, {
         interviewer: selectedInterviewer,
         interviewee: selectedStudent._id,
         candidateName: selectedStudent.name,
@@ -186,7 +186,7 @@ const ViewApplications = () => {
         setError(null);
       }, 1500);
 
-    } catch {
+    } catch (err) {
       setError('Failed to schedule interview');
       setValidationError('');
     }
@@ -209,7 +209,7 @@ const ViewApplications = () => {
         setClosingApplicationId(null); // Reset closing state
       }, 500); // Match this timeout to the CSS animation duration
 
-    } catch {
+    } catch (err) {
       // If API call fails, stop the animation and show error
       setClosingApplicationId(null);
       setError('Failed to close application');
@@ -519,10 +519,10 @@ const ViewApplications = () => {
                 >
                   <div style={{ marginBottom: '16px' }}>
                     <h3 style={{ margin: '0 0 8px 0', color: '#1f2937', fontSize: '1.1rem' }}>
-                      {application.applicationFromCollege?.name || 'College Name Not Available'}
+                      {application.collegeName || 'College Name Not Available'}
                     </h3>
                     <p style={{ margin: '0 0 8px 0', color: '#4b5563', fontSize: '0.9rem' }}>
-                      Role: {application.roleId?.jobTitle || 'Role Not Specified'}
+                      Role: {application.roleName || 'Role Not Specified'}
                     </p>
                     <p style={{ margin: '0 0 8px 0', color: '#6b7280', fontSize: '0.9rem' }}>
                       Students: {application.students?.length || 0}
@@ -672,7 +672,7 @@ const ViewApplications = () => {
                 overflowY: 'auto',
                 flex: 1
               }}>
-                {selectedApplication.students?.map((studentObj) => {
+                {selectedApplication.students?.map((studentObj, index) => {
                   const student = studentObj.studentId;
                   return (
                     <div

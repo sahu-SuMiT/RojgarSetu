@@ -6,7 +6,7 @@ const Interview = require('../models/Interview');
 const CollegeStudent = require('../models/collegeStudent.model');
 const Company = require('../models/Company');
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/campus_connect';
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/campus_connect';
 
 mongoose.connect(MONGO_URI)
   .then(async () => {

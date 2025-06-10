@@ -31,7 +31,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 const CollegeProfile = () => {
   const { studentId, collegeId } = useParams();
-  // const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState('profile');
   const [student, setStudent] = useState(null);
   const [college, setCollege] = useState(null);
   const [internships, setInternships] = useState([]);
@@ -41,9 +41,9 @@ const CollegeProfile = () => {
   const [error, setError] = useState(null);
   const [editingSection, setEditingSection] = useState(null);
   const [editForm, setEditForm] = useState({});
-  // const [isSaving, setIsSaving] = useState(false);
-  // const [saveError, setSaveError] = useState(null);
-  // const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const scrollContainersRef = useRef({});
 
   const ScrollableContainer = ({ children, containerId }) => (
@@ -91,7 +91,7 @@ const CollegeProfile = () => {
         setError(null); // Reset error state
 
         // First fetch student data
-        const studentUrl = `${apiUrl}/api/college/${collegeId}/student/${studentId}`;
+        const studentUrl = `${apiUrl}/api/colleges/${collegeId}/student/${studentId}`;
         const studentResponse = await axios.get(studentUrl);
         setStudent(studentResponse.data);
 
@@ -155,7 +155,7 @@ const CollegeProfile = () => {
     initials: college?.name ? college.name.substring(0, 2).toUpperCase() : 'CA'
   };
 
-  const handleEditClick = (section) => {
+  const handleEditClick = (section, data) => {
     // Prevent default behavior
     if (section === 'nameCard') {
       setEditForm({
@@ -220,7 +220,7 @@ const CollegeProfile = () => {
       }
 
       // Update the backend
-      await axios.put(`${apiUrl}/api/college/${collegeId}/student/${studentId}`, updated);
+      await axios.put(`${apiUrl}/api/colleges/${collegeId}/student/${studentId}`, updated);
       
       // Update the local state
       setStudent(updated);

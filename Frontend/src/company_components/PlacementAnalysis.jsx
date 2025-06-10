@@ -88,15 +88,11 @@ const PlacementAnalysis = () => {
 
       setPlacementData(mockData);
       setLoading(false);
-    } catch {
+    } catch (err) {
       setError('Failed to fetch placement data');
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchPlacementData();
-  }, []);
 
   const handleDownloadReport = () => {
     // In a real application, this would generate and download a PDF report

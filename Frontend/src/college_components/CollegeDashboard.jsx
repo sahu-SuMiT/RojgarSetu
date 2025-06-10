@@ -2,29 +2,29 @@ import React, { useState, useEffect } from 'react';
 import SearchBar from '../SearchBar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { FaTicketAlt, FaChartLine, FaChevronRight, FaUserGraduate } from 'react-icons/fa';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useParams } from 'react-router-dom';
 import Sidebar from '../Sidebar';
 import axios from 'axios';
 import calculateCampusScore from '../utils/calculateCampusScore';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-// const collegeLinks = [
-//   { label: 'Track Student Performance', href: '/college-dashboard' },
-//   { label: 'Access Feedback & Scores', href: '/college-dashboard/feedback' },
-//   { label: 'Edit & Update Student Profile Record', href: '/college-dashboard/update-profile' }
-// ];
+const collegeLinks = [
+  { label: 'Track Student Performance', href: '/college-dashboard' },
+  { label: 'Access Feedback & Scores', href: '/college-dashboard/feedback' },
+  { label: 'Edit & Update Student Profile Record', href: '/college-dashboard/update-profile' }
+];
 
-// const yearOptions = ['All', '1st', '2nd', '3rd', '4th'];
+const yearOptions = ['All', '1st', '2nd', '3rd', '4th'];
 
-// const navItems = [
-//   { label: 'Dashboard', href: '/college-dashboard', icon: <FaChevronRight /> },
-//   { label: 'View Jobs', href: '/college-dashboard/view-jobs', icon: <FaChevronRight /> },
-//   { label: 'Student Applications', href: '/college-dashboard/student-applications', icon: <FaChevronRight /> },
-//   { label: 'Add Students', href: '/college-dashboard/add-students', icon: <FaUserGraduate /> },
-//   { label: 'Support', href: '/support', icon: <FaTicketAlt /> },
-//   { label: 'Placement Analysis', href: '/placement-analysis', icon: <FaChartLine /> },
-// ];
+const navItems = [
+  { label: 'Dashboard', href: '/college-dashboard', icon: <FaChevronRight /> },
+  { label: 'View Jobs', href: '/college-dashboard/view-jobs', icon: <FaChevronRight /> },
+  { label: 'Student Applications', href: '/college-dashboard/student-applications', icon: <FaChevronRight /> },
+  { label: 'Add Students', href: '/college-dashboard/add-students', icon: <FaUserGraduate /> },
+  { label: 'Support', href: '/support', icon: <FaTicketAlt /> },
+  { label: 'Placement Analysis', href: '/placement-analysis', icon: <FaChartLine /> },
+];
 const sidebarUser = { initials: 'AJ', name: 'Alex Johnson', role: 'Student' };
 
 const CollegeDashboard = () => {
@@ -35,8 +35,6 @@ const CollegeDashboard = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [college, setCollege] = useState(null);
   const studentsPerPage = 10;
@@ -93,12 +91,12 @@ const CollegeDashboard = () => {
     // Fetch students for this college
     setLoading(true);
     setError(null);
-    axios.get(`${apiUrl}/api/college-students/college/${collegeId}`)
+    axios.get(`${apiUrl}/api/students/college/${collegeId}`)
       .then(res => {
         setStudents(res.data);
         setLoading(false);
       })
-      .catch(() => {
+      .catch(err => {
         setError('Error fetching students.');
         setLoading(false);
       });
@@ -198,50 +196,123 @@ const CollegeDashboard = () => {
 
   const metrics = calculateMetrics(filteredStudents);
 
-  const handleEditStudent = (student) => {
-    setEditingId(student._id);
-    setEditForm({
-      name: student.name,
-      email: student.email,
-      department: student.department,
-      cgpa: student.cgpa,
-      batch: student.batch,
-      skills: student.skills ? student.skills.join(', ') : '',
-      extracurricular: student.extracurricular ? student.extracurricular.map(e => e.activity).join(', ') : '',
-      remark: student.remark || '',
-    });
-  };
-
-  const handleEditChange = (e) => {
-    const { name, value } = e.target;
-    setEditForm(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSaveStudent = async (id) => {
-    try {
-      const updated = {
-        ...editForm,
-        cgpa: Number(editForm.cgpa),
-        skills: editForm.skills.split(',').map(s => s.trim()),
-        extracurricular: editForm.extracurricular.split(',').map(a => ({ activity: a.trim(), role: '', achievement: '' })),
-        remark: editForm.remark,
-      };
-      await axios.put(`${apiUrl}/api/student/${id}`, updated);
-      setStudents(students => students.map(s => s._id === id ? { ...s, ...updated } : s));
-      setEditingId(null);
-    } catch {
-      alert('Error saving student.');
+  // Function to calculate current year of study
+  const getCurrentYearOfStudy = (joiningYear, graduationYear) => {
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth(); // 0-11 (Jan = 0)
+    
+    // If graduation year has passed, return "Passed Out"
+    if (currentYear > graduationYear) {
+      return "Passed Out";
     }
+    
+    // Calculate years since joining
+    let yearsSinceJoining = currentYear - joiningYear;
+    
+    // If it's before July (month < 6), consider it the same academic year
+    // If it's July or after (month >= 6), consider it the next academic year
+    if (currentMonth >= 6) {
+      yearsSinceJoining += 1;
+    }
+    
+    // Ensure we don't exceed graduation year
+    if (yearsSinceJoining > (graduationYear - joiningYear + 1)) {
+      return "Passed Out";
+    }
+    
+    // Convert to ordinal format
+    const getOrdinalSuffix = (num) => {
+      if (num >= 11 && num <= 13) return 'th';
+      switch (num % 10) {
+        case 1: return 'st';
+        case 2: return 'nd';
+        case 3: return 'rd';
+        default: return 'th';
+      }
+    };
+    
+    return `${yearsSinceJoining}${getOrdinalSuffix(yearsSinceJoining)} Year`;
   };
 
-  const handleCancelEdit = () => {
-    setEditingId(null);
+  // Function to get numeric year for sorting
+  const getNumericYear = (joiningYear, graduationYear) => {
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
+    
+    // If graduation year has passed, return graduation year (for passed out students)
+    if (currentYear > graduationYear) {
+      return graduationYear;
+    }
+    
+    // Calculate years since joining
+    let yearsSinceJoining = currentYear - joiningYear;
+    
+    // If it's July or after, consider it the next academic year
+    if (currentMonth >= 6) {
+      yearsSinceJoining += 1;
+    }
+    
+    // Ensure we don't exceed graduation year
+    if (yearsSinceJoining > (graduationYear - joiningYear + 1)) {
+      return graduationYear;
+    }
+    
+    return yearsSinceJoining;
+  };
+
+  // Sort students by current year (highest first) and then by graduation year (highest first)
+  const sortedStudents = [...filteredStudents].sort((a, b) => {
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
+    
+    // Check if students are graduated
+    const isAGraduated = currentYear > a.graduationYear;
+    const isBGraduated = currentYear > b.graduationYear;
+    
+    // Prioritize current students over graduated students
+    if (isAGraduated && !isBGraduated) return 1; // A is graduated, B is current
+    if (!isAGraduated && isBGraduated) return -1; // A is current, B is graduated
+    
+    // If both are current students, sort by current year (highest first)
+    if (!isAGraduated && !isBGraduated) {
+      const yearA = getNumericYear(a.joiningYear, a.graduationYear);
+      const yearB = getNumericYear(b.joiningYear, b.graduationYear);
+      
+      if (yearA !== yearB) {
+        return yearB - yearA;
+      }
+      
+      // If same year, sort by graduation year (highest first)
+      return (b.graduationYear || 0) - (a.graduationYear || 0);
+    }
+    
+    // If both are graduated, sort by graduation year (highest first)
+    return (b.graduationYear || 0) - (a.graduationYear || 0);
+  });
+
+  const handleVerifyStudent = async (studentId) => {
+    try {
+      const response = await axios.post(`${apiUrl}/api/students/verify`, {
+        studentId: studentId
+      });
+      
+      // Update the student in the local state
+      setStudents(students => students.map(s => 
+        s._id === studentId 
+          ? { ...s, isCollegeVerified: true }
+          : s
+      ));
+      
+    } catch (err) {
+      console.error('Error verifying student:', err);
+      alert('Error verifying student. Please try again.');
+    }
   };
 
   const indexOfLastStudent = currentPage * studentsPerPage;
   const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
-  const currentStudents = filteredStudents.filter(student => student.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(indexOfFirstStudent, indexOfLastStudent);
-  const totalPages = Math.ceil(filteredStudents.filter(student => student.name.toLowerCase().includes(searchQuery.toLowerCase())).length / studentsPerPage);
+  const currentStudents = sortedStudents.filter(student => student.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(indexOfFirstStudent, indexOfLastStudent);
+  const totalPages = Math.ceil(sortedStudents.filter(student => student.name.toLowerCase().includes(searchQuery.toLowerCase())).length / studentsPerPage);
 
   const handlePrevPage = () => {
     if (currentPage > 1) {
@@ -842,54 +913,104 @@ const CollegeDashboard = () => {
                     <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
                       <th style={{ padding: '12px 16px', fontWeight: 600 }}>Name</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600 }}>Department</th>
-                      <th style={{ padding: '12px 16px', fontWeight: 600 }}>Year</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600 }}>Current Year</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600 }}>Batch</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600 }}>CGPA</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600 }}>Campus Score</th>
+                      <th style={{ padding: '12px 16px', fontWeight: 600 }}>Verification Status</th>
                       <th style={{ padding: '12px 16px', fontWeight: 600 }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {currentStudents.map((student, index) => {
-                      const campusScore = calculateCampusScore(student);
-                      const isEditing = editingId === student._id;
                       return (
-                        <tr key={student._id} style={{ borderBottom: '1px solid #e2e8f0', background: index % 2 === 0 ? '#fff' : '#f8fafc' }}>
-                          <td style={{ padding: '12px 16px' }}>
-                            {isEditing ? (
-                              <input name="name" value={editForm.name} onChange={handleEditChange} style={{ width: '100%' }} />
-                            ) : (
+                        <tr key={student._id} style={{ 
+                          borderBottom: '1px solid #e2e8f0', 
+                          background: index % 2 === 0 ? '#fff' : '#f8fafc',
+                          height: '60px',
+                          minHeight: '60px',
+                          maxHeight: '60px'
+                        }}>
+                          <td style={{ padding: '12px 16px', height: '60px', verticalAlign: 'middle' }}>
                               <Link to={`/college/${collegeId}/student/${student._id}`} className="student-name">{student.name}</Link>
-                            )}
                           </td>
-                          <td style={{ padding: '12px 16px' }}>
-                            {isEditing ? (
-                              <input name="department" value={editForm.department} onChange={handleEditChange} style={{ width: '100%' }} />
-                            ) : student.department}
+                          <td style={{ padding: '12px 16px', height: '60px', verticalAlign: 'middle' }}>{student.department}</td>
+                          <td style={{ padding: '12px 16px', height: '60px', verticalAlign: 'middle' }}>
+                            {(() => {
+                              const currentYearOfStudy = getCurrentYearOfStudy(student.joiningYear, student.graduationYear);
+                              const isPassedOut = currentYearOfStudy === "Passed Out";
+                              
+                              return (
+                                <>
+                                  <span style={{ 
+                                    color: isPassedOut ? '#ea580c' : '#1f2937',
+                                    fontWeight: isPassedOut ? '600' : '400'
+                                  }}>
+                                    {isPassedOut ? student.batch : currentYearOfStudy}
+                                  </span>
+                                  {isPassedOut && (
+                                    <span style={{ 
+                                      marginLeft: '8px',
+                                      padding: '2px 6px', 
+                                      borderRadius: '4px', 
+                                      fontSize: '10px', 
+                                      fontWeight: '600',
+                                      backgroundColor: '#fed7aa',
+                                      color: '#ea580c'
+                                    }}>
+                                      Passed Out
+                                    </span>
+                                  )}
+                                </>
+                              );
+                            })()}
                           </td>
-                          <td style={{ padding: '12px 16px' }}>
-                            {isEditing ? (
-                              <input name="batch" value={editForm.batch} onChange={handleEditChange} style={{ width: 60 }} />
-                            ) : student.batch}
+                          <td style={{ padding: '12px 16px', height: '60px', verticalAlign: 'middle' }}>
+                            {student.joiningYear && student.graduationYear 
+                              ? `${student.joiningYear}-${student.graduationYear.toString().slice(-2)}`
+                              : student.batch || 'N/A'
+                            }
                           </td>
-                          <td style={{ padding: '12px 16px' }}>
-                            {isEditing ? (
-                              <input name="cgpa" value={editForm.cgpa} onChange={handleEditChange} style={{ width: 50 }} />
-                            ) : student.cgpa}
+                          <td style={{ padding: '12px 16px', height: '60px', verticalAlign: 'middle' }}>{student.cgpa}</td>
+                          <td style={{ padding: '12px 16px', height: '60px', verticalAlign: 'middle' }}>
+                            {student.campusScore ? student.campusScore.toFixed(1) : 'N/A'}
                           </td>
-                          <td style={{ padding: '12px 16px' }}>{campusScore}</td>
-                          <td style={{ padding: '12px 16px' }}>
-                            {isEditing ? (
-                              <>
-                                <button onClick={() => handleSaveStudent(student._id)} style={{ marginRight: 8, background: '#059669', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', fontWeight: 600 }}>Save</button>
-                                <button onClick={handleCancelEdit} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', fontWeight: 600 }}>Cancel</button>
-                              </>
-                            ) : (
+                          <td style={{ padding: '12px 16px', height: '60px', verticalAlign: 'middle' }}>
+                            <span style={{ 
+                              padding: '4px 8px', 
+                              borderRadius: '4px', 
+                              fontSize: '12px', 
+                              fontWeight: '600',
+                              backgroundColor: student.isCollegeVerified ? '#dcfce7' : '#fef2f2',
+                              color: student.isCollegeVerified ? '#166534' : '#dc2626'
+                            }}>
+                              {student.isCollegeVerified ? '✓ Verified' : '✗ Not Verified'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 16px', height: '60px', verticalAlign: 'middle' }}>
+                            {!student.isCollegeVerified ? (
                               <button
-                                onClick={() => handleEditStudent(student)}
-                                style={{ padding: '6px 12px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                                onClick={() => handleVerifyStudent(student._id)}
+                                style={{ 
+                                  padding: '6px 12px', 
+                                  background: '#059669', 
+                                  color: '#fff', 
+                                  border: 'none', 
+                                  borderRadius: 6, 
+                                  cursor: 'pointer', 
+                                  fontWeight: 600 
+                                }}
                               >
-                                Edit Profile
+                                Verify
                               </button>
+                            ) : (
+                              <span style={{ 
+                                color: '#059669', 
+                                fontWeight: 600,
+                                fontSize: '14px'
+                              }}>
+                                ✓ Verified
+                              </span>
                             )}
                           </td>
                         </tr>
