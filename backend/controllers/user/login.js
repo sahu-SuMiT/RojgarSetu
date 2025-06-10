@@ -60,7 +60,7 @@ module.exports = async (req, res) => {
     // Sign and return JWT token
     jwt.sign(
       payload,
-      process.env.JWT_SECRET,
+      process.env.SESSION_SECRET,
       { expiresIn: 360000 }, // 100 hours
       (err, token) => {
         if (err) {

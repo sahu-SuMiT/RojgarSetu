@@ -40,7 +40,7 @@ const handleSubmit = async (e) => {
     localStorage.setItem("userName", `${user.firstName} ${user.lastName}`);
 
     // Redirect to sales dashboard
-    navigate("https://campusadmin.vercel.app/Sales");
+    window.location.href = "https://campusadmin.vercel.app/Sales";
   } catch (err) {
     console.error('Login error:', err);
     setError(err.response?.data?.msg || 'Error during login. Please try again.');
