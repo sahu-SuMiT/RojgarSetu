@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const College = require('../models/College');
-const CollegeStudent = require('../models/CollegeStudent.model');
+const CollegeStudent = require('../models/collegeStudent.model');
 const RegistrationOtp = require('../models/RegistrationOtp');
 const {emailTransport} = require('../config/email');
 
