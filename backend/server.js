@@ -1125,8 +1125,11 @@ app.post('/api/college-students/email', async (req, res) => {
     console.log('Student verified successfully');
     const { password: pw, ...studentData } = student.toObject();
     res.json({
-      ...studentData,
-      studentId: student._id
+      user: {
+        id: studentData._id,
+        email: studentData.contactEmail,
+        name: studentData.studentName,
+      }
     });
   } catch (error) {
     console.error('Error verifying student:', error);

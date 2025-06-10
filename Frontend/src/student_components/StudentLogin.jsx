@@ -388,7 +388,7 @@ const StudentLogin = () => {
             <LoginForm
               type="student"
               apiEndpoint="https://campusadmin.onrender.com/api/college-students/email"
-              redirectPath="/student-dashboard"
+              redirectPath="/dashboard"
             />
             <div style={{ marginTop: '2rem', textAlign: 'center' }}>
               <button

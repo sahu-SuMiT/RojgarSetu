@@ -25,22 +25,33 @@ const handleSubmit = async (e) => {
   setLoading(true);
 
   try {
-    const response = await axios.post(`https://campusadmin.onrender.com/api/v1/user/login`, formData);
+    const response = await axios.post(`${apiEndpoint}`, formData);
     const { token, user } = response.data;
 
-    if (!token || !user) {
-      setError('Invalid credentials.');
-      setLoading(false);
-      return;
-    }
+    // if (!user) {
+    //   setError('Invalid credentials.');
+    //   setLoading(false);
+    //   return;
+    // }
+    // console.log('Login successful:', response.data);
 
     // Save token and user info
-    localStorage.setItem("token", token);
-    localStorage.setItem("userRole", user.role);
-    localStorage.setItem("userName", `${user.firstName} ${user.lastName}`);
+    if (type === 'Sales') {
+      localStorage.setItem("token", token);
+      localStorage.setItem("userRole", user.role);
+      localStorage.setItem("userName", `${user.firstName} ${user.lastName}`);
+    } else {
+      localStorage.setItem(`${type.toLowerCase()}Id`, response.data.studentId);
+      localStorage.setItem(`${type.toLowerCase()}Name`, response.data.studentName);
+      localStorage.setItem(`${type.toLowerCase()}Email`, response.data.contactEmail);
+    }
 
-    // Redirect to sales dashboard
-    window.location.href = "https://campusadmin.vercel.app/Sales";
+    // Navigate to appropriate dashboard
+    if(type === 'Sales') {
+      navigate(redirectPath);
+    } else {
+      navigate(redirectPath, { state: { user: response.data } });
+    }
   } catch (err) {
     console.error('Login error:', err);
     setError(err.response?.data?.msg || 'Error during login. Please try again.');

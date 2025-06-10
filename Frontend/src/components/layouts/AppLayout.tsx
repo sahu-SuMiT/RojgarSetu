@@ -54,7 +54,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className="w-64 bg-campus-blue text-white">
+      <div className="w-64 bg-campus-blue text-white" style={{ backgroundColor: "#1e40af" }}>
         <div className="p-4 font-bold text-xl">
           <Link to="/support" className="flex items-center">
             Campus Connect
@@ -101,7 +101,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         
         <div className="absolute bottom-0 w-64 p-4 bg-campus-blue border-t border-blue-800">
           <div className="flex items-center">
-            <div className="h-8 w-8 rounded-full bg-white text-campus-blue flex items-center justify-center mr-3">
+            <div className="h-8 w-8 rounded-full bg-white text-campus-blue flex items-center justify-center mr-3"  style={{ color: "#1e40af" }}>
               <span className="font-semibold">AJ</span>
             </div>
             <div>
