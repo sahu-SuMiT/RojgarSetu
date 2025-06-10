@@ -2109,4 +2109,4 @@ app.listen(PORT, () => {
 
 // Routes (Sales and Support)
 app.use('/api/v1/user', require('./routes/user')); // Fixed path by adding leading '/'
-app.use('/api/v1/placement', require('./routes/placement')); // Fixed path
+app.use('/api/v1/placement', require('./routes/placement')); // Fixed path  

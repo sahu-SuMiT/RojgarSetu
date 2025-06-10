@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
 
     jwt.sign(
       payload,
-      process.env.JWT_SECRET,
+      process.env.SESSION_SECRET,
       { expiresIn: 360000 },
       (err, token) => {
         if (err) throw err;
