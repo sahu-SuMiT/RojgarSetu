@@ -79,7 +79,7 @@ export function AdminSidebar({ currentView, setCurrentView }: AdminSidebarProps)
       <SidebarHeader className="p-6">
         <div className="p-4 font-bold text-xl">
                   <Link to="/admin_dashboard" className="flex items-center">
-                    Campus Connect
+                    ROJGAR SETU
                   </Link>
                 </div>
       </SidebarHeader>
