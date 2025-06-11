@@ -181,7 +181,7 @@ const Index_Website = () => {
                   <GraduationCap className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-blue-600 bg-clip-text text-transparent">
-                  Campus Connect
+                ROJGAR SETU
                 </span>
               </div>
             </div>
@@ -472,7 +472,7 @@ const Index_Website = () => {
           </div>
           
           <div className="text-center mt-12">
-            <p className="text-gray-500 mb-6">and 50,000+ more companies trust Campus Connect</p>
+            <p className="text-gray-500 mb-6">and 50,000+ more companies trust ROJGAR SETU</p>
             <Button onClick={handleSignIn} variant="outline" className="hover:shadow-lg transition-all duration-200">
               Join Our Network
               <ArrowRight className="w-4 h-4 ml-2" />
@@ -498,7 +498,7 @@ const Index_Website = () => {
               {
                 name: "Priya Sharma",
                 role: "Software Engineer at Microsoft",
-                story: "Campus Connect's AI-powered matching connected me with my dream job at Microsoft. The journey was seamless and the support was incredible!",
+                story: "ROJGAR SETU's AI-powered matching connected me with my dream job at Microsoft. The journey was seamless and the support was incredible!",
                 rating: 5,
                 image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face"
               },
@@ -512,7 +512,7 @@ const Index_Website = () => {
               {
                 name: "Anita Patel",
                 role: "Product Manager at Amazon",
-                story: "From college to corporate - Campus Connect made the transition smooth. The mentorship program was a game-changer for my career.",
+                story: "From college to corporate - ROJGAR SETU made the transition smooth. The mentorship program was a game-changer for my career.",
                 rating: 5,
                 image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face"
               }
@@ -561,7 +561,7 @@ const Index_Website = () => {
             Ready to Transform Your Career?
           </h2>
           <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-            Join millions of students and professionals building successful careers with Campus Connect
+            Join millions of students and professionals building successful careers with ROJGAR SETU
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
@@ -610,7 +610,7 @@ const Index_Website = () => {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                   <GraduationCap className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-xl font-bold">Campus Connect</span>
+                <span className="text-xl font-bold">ROJGAR SETU</span>
               </div>
               <p className="text-gray-400 text-sm mb-6 leading-relaxed">
                 India's leading career platform connecting students with unlimited opportunities and helping them build successful careers.
@@ -655,7 +655,7 @@ const Index_Website = () => {
           </div>
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
-              © 2024 Campus Connect. All rights reserved.
+              © 2024 ROJGAR SETU. All rights reserved.
             </p>
             <p className="text-gray-400 text-sm mt-4 md:mt-0 flex items-center">
               Made with <Heart className="w-4 h-4 mx-1 text-red-500" /> for students across India

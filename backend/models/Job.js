@@ -1,19 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const jobSchema = new mongoose.Schema({
-  company: { type: String, required: true },
-  location: { type: String, required: true },
-  requirements: [String],
-  responsibilities: [String],
-  qualifications: [String],
-  benefits: [String],
-  aboutCompany: { type: String },
-  applicants: { type: Number, default: 0 },
-  posted: { type: String }, // e.g. '2 days ago'
-  type: { type: String, enum: ['Internship', 'Full-time', 'Part-time'], default: 'Full-time' },
-  duration: { type: String },
-
+const jobSchema = new Schema({
   studentId: {
     type: Schema.Types.ObjectId,
     ref: 'CollegeStudent',
@@ -76,9 +64,8 @@ const jobSchema = new mongoose.Schema({
   }
 });
 
-// College and Company
 // Index for efficient querying
 jobSchema.index({ studentId: 1, companyId: 1 });
 jobSchema.index({ status: 1 });
 
-module.exports = mongoose.model('Job', jobSchema);
+module.exports = mongoose.model('Job', jobSchema); 

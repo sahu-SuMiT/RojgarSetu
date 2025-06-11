@@ -1,5 +1,5 @@
 require('dotenv').config({path:'../.env'});
-const Application = require('../models/Application');
+const Application = require('../models/CollegeApplication');
 const College = require('../models/College');
 const Company = require('../models/Company');
 const Role = require('../models/Role');

@@ -56,7 +56,7 @@ const Login = () => {
           color: '#1F2937',
           marginBottom: '1rem'
         }}>
-          Campus Connect
+          ROJGAR SETU
         </h1>
         <p style={{
           fontSize: '1.1rem',

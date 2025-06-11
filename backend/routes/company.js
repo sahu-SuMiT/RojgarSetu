@@ -7,7 +7,7 @@ const Role = require('../models/Role')
 const Employee = require('../models/Employee');
 const RegistrationOtp = require('../models/RegistrationOtp');
 const Interview = require('../models/Interview');
-const Application = require('../models/Application');
+const Application = require('../models/CollegeApplication');
 const {emailTransport} = require('../config/email');
 //INDEX
 // app.get('/api/company/auth') ..... company authentication

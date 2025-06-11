@@ -61,7 +61,7 @@ const Sidebar = ({
           {/* Campus Header */}
           <div className="px-8 pt-6 pb-4 border-b border-blue-500 flex items-center justify-between">
             <div className="w-full font-bold text-lg tracking-wide whitespace-nowrap overflow-hidden text-ellipsis leading-tight max-w-38">
-              Campus Connect
+            ROJGAR SETU
             </div>
             <button
               onClick={onClose}

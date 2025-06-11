@@ -57,7 +57,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       <div className="w-64 bg-campus-blue text-white" style={{ backgroundColor: "#1e40af" }}>
         <div className="p-4 font-bold text-xl">
           <Link to="/support" className="flex items-center">
-            Campus Connect
+          ROJGAR SETU
           </Link>
         </div>
         

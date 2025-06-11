@@ -387,6 +387,7 @@ const ViewJobs = () => {
                     color: '#4338ca'
                   }}>
                     {role.companyId?.name || 'Techori'}
+                    <div style={{ fontSize: '1rem', textAlign: 'right', fontWeight: 600, color: '#4338ca', marginBottom: 2, letterSpacing: 0.5 }}>{role.jobType}</div>
                   </div>
                     <div style={{ fontSize: '1.7rem', fontWeight: 800, color: '#4338ca', marginBottom: 2, letterSpacing: 0.5 }}>{role.jobTitle}</div>
                     <div style={{ color: '#6b7280', marginBottom: 16, fontSize: '1.1'}}><i>{role.description}</i></div>
