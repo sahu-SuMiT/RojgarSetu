@@ -37,7 +37,7 @@ const Sidebar = ({ navItems = [], user = { initials: '', name: '', role: '' }, s
           
           
         }}>
-          Campus Connect
+          ROJGAR SETU
         </div>
         <div style={{ color: '#c7d2fe', fontWeight: 700, fontSize: 13, padding: '0 2rem', marginTop: 18, marginBottom: 16, letterSpacing: 1 }}>
           {sectionLabel}

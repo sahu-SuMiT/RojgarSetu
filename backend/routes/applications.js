@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const Application = require('../models/Application');
+const Application = require('../models/CollegeApplication');
 const College = require('../models/College');
 const CollegeStudent = require('../models/collegeStudent.model');
 const Company = require('../models/Company');
@@ -28,6 +28,7 @@ const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 router.post('/', async (req, res) => {
   try {
     const { applicationFromCollege, applicationToCompany, roleId, roleName, students } = req.body;
+    console.log(req.body);
     
     if (!applicationFromCollege || !applicationToCompany || !roleId || !students || !Array.isArray(students)) {
       return res.status(400).json({ message: 'Missing required fields' });

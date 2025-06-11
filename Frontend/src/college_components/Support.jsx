@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { FaChevronRight, FaTicketAlt, FaChartLine, FaPaperPlane, FaUserGraduate, FaRobot, FaTimes, FaCheck } from 'react-icons/fa';
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
+import CollegeSettingsModal from './CollegeSettingsModal';
 import axios from 'axios';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -17,6 +18,8 @@ const Support = () => {
   const [tickets, setTickets] = useState([]);
   const [showTicketList, setShowTicketList] = useState(false);
   const [quickHelpTopics, setQuickHelpTopics] = useState([]);
+  const [showSettings, setShowSettings] = useState(false);
+  const [college, setCollege] = useState(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -34,6 +37,15 @@ const Support = () => {
     setCollegeName(name);
     
     if (id) {
+      // Fetch college details
+      axios.get(`${apiUrl}/api/colleges/${id}`)
+        .then(res => {
+          setCollege(res.data);
+        })
+        .catch(err => {
+          console.error('Error fetching college:', err);
+        });
+      
       fetchTickets(id);
       fetchQuickHelpTopics();
     }
@@ -141,6 +153,11 @@ const Support = () => {
     }
   };
 
+  const handleCollegeUpdate = (updatedCollege) => {
+    setCollege(updatedCollege);
+    setCollegeName(updatedCollege.name);
+  };
+
   // Navigation items with college ID
   const navItems = [
     { label: 'Dashboard', href: `/college/${collegeId}/dashboard`, icon: <FaChevronRight /> },
@@ -176,7 +193,7 @@ const Support = () => {
       <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="COLLEGE SERVICES" />
       <div className="main-container" style={{ marginLeft: 260, width: '100%', padding: 0, position: 'relative' }}>
         <div style={{ padding: '0 24px' }}>
-          <SearchBar />
+          <SearchBar onSettingsClick={() => setShowSettings(true)} />
         </div>
         <div style={{ padding: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -612,6 +629,14 @@ const Support = () => {
           </div>
         </div>
       </div>
+
+      {/* Settings Modal */}
+      <CollegeSettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        college={college}
+        onUpdate={handleCollegeUpdate}
+      />
 
       <style jsx>{`
         @keyframes slideInUp {

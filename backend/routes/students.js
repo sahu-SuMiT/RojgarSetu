@@ -148,9 +148,9 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/verify', async (req, res) => {
+router.patch('/verify', async (req, res) => {
   try {
-    const { studentId } = req.body;
+    const { studentId} = req.body;
     
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(studentId)) {
