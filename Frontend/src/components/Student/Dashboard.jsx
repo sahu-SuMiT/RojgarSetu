@@ -120,7 +120,7 @@ const StudentDashboard = () => {
         <UserCircle className="w-20 h-20 md:mr-8 text-white drop-shadow-lg z-10 rounded-full bg-blue-500/40 p-2 border-4 border-white" />
         <div className="z-10 text-center md:text-left">
           <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-2 drop-shadow">
-            Welcome back{student?.name ? `, ${student.name}` : ""}!
+            Welcome {student?.name ? ` ${student.name}` : ""}!
           </h2>
           <div className="text-blue-100/90 text-lg font-medium mt-1">Ready for your next opportunity?</div>
         </div>
