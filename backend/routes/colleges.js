@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const College = require('../models/College');
-const CollegeStudent = require('../models/CollegeStudent.model');
+const CollegeStudent = require('../models/collegeStudent.model');
 const RegistrationOtp = require('../models/RegistrationOtp');
 const {emailTransport} = require('../config/email');
 
@@ -189,6 +189,7 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch college details' });
   }
 });
+
 router.get('/api/colleges', async (req, res) => {
   try {
     const colleges = await College.find().sort({ name: 1 });
@@ -214,6 +215,77 @@ router.get('/api/colleges/email/:email', async (req, res) => {
     res.json(college);
   } catch (error) {
     res.status(500).json({ error: 'Failed to find college' });
+  }
+});
+
+// PUT endpoint for editing college information
+router.put('/:id/edit', async (req, res) => {
+  try {
+    const {
+      name,
+      code,
+      location,
+      website,
+      contactEmail,
+      contactPhone,
+      placementOfficer,
+      departments,
+      establishedYear,
+      campusSize
+    } = req.body;
+
+    // Validate required fields
+    if (!name || !code || !location || !contactEmail || !contactPhone || !establishedYear || !campusSize) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Check if college exists
+    const existingCollege = await College.findById(req.params.id);
+    if (!existingCollege) {
+      return res.status(404).json({ error: 'College not found' });
+    }
+
+    // Check for duplicate code or email (excluding the current college)
+    const duplicateCheck = await College.findOne({
+      $or: [
+        { code, _id: { $ne: req.params.id } },
+        { contactEmail, _id: { $ne: req.params.id } },
+        { code, _id: { $ne: req.params.id } }
+      ]
+    });
+
+    if (duplicateCheck) {
+      return res.status(409).json({ error: 'College with this code or email already exists' });
+    }
+
+    // Update the college
+    const updatedCollege = await College.findByIdAndUpdate(
+      req.params.id,
+      {
+        name,
+        code,
+        location,
+        website,
+        contactEmail,
+        contactPhone,
+        placementOfficer,
+        departments,
+        establishedYear,
+        campusSize
+      },
+      { new: true, runValidators: true }
+    );
+
+    // Remove password from response
+    const { password, ...collegeData } = updatedCollege.toObject();
+
+    res.json(collegeData);
+  } catch (error) {
+    console.error('Error updating college:', error);
+    res.status(500).json({ 
+      error: 'Failed to update college information',
+      details: error.message 
+    });
   }
 });
 

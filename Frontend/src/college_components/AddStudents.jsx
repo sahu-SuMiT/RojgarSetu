@@ -11,6 +11,7 @@ import {
 } from 'react-icons/fa';
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
+import CollegeSettingsModal from './CollegeSettingsModal';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -21,6 +22,7 @@ const AddStudents = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [students, setStudents] = useState([{
     name: '',
     email: '',
@@ -131,12 +133,16 @@ const AddStudents = () => {
     }
   };
 
+  const handleCollegeUpdate = (updatedCollege) => {
+    setCollege(updatedCollege);
+  };
+
   if (loading && !college) {
     return (
       <div style={{ display: 'flex', minHeight: '100vh' }}>
         <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="CAMPUS SERVICES" />
         <div className='main-container' style={{ marginLeft: 260, padding: '2rem' }}>
-          <SearchBar />
+          <SearchBar onSettingsClick={() => setShowSettings(true)} />
           <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>
         </div>
       </div>
@@ -153,7 +159,7 @@ const AddStudents = () => {
         minHeight: '100vh',
         background: '#f9fafb'
       }}>
-        <SearchBar />
+        <SearchBar onSettingsClick={() => setShowSettings(true)} />
         
         <div style={{ 
           background: '#fff',
@@ -449,6 +455,14 @@ const AddStudents = () => {
             </div>
           </form>
         </div>
+
+        {/* Settings Modal */}
+        <CollegeSettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          college={college}
+          onUpdate={handleCollegeUpdate}
+        />
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import SearchBar from '../SearchBar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { FaTicketAlt, FaChartLine, FaChevronRight, FaUserGraduate } from 'react-icons/fa';
+import { FaTicketAlt, FaChartLine, FaChevronRight, FaUserGraduate, FaCog } from 'react-icons/fa';
 import { useLocation, Link, useParams } from 'react-router-dom';
 import Sidebar from '../Sidebar';
+import CollegeSettingsModal from './CollegeSettingsModal';
 import axios from 'axios';
 import calculateCampusScore from '../utils/calculateCampusScore';
 
@@ -37,6 +38,7 @@ const CollegeDashboard = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [college, setCollege] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
   const studentsPerPage = 10;
 
   // Get college ID from URL params or localStorage
@@ -102,12 +104,70 @@ const CollegeDashboard = () => {
       });
   }, [collegeId]); // Add collegeId as dependency
 
-  const departments = ['All', ...Array.from(new Set(students.map(s => s.department || 'Unknown')))];
+  // Create departments list from both college departments and student departments
+  const collegeDepartments = college?.departments?.map(dept => dept.name) || [];
+  const studentDepartments = Array.from(new Set(students.map(s => s.department || 'Unknown')));
+  const allDepartments = ['All', ...new Set([...collegeDepartments, ...studentDepartments])];
 
-  // Filter students globally by department and year
+  // Function to calculate current year of study
+  const getCurrentYearOfStudy = (joiningYear, graduationYear) => {
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth(); // 0-11 (Jan = 0)
+    
+    // If graduation year has passed, return "Passed Out"
+    if (currentYear > graduationYear) {
+      return "Passed Out";
+    }
+    
+    // Calculate years since joining
+    let yearsSinceJoining = currentYear - joiningYear;
+    
+    // If it's before July (month < 6), consider it the same academic year
+    // If it's July or after (month >= 6), consider it the next academic year
+    if (currentMonth >= 6) {
+      yearsSinceJoining += 1;
+    }
+    
+    // Ensure we don't exceed graduation year
+    if (yearsSinceJoining > (graduationYear - joiningYear + 1)) {
+      return "Passed Out";
+    }
+    
+    // Convert to ordinal format
+    const getOrdinalSuffix = (num) => {
+      if (num >= 11 && num <= 13) return 'th';
+      switch (num % 10) {
+        case 1: return 'st';
+        case 2: return 'nd';
+        case 3: return 'rd';
+        default: return 'th';
+      }
+    };
+    
+    return `${yearsSinceJoining}${getOrdinalSuffix(yearsSinceJoining)} Year`;
+  };
+
+  // Filter students based on selected department and year
   const filteredStudents = students.filter(student => {
     const matchesDepartment = selectedDepartment === 'All' || student.department === selectedDepartment;
-    const matchesYear = selectedYear === 'All' || student.batch === selectedYear;
+    
+    // Calculate current year of study for filtering
+    const currentYearOfStudy = getCurrentYearOfStudy(student.joiningYear, student.graduationYear);
+    
+    // Map dropdown values to actual year values
+    let matchesYear = false;
+    if (selectedYear === 'All') {
+      matchesYear = true;
+    } else if (selectedYear === '1st') {
+      matchesYear = currentYearOfStudy === '1st Year';
+    } else if (selectedYear === '2nd') {
+      matchesYear = currentYearOfStudy === '2nd Year';
+    } else if (selectedYear === '3rd') {
+      matchesYear = currentYearOfStudy === '3rd Year';
+    } else if (selectedYear === '4th') {
+      matchesYear = currentYearOfStudy === '4th Year';
+    }
+    
     return matchesDepartment && matchesYear;
   });
 
@@ -196,44 +256,6 @@ const CollegeDashboard = () => {
 
   const metrics = calculateMetrics(filteredStudents);
 
-  // Function to calculate current year of study
-  const getCurrentYearOfStudy = (joiningYear, graduationYear) => {
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth(); // 0-11 (Jan = 0)
-    
-    // If graduation year has passed, return "Passed Out"
-    if (currentYear > graduationYear) {
-      return "Passed Out";
-    }
-    
-    // Calculate years since joining
-    let yearsSinceJoining = currentYear - joiningYear;
-    
-    // If it's before July (month < 6), consider it the same academic year
-    // If it's July or after (month >= 6), consider it the next academic year
-    if (currentMonth >= 6) {
-      yearsSinceJoining += 1;
-    }
-    
-    // Ensure we don't exceed graduation year
-    if (yearsSinceJoining > (graduationYear - joiningYear + 1)) {
-      return "Passed Out";
-    }
-    
-    // Convert to ordinal format
-    const getOrdinalSuffix = (num) => {
-      if (num >= 11 && num <= 13) return 'th';
-      switch (num % 10) {
-        case 1: return 'st';
-        case 2: return 'nd';
-        case 3: return 'rd';
-        default: return 'th';
-      }
-    };
-    
-    return `${yearsSinceJoining}${getOrdinalSuffix(yearsSinceJoining)} Year`;
-  };
-
   // Function to get numeric year for sorting
   const getNumericYear = (joiningYear, graduationYear) => {
     const currentYear = new Date().getFullYear();
@@ -292,7 +314,7 @@ const CollegeDashboard = () => {
 
   const handleVerifyStudent = async (studentId) => {
     try {
-      const response = await axios.post(`${apiUrl}/api/students/verify`, {
+      const response = await axios.patch(`${apiUrl}/api/students/verify`, {
         studentId: studentId
       });
       
@@ -326,6 +348,18 @@ const CollegeDashboard = () => {
     }
   };
 
+  const handleCollegeUpdate = (updatedCollege) => {
+    setCollege(updatedCollege);
+    // Update sidebar user info
+    sidebarUser.initials = updatedCollege.name.substring(0, 2).toUpperCase();
+    sidebarUser.name = updatedCollege.name;
+    sidebarUser.role = 'College Admin';
+    
+    // Reset department filter to 'All' when departments are updated
+    // This ensures the dropdown shows all available departments including newly added ones
+    setSelectedDepartment('All');
+  };
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="CAMPUS SERVICES" />
@@ -337,7 +371,7 @@ const CollegeDashboard = () => {
         minWidth: 0,
         padding: '0 1rem',
       }}>
-        <SearchBar />
+        <SearchBar onSettingsClick={() => setShowSettings(true)} />
         <div style={{ padding: '1.5rem 0' }}>
               <div style={{ 
                 display: 'flex', 
@@ -388,7 +422,7 @@ const CollegeDashboard = () => {
                       transition: 'all 0.2s ease'
                     }}
                   >
-                    {departments.map(dept => (
+                    {allDepartments.map(dept => (
                       <option key={dept} value={dept}>{dept}</option>
                     ))}
                   </select>
@@ -1063,6 +1097,14 @@ const CollegeDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Settings Modal */}
+      <CollegeSettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        college={college}
+        onUpdate={handleCollegeUpdate}
+      />
     </div>
   );
 };

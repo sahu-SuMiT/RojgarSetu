@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaChevronRight, FaTicketAlt, FaChartLine, FaSearch, FaMapMarkerAlt, FaBriefcase, FaClock, FaTimes, FaUserGraduate } from 'react-icons/fa';
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
+import CollegeSettingsModal from './CollegeSettingsModal';
 import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -27,6 +28,8 @@ const ViewJobs = () => {
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [college, setCollege] = useState(null);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -40,6 +43,11 @@ const ViewJobs = () => {
         
         setCollegeId(id);
         setCollegeName(name);
+        
+        // Fetch college details
+        const collegeResponse = await axios.get(`${apiUrl}/api/colleges/${id}`);
+        setCollege(collegeResponse.data);
+        
         await fetchRoles();
       } catch (error) {
         setError('Failed to initialize data');
@@ -183,6 +191,11 @@ const ViewJobs = () => {
   const locations = ['All', ...new Set(roles.map(role => role.location).filter(Boolean))];
   const types = ['All', ...new Set(roles.map(role => role.jobType).filter(Boolean))];
 
+  const handleCollegeUpdate = (updatedCollege) => {
+    setCollege(updatedCollege);
+    setCollegeName(updatedCollege.name);
+  };
+
     return (
     <>
       <style>{`
@@ -250,7 +263,7 @@ const ViewJobs = () => {
       <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="COLLEGE SERVICES" />
       <div className="main-container" style={{ marginLeft: 260, width: '100%', padding: 0, position: 'relative' }}>
         <div style={{ padding: '0 24px' }}>
-            <SearchBar />
+            <SearchBar onSettingsClick={() => setShowSettings(true)} />
         </div>
         <div style={{ padding: '24px' }}>
       <div style={{ 
@@ -810,6 +823,14 @@ const ViewJobs = () => {
         )}
       </div>
     </div>
+
+    {/* Settings Modal */}
+    <CollegeSettingsModal
+      isOpen={showSettings}
+      onClose={() => setShowSettings(false)}
+      college={college}
+      onUpdate={handleCollegeUpdate}
+    />
     </div>
   </>
   );

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaChevronRight, FaTicketAlt, FaChartLine, FaDownload, FaUserGraduate } from 'react-icons/fa';
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
+import CollegeSettingsModal from './CollegeSettingsModal';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -12,6 +13,8 @@ const PlacementAnalysis = () => {
   const [error, setError] = useState(null);
   const [collegeId, setCollegeId] = useState(null);
   const [collegeName, setCollegeName] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [college, setCollege] = useState(null);
   const [placementData, setPlacementData] = useState({
     overall: {
       totalStudents: 0,
@@ -28,8 +31,25 @@ const PlacementAnalysis = () => {
     const name = localStorage.getItem('collegeName');
     setCollegeId(id);
     setCollegeName(name);
+    
+    // Fetch college details
+    if (id) {
+      axios.get(`${apiUrl}/api/colleges/${id}`)
+        .then(res => {
+          setCollege(res.data);
+        })
+        .catch(err => {
+          console.error('Error fetching college:', err);
+        });
+    }
+    
     fetchPlacementData();
   }, []);
+
+  const handleCollegeUpdate = (updatedCollege) => {
+    setCollege(updatedCollege);
+    setCollegeName(updatedCollege.name);
+  };
 
   // Navigation items with college ID
   const navItems = [
@@ -98,7 +118,7 @@ const PlacementAnalysis = () => {
       <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="COLLEGE SERVICES" />
       <div className="main-container" style={{ marginLeft: 260, width: '100%', padding: 0, position: 'relative' }}>
         <div style={{ padding: '0 24px' }}>
-          <SearchBar />
+          <SearchBar onSettingsClick={() => setShowSettings(true)} />
         </div>
         <div style={{ padding: '24px' }}>
           <div style={{ 
@@ -259,6 +279,14 @@ const PlacementAnalysis = () => {
             </div>
           )}
         </div>
+
+        {/* Settings Modal */}
+        <CollegeSettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          college={college}
+          onUpdate={handleCollegeUpdate}
+        />
       </div>
     </div>
   );

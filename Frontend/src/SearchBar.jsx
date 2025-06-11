@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FaSearch, FaBell, FaCog, FaSignOutAlt } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-const SearchBar = () => {
+const SearchBar = ({ onSettingsClick }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -34,6 +34,16 @@ const SearchBar = () => {
     localStorage.clear();
     // Redirect to login page
     navigate('/');
+  };
+
+  const handleSettingsClick = () => {
+    setShowDropdown(false);
+    if (onSettingsClick) {
+      onSettingsClick();
+    } else {
+      // Fallback to navigation if no handler provided
+      navigate('/settings');
+    }
   };
 
   return (
@@ -146,11 +156,7 @@ const SearchBar = () => {
               </div>
               <div style={{ padding: 8 }}>
                 <button
-                  onClick={() => {
-                    setShowDropdown(false);
-                    // Navigate to settings page
-                    navigate('/settings');
-                  }}
+                  onClick={handleSettingsClick}
                   style={{
                     display: 'flex',
                     alignItems: 'center',

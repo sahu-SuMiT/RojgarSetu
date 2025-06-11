@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { FaChevronRight, FaTicketAlt, FaChartLine, FaBuilding, FaUserGraduate, FaCalendarAlt, FaClock, FaSearch, FaTrash } from 'react-icons/fa';
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
+import CollegeSettingsModal from './CollegeSettingsModal';
 import { formatDistanceToNow } from 'date-fns';
 import calculateCampusScore from '../utils/calculateCampusScore';
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -21,6 +22,8 @@ const ScheduledApplications = () => {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
   const [studentDetails, setStudentDetails] = useState({});
+  const [showSettings, setShowSettings] = useState(false);
+  const [college, setCollege] = useState(null);
   const location = useLocation();
 
   // Helper function to highlight text
@@ -40,6 +43,16 @@ const ScheduledApplications = () => {
     if (id) {
       setCollegeId(id);
       setCollegeName(name || 'College Admin');
+      
+      // Fetch college details
+      axios.get(`${apiUrl}/api/colleges/${id}`)
+        .then(res => {
+          setCollege(res.data);
+        })
+        .catch(err => {
+          console.error('Error fetching college:', err);
+        });
+      
       fetchApplications(id);
     } else {
       setError('College ID not found');
@@ -363,6 +376,11 @@ const ScheduledApplications = () => {
     );
   };
 
+  const handleCollegeUpdate = (updatedCollege) => {
+    setCollege(updatedCollege);
+    setCollegeName(updatedCollege.name);
+  };
+
   if (!collegeId) {
     return (
       <div style={{ 
@@ -382,7 +400,7 @@ const ScheduledApplications = () => {
       <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="COLLEGE SERVICES" />
       <div className="main-container" style={{ marginLeft: 260, width: '100%', padding: 0, position: 'relative' }}>
         <div style={{ padding: '0 24px' }}>
-          <SearchBar />
+          <SearchBar onSettingsClick={() => setShowSettings(true)} />
         </div>
         <div style={{ padding: '24px' }}>
           <div style={{ 
@@ -579,16 +597,24 @@ const ScheduledApplications = () => {
         {/* Modal for all students */}
         {showAllStudents && renderAllStudentsModal(filteredApplications.find(app => app._id === showAllStudents))}
 
+        {/* Settings Modal */}
+        <CollegeSettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          college={college}
+          onUpdate={handleCollegeUpdate}
+        />
+
         {deleteError && (
           <div style={{
             position: 'fixed',
             top: '20px',
             right: '20px',
-            padding: '12px 24px',
             background: '#fee2e2',
             color: '#dc2626',
-            borderRadius: '6px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             zIndex: 1000
           }}>
             {deleteError}
