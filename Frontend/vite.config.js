@@ -9,5 +9,11 @@ export default defineConfig({
     proxy: {
       '/api': 'https://campusadmin.onrender.com'
     }
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    minify: 'terser',
+    chunkSizeWarningLimit: 1600
   }
 })
