@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+axios.defaults.withCredentials = true;
 import { useLocation } from 'react-router-dom';
 import { FaChevronRight, FaTicketAlt, FaChartLine, FaBuilding, FaUserGraduate, FaCalendarAlt, FaClock, FaSearch, FaTrash } from 'react-icons/fa';
 import Sidebar from '../Sidebar';

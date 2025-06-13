@@ -3,10 +3,12 @@ import { useParams } from 'react-router-dom';
 import Sidebar from '../Sidebar';
 import { FaChevronRight , FaTicketAlt , FaChartLine, FaUserGraduate } from 'react-icons/fa';
 import axios from 'axios';
+axios.defaults.withCredentials = true;
 import { CSSTransition } from 'react-transition-group';
 import './ScheduledInterviews.css';
 import SearchBar from '../SearchBar';
 import { formatDistanceToNow } from 'date-fns';
+import CompanySettingsModal from './CompanySettingsModal';
 const apiUrl = import.meta.env.VITE_API_URL;
 const PostJobForm = () => {
   const { companyId } = useParams();
@@ -34,6 +36,7 @@ const PostJobForm = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [deletingRoleId, setDeletingRoleId] = useState(null);
   const [company, setCompany] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     const companyId = localStorage.getItem('companyId');
@@ -346,7 +349,9 @@ const PostJobForm = () => {
           {successMessage && (
             <div className="success-toast">{successMessage}</div>
           )}
-            <SearchBar />
+            <div style={{ padding: '0 24px' }}>
+              <SearchBar onSettingsClick={() => setShowSettings(true)} />
+            </div>
           
           <div className="post-job-container" style={{ width: '100%', padding: 0, margin: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', padding: '0 24px' }}>
@@ -1219,6 +1224,23 @@ const PostJobForm = () => {
         </div>
             )}
         </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <CompanySettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          company={company}
+          onUpdate={(updatedCompany) => {
+            setCompany(updatedCompany);
+            setSidebarUser({
+              initials: updatedCompany.name.substring(0, 2).toUpperCase(),
+              name: updatedCompany.name,
+              role: 'Company Admin'
+            });
+          }}
+        />
+      )}
     </div>
     </div>
     </>

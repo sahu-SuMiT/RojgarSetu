@@ -4,6 +4,8 @@ import { FaChevronRight, FaTicketAlt, FaChartLine, FaUserGraduate, FaPlus, FaEdi
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
 import axios from 'axios';
+axios.defaults.withCredentials = true;
+import CompanySettingsModal from './CompanySettingsModal';
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const ManageEmployees = () => {
@@ -26,6 +28,7 @@ const ManageEmployees = () => {
     password: ''
   });
   const [validationErrors, setValidationErrors] = useState({});
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -212,8 +215,10 @@ const ManageEmployees = () => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="COMPANY SERVICES" />
-      <div className="main-container" style={{ marginLeft: 260, width: '100%', padding: '24px' }}>
-        <SearchBar />
+      <div className="main-container" style={{ marginLeft: 260, width: '100%', padding: 0, position: 'relative' }}>
+        <div style={{ padding: '0 24px' }}>
+          <SearchBar onSettingsClick={() => setShowSettings(true)} />
+        </div>
         
         <div style={{ marginBottom: '32px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -763,6 +768,23 @@ const ManageEmployees = () => {
           </div>
         </div>
       </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <CompanySettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          company={company}
+          onUpdate={(updatedCompany) => {
+            setCompany(updatedCompany);
+            setSidebarUser({
+              initials: updatedCompany.name.substring(0, 2).toUpperCase(),
+              name: updatedCompany.name,
+              role: 'Company Admin'
+            });
+          }}
+        />
+      )}
     </div>
   );
 };

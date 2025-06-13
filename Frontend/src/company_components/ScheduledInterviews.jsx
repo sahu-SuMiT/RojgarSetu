@@ -9,10 +9,12 @@ import SearchBar from '../SearchBar';
 import Sidebar from '../Sidebar';
 import { FaChevronRight, FaCalendarAlt, FaClock, FaVideo, FaTimes, FaSpinner, FaTicketAlt, FaChartLine, FaUserGraduate, FaCheck, FaTrash, FaEye, FaCopy, FaFileAlt, FaExternalLinkAlt } from 'react-icons/fa';
 import axios from 'axios';
+axios.defaults.withCredentials = true;
 import './ScheduledInterviews.css';
 import '../index.css'; // Ensure global styles are applied
 import calculateCampusScore from '../utils/calculateCampusScore';
 const apiUrl = import.meta.env.VITE_API_URL;
+import CompanySettingsModal from './CompanySettingsModal';
 
 const ScheduledInterviews = () => {
   const [showFilter, setShowFilter] = useState(false);
@@ -85,6 +87,7 @@ const ScheduledInterviews = () => {
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [selectedLink, setSelectedLink] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   const roles = [
     { id: 'all', name: 'All Roles' },
@@ -834,7 +837,9 @@ ${company?.name || 'The Hiring Team'}`);
         maxHeight: '100vh',
         overflowY: 'auto'
       }}>
-        <SearchBar />
+        <div style={{ padding: '0 24px' }}>
+          <SearchBar onSettingsClick={() => setShowSettings(true)} />
+        </div>
         <div style={{ 
           padding: '2rem 24px 2rem 24px',
           width: '100%'
@@ -2995,6 +3000,23 @@ Comments: ${interview.feedback.comments || 'No comments'}`}
             </div>
           </div>
         </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <CompanySettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          company={company}
+          onUpdate={(updatedCompany) => {
+            setCompany(updatedCompany);
+            setSidebarUser({
+              initials: updatedCompany.name.substring(0, 2).toUpperCase(),
+              name: updatedCompany.name,
+              role: 'Company Admin'
+            });
+          }}
+        />
       )}
     </div>
   );

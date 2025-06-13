@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
+axios.defaults.withCredentials = true;
 import { 
   FaUserGraduate, 
   FaEnvelope, 
