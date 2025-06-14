@@ -10,7 +10,7 @@ const notificationSchema = new mongoose.Schema({
   senderModel: {
     type: String,
     required: true,
-    enum: ['College', 'Student', 'Company']
+    enum: ['College', 'Student', 'Company','CollegeStudent']
   },
   
   // Recipient information
@@ -22,7 +22,7 @@ const notificationSchema = new mongoose.Schema({
   recipientModel: {
     type: String,
     required: true,
-    enum: ['College', 'Student', 'Company']
+    enum: ['College', 'Student', 'Company','CollegeStudent']
   },
   
   // Notification content
@@ -95,6 +95,14 @@ const notificationSchema = new mongoose.Schema({
   expiresAt: {
     type: Date,
     default: null
+  },
+  senderDeleted:{
+    type:Boolean,
+    default:false
+  },
+  recipientDeleted:{
+    type:Boolean,
+    default:false,
   }
 }, {
   timestamps: true
