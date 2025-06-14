@@ -144,6 +144,15 @@ router.patch('/:applicationId/status', async (req, res) => {
   }
 });
 
+router.patch('/:id', async (req,res)=>{
+  try{
+    const application = await Application.findByIdAndUpdate(req.params.id,{status: req.body.status});
+    res.json(application);
+  }catch(err){
+    res.status(404).json({message:"Error Updating Status"});
+    console.log(err);
+  }
+})
 // Delete application
 router.delete('/:applicationId', async (req, res) => {
   try {

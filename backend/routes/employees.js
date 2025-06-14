@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Employee = require('../models/Employee'); 
-
-
+const {isCompanyAuthenticated,isCompanyHR,isCompanyOwner,isCompanyAdmin} = require('../middleware/auth');
 // app.post('/api/employees/register') .....Post, company registers his employee
 // app.post('/api/employees/login') .....Post, employee login to company
 // app.get('/api/employees') ..... needs to be fixed to app.get('/api/employee/company/:companyId')
@@ -22,36 +21,15 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    const employee = await Employee.findOne({ email });
-    if (!employee || employee.password !== password) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    res.json({
-      _id: employee._id,
-      name: employee.name,
-      email: employee.email,
-      type: employee.type,
-      companyId: employee.companyId,
-      department: employee.department,
-      position: employee.position
-    });
-  } catch (error) {
-    console.error('Error during employee login:', error);
-    res.status(500).json({ error: 'Error during login' });
-  }
-});
 
-router.get('/', async (req, res) => {
+router.get('/', isCompanyAuthenticated, async (req, res) => {
   const { companyId } = req.query;
   if (!companyId) return res.status(400).json({ error: 'companyId required' });
   const employees = await Employee.find({ companyId})
   res.json(employees);
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', isCompanyAuthenticated, isCompanyAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -76,7 +54,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id/company/:companyId/', async (req, res) => {
+router.delete('/:id/company/:companyId/',isCompanyAuthenticated,isCompanyAdmin, async (req, res) => {
   try {
     const { companyId, id } = req.params;
 

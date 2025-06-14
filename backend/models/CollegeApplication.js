@@ -40,7 +40,8 @@ const applicationSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['active', 'closed'],
-    default: 'active'
+    default: 'active',
+    required: 'true',
   }
 }, {
   timestamps: true

@@ -4,7 +4,7 @@ import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
 import CollegeSettingsModal from './CollegeSettingsModal';
 import axios from 'axios';
-
+axios.defaults.withCredentials = true;
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Support = () => {

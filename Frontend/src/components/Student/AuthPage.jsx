@@ -92,7 +92,7 @@ export const AuthPage = ({ onAuthSuccess }) => {
           text: data.message || "Something went wrong",
         });
       }
-    } catch (error) {
+    } catch  {
       setMessage({ type: "error", text: "Network error. Please try again." });
     } finally {
       setLoading(false);

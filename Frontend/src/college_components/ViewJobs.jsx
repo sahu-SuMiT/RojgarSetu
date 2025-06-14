@@ -9,7 +9,7 @@ const apiUrl = import.meta.env.VITE_API_URL;
 // Configure axios defaults
 
 axios.defaults.headers.common['Content-Type'] = 'application/json';
-
+axios.defaults.withCredentials = true;
 const ViewJobs = () => {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -658,7 +658,7 @@ const ViewJobs = () => {
                           onMouseOut={e => e.currentTarget.style.borderColor = '#e5e7eb'}
                         >
                           {/* Checkbox with Tick */}
-                              <div style={{ 
+                            <div style={{
                             width: '20px', 
                             height: '20px', 
                             border: '2px solid #059669',

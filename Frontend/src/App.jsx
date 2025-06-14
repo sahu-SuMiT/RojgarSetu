@@ -115,8 +115,8 @@ const AuthRoute = ({ isAuthenticated, children }) => {
 };
 
 const App = () => {
-  // const [sidebarOpen, setSidebarOpen] = useState(false);
-  // const [isAuthenticated, setIsAuthenticated] = useState(false);
+   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -147,48 +147,48 @@ const App = () => {
     checkAuthStatus();
   }, []);
 
-  // const toggleSidebar = () => setSidebarOpen((prev) => !prev);
+  const toggleSidebar = () => setSidebarOpen((prev) => !prev);
 
-  // // Handle successful login/signup
-  // const handleAuthSuccess = (userData) => {
-  //   if (userData?.studentId) localStorage.setItem('studentId', userData.studentId);
-  //   setIsAuthenticated(true);
-  //   setUser(userData.user || userData);
-  // };
+  // Handle successful login/signup
+  const handleAuthSuccess = (userData) => {
+    if (userData?.studentId) localStorage.setItem('studentId', userData.studentId);
+    setIsAuthenticated(true);
+    setUser(userData.user || userData);
+  };
 
-  // // Handle logout
-  // const handleLogout = async () => {
-  //   try {
-  //     await fetch('http://localhost:5000/api/auth/logout', {
-  //       method: 'POST',
-  //       credentials: 'include',
-  //     });
-  //   } catch {
-  //     // Ignore logout errors
-  //   }
-  //   localStorage.removeItem('studentId');
-  //   setIsAuthenticated(false);
-  //   setUser(null);
-  // };
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:5000/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // Ignore logout errors
+    }
+    localStorage.removeItem('studentId');
+    setIsAuthenticated(false);
+    setUser(null);
+  };
 
-  // // Show loading spinner while checking auth status
-  // if (loading) {
-  //   return (
-  //     <div className="flex items-center justify-center min-h-screen bg-gray-100">
-  //       <div className="text-center">
-  //         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-  //         <p className="mt-4 text-gray-600">Loading...</p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+  // Show loading spinner while checking auth status
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Only ONE Router in main.jsx/index.jsx! Not here.
 
   return (
     <Routes>
       {/* Auth page (handles both login & signup) */}
-      {/* <Route
+       <Route
         path="/auth"
         element={
           <AuthRoute isAuthenticated={isAuthenticated}>
@@ -199,17 +199,17 @@ const App = () => {
 
       {/* Protected routes */}
       <Route
-        // path="/"
-        // element={
-        //   <ProtectedRoute isAuthenticated={isAuthenticated}>
-        //     <AppLayout
-        //       user={user}
-        //       onLogout={handleLogout}
-        //       sidebarOpen={sidebarOpen}
-        //       toggleSidebar={toggleSidebar}
-        //     />
-        //   </ProtectedRoute>
-        // }
+        path="/"
+        element={
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <AppLayout
+              user={user}
+              onLogout={handleLogout}
+              sidebarOpen={sidebarOpen}
+              toggleSidebar={toggleSidebar}
+            />
+          </ProtectedRoute>
+        }
       >
         {/* <Route index element={<Dashboard user={user} />} /> */}
         <Route path="/*" element={<Index_Website />} />

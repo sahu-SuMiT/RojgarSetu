@@ -3,7 +3,9 @@ import { FaChevronRight, FaTicketAlt, FaChartLine, FaDownload, FaUserGraduate } 
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
 import axios from 'axios';
+axios.defaults.withCredentials = true;
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import CompanySettingsModal from './CompanySettingsModal';
 const apiUrl = import.meta.env.VITE_API_URL;
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -21,6 +23,7 @@ const PlacementAnalysis = () => {
     byCompany: [],
     salaryDistribution: []
   });
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     const companyId = localStorage.getItem('companyId');
@@ -104,7 +107,7 @@ const PlacementAnalysis = () => {
       <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="COMPANY SERVICES" />
       <div className="main-container" style={{ marginLeft: 260, width: '100%', padding: 0, position: 'relative' }}>
         <div style={{ padding: '0 24px' }}>
-          <SearchBar />
+          <SearchBar onSettingsClick={() => setShowSettings(true)} />
         </div>
         <div style={{ padding: '24px' }}>
           <div style={{ 
@@ -266,6 +269,23 @@ const PlacementAnalysis = () => {
           )}
         </div>
       </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <CompanySettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          company={company}
+          onUpdate={(updatedCompany) => {
+            setCompany(updatedCompany);
+            setSidebarUser({
+              initials: updatedCompany.name.substring(0, 2).toUpperCase(),
+              name: updatedCompany.name,
+              role: 'Company Admin'
+            });
+          }}
+        />
+      )}
     </div>
   );
 };
