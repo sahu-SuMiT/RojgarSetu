@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Menu } from 'lucide-react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 
+
 // Import all page components
 import Sidebar from './components/Student/Sidebar';
 import Dashboard from './components/Student/Dashboard';
@@ -230,6 +231,7 @@ const App = () => {
         <Route path="/placement-analysis" element={<PlacementAnalysis />} />
         <Route path="/kyc-dashboard" element={<EKysDashboard />} />
         <Route path="/sales" element={<Sales />} />
+        <Route path="/profile" element={<Profile />} />
 
         {/* College and Compay */}
         <Route path="/student-login" element={<StudentLogin />} />

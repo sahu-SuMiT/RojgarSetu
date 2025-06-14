@@ -1,11 +1,8 @@
 import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
 
-// import { cn } from "@/lib/utils"
-// Utility function to concatenate class names conditionally
-export function cn(...classes: (string | undefined | false | null)[]): string {
-  return classes.filter(Boolean).join(' ');
-}
+import { cn } from "@/lib/utils"
+
 const Drawer = ({
   shouldScaleBackground = true,
   ...props
