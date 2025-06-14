@@ -3,8 +3,10 @@ import { useParams } from 'react-router-dom';
 import Sidebar from '../Sidebar';
 import { FaChevronRight, FaTicketAlt, FaChartLine, FaCheck, FaTimes, FaCalendarAlt, FaUsers, FaUser, FaStar, FaUserGraduate } from 'react-icons/fa';
 import axios from 'axios';
+axios.defaults.withCredentials = true;
 import SearchBar from '../SearchBar';
 import calculateCampusScore from '../utils/calculateCampusScore';
+import CompanySettingsModal from './CompanySettingsModal';
 const apiUrl = import.meta.env.VITE_API_URL;
 
 
@@ -45,16 +47,35 @@ const ViewApplications = () => {
   const [rejectMailSubject, setRejectMailSubject] = useState('');
   const [rejectMailBody, setRejectMailBody] = useState('');
   const [selectedStudentForAction, setSelectedStudentForAction] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [sidebarUser, setSidebarUser] = useState({
+    name: 'Company Admin',
+    role: 'Company Admin',
+    initials: 'CA'
+  });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Single API call to get all required data
-        const response = await axios.get(`${apiUrl}/api/company/${companyId}/applications/complete`);
-        const { company, applications } = response.data;
+        // Fetch complete company data
+        const [applicationsResponse, companyResponse] = await Promise.all([
+          axios.get(`${apiUrl}/api/company/${companyId}/applications/complete`),
+          axios.get(`${apiUrl}/api/company/${companyId}`)
+        ]);
         
-        setCompany(company);
+        const { applications } = applicationsResponse.data;
+        const companyData = companyResponse.data;
+        
+        setCompany(companyData);
         setApplications(applications);
+        // Update sidebar user when company data is loaded
+        if (companyData && companyData.name) {
+          setSidebarUser({
+            name: companyData.name,
+            role: 'Company Admin',
+            initials: companyData.name.substring(0, 2).toUpperCase()
+          });
+        }
       } catch (err) {
         console.error('Error fetching data:', err);
         setError(err.message || 'Failed to fetch data');
@@ -64,7 +85,7 @@ const ViewApplications = () => {
     };
 
     fetchData();
-  }, []);
+  }, [companyId]);
 
   const navItems = [
     { label: 'Dashboard', href: `/company/${localStorage.getItem('companyId')}/dashboard`, icon: <FaChevronRight /> },
@@ -75,12 +96,6 @@ const ViewApplications = () => {
     { label: 'Support', href: `/company/${localStorage.getItem('companyId')}/support`, icon: <FaTicketAlt /> },
     { label: 'Placement Analysis', href: `/company/${localStorage.getItem('companyId')}/placement-analysis`, icon: <FaChartLine /> },
   ];
-
-  const sidebarUser = {
-    name: company?.name || 'Company Admin',
-    role: 'Company Admin',
-    initials: company?.name ? company.name.substring(0, 2).toUpperCase() : 'CA'
-  };
 
   const handleViewStudents = (application) => {
     setSelectedApplication(application);
@@ -459,19 +474,11 @@ const ViewApplications = () => {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="COMPANY SERVICES" />
-      <div className="main-container" style={{ 
-        marginLeft: 260, 
-        width: '100%', 
-        padding: 0, 
-        position: 'relative',
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
-        <div style={{ padding: '0 24px', flexShrink: 0 }}>
-          <SearchBar />
+      <div className="main-container" style={{ marginLeft: 260, width: '100%', padding: 0, position: 'relative' }}>
+        <div style={{ padding: '0 24px' }}>
+          <SearchBar onSettingsClick={() => setShowSettings(true)} />
         </div>
         {/* Add validation/error message display */}
         {(validationError || error) && (
@@ -1901,6 +1908,27 @@ const ViewApplications = () => {
         )}
 
       </div>
+
+      {/* Settings Modal */}
+      {showSettings && company && (
+        <CompanySettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          company={company}
+          onUpdate={(updatedCompany) => {
+            if (updatedCompany) {
+              setCompany(updatedCompany);
+              // Update sidebar user info
+              const updatedSidebarUser = {
+                name: updatedCompany.name,
+                role: 'Company Admin',
+                initials: updatedCompany.name.substring(0, 2).toUpperCase()
+              };
+              setSidebarUser(updatedSidebarUser);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

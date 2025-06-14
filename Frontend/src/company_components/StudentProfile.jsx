@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { FaChevronRight, FaUserGraduate, FaTicketAlt, FaChartLine } from 'react-icons/fa';
 import Sidebar from '../Sidebar';
 import axios from 'axios';
+axios.defaults.withCredentials = true;
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const StudentProfile = () => {

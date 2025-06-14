@@ -96,7 +96,7 @@ const CompanyLogin = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${apiUrl}/api/auth/company-admin`, formData);
+      const response = await axios.post(`${apiUrl}/api/auth/company-admin`, formData, { withCredentials: true });
       const { _id, name, role } = response.data;
 
       localStorage.setItem('companyId', _id);

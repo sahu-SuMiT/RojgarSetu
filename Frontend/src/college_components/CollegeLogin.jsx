@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaUniversity } from 'react-icons/fa';
 import axios from 'axios';
+axios.defaults.withCredentials = true;
 import './CollegeLogin.css';
 
 const apiUrl = import.meta.env.VITE_API_URL;

@@ -1,70 +1,87 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaSave, FaEdit, FaBuilding, FaMapMarkerAlt, FaPhone, FaEnvelope, FaGlobe, FaUserTie, FaCode, FaRulerCombined, FaCamera } from 'react-icons/fa';
+import { FaTimes, FaSave, FaEdit, FaBuilding, FaMapMarkerAlt, FaPhone, FaEnvelope, FaGlobe, FaUserTie, FaIndustry, FaUsers, FaCalendarAlt, FaCamera } from 'react-icons/fa';
 import axios from 'axios';
 axios.defaults.withCredentials = true;
+
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
+const CompanySettingsModal = ({ isOpen, onClose, company, onUpdate }) => {
   const [formData, setFormData] = useState({
     name: '',
-    code: '',
-    location: '',
+    type: '',
+    industry: '',
     website: '',
+    location: '',
     contactEmail: '',
     contactPhone: '',
-    placementOfficer: {
+    adminContact: {
       name: '',
       email: '',
-      phone: ''
+      phone: '',
+      designation: ''
     },
-    departments: [],
-    establishedYear: '',
-    campusSize: '',
+    companySize: '',
+    foundedYear: '',
+    description: '',
     profileImage: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [isEditingImage, setIsEditingImage] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
   const [imageLoading, setImageLoading] = useState(false);
 
   useEffect(() => {
-    if (college) {
+    if (company) {
       setFormData({
-        name: college.name || '',
-        code: college.code || '',
-        location: college.location || '',
-        website: college.website || '',
-        contactEmail: college.contactEmail || '',
-        contactPhone: college.contactPhone || '',
-        placementOfficer: {
-          name: college.placementOfficer?.name || '',
-          email: college.placementOfficer?.email || '',
-          phone: college.placementOfficer?.phone || ''
+        name: company.name || '',
+        type: company.type || '',
+        industry: company.industry || '',
+        website: company.website || '',
+        location: company.location || '',
+        contactEmail: company.contactEmail || '',
+        contactPhone: company.contactPhone || '',
+        adminContact: {
+          name: company.adminContact?.name || '',
+          email: company.adminContact?.email || '',
+          phone: company.adminContact?.phone || '',
+          designation: company.adminContact?.designation || ''
         },
-        departments: college.departments || [],
-        establishedYear: college.establishedYear || '',
-        campusSize: college.campusSize || '',
-        profileImage: college.profileImage || ''
+        companySize: company.companySize || '',
+        foundedYear: company.foundedYear || '',
+        description: company.description || '',
+        profileImage: company.profileImage || ''
       });
-      setImagePreview(college.profileImage);
+      setImagePreview(company.profileImage);
     }
-  }, [college]);
+  }, [company]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
+      setFormData(prev => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [child]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       setImageLoading(true);
+      setError(null);
+      setSuccess(false);
       try {
         // Create a preview URL
         const previewUrl = URL.createObjectURL(file);
@@ -79,7 +96,7 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
           try {
             // Update only the profile image
             const response = await axios.put(
-              `${apiUrl}/api/colleges/${college._id}/edit`,
+              `${apiUrl}/api/company/${company._id}/edit`,
               { profileImage: reader.result },
               {
                 headers: {
@@ -97,18 +114,25 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
               setTimeout(() => {
                 setSuccess(false);
               }, 3000);
+            } else {
+              throw new Error('Failed to update profile image');
             }
           } catch (err) {
             console.error('Error updating profile image:', err);
-            setError(err.response?.data?.error || 'Failed to update profile image');
+            setError(err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to update profile image');
+            setSuccess(false);
           } finally {
             setImageLoading(false);
           }
         };
+        reader.onerror = () => {
+          setError('Failed to read image file');
+          setImageLoading(false);
+        };
         reader.readAsDataURL(optimizedImage);
       } catch (err) {
         console.error('Error processing image:', err);
-        setError('Failed to process image');
+        setError(err.message || 'Failed to process image');
         setImageLoading(false);
       }
     }
@@ -148,42 +172,6 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
     });
   };
 
-  const handlePlacementOfficerChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      placementOfficer: {
-        ...prev.placementOfficer,
-        [field]: value
-      }
-    }));
-  };
-
-  const handleDepartmentChange = (index, field, value) => {
-    const newDepartments = [...formData.departments];
-    newDepartments[index] = {
-      ...newDepartments[index],
-      [field]: value
-    };
-    setFormData(prev => ({
-      ...prev,
-      departments: newDepartments
-    }));
-  };
-
-  const addDepartment = () => {
-    setFormData(prev => ({
-      ...prev,
-      departments: [...prev.departments, { name: '', code: '' }]
-    }));
-  };
-
-  const removeDepartment = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      departments: prev.departments.filter((_, i) => i !== index)
-    }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -195,7 +183,7 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
       const { profileImage, ...updateData } = formData;
 
       const response = await axios.put(
-        `${apiUrl}/api/colleges/${college._id}/edit`,
+        `${apiUrl}/api/company/${company._id}/edit`,
         updateData,
         {
           headers: {
@@ -215,37 +203,16 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
         setTimeout(() => {
           setSuccess(false);
         }, 3000);
+      } else {
+        throw new Error('Failed to update company information');
       }
     } catch (err) {
-      console.error('Error updating college:', err);
-      setError(err.response?.data?.error || err.response?.data?.message || 'Failed to update college information');
+      console.error('Error updating company:', err);
+      setError(err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to update company information');
+      setSuccess(false); // Ensure success is false when there's an error
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCancel = () => {
-    if (college) {
-      setFormData({
-        name: college.name || '',
-        code: college.code || '',
-        location: college.location || '',
-        website: college.website || '',
-        contactEmail: college.contactEmail || '',
-        contactPhone: college.contactPhone || '',
-        placementOfficer: {
-          name: college.placementOfficer?.name || '',
-          email: college.placementOfficer?.email || '',
-          phone: college.placementOfficer?.phone || ''
-        },
-        departments: college.departments || [],
-        establishedYear: college.establishedYear || '',
-        campusSize: college.campusSize || '',
-        profileImage: college.profileImage || ''
-      });
-    }
-    setIsEditing(false);
-    setError(null);
   };
 
   if (!isOpen) return null;
@@ -296,7 +263,7 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
               color: '#1f2937',
               margin: 0
             }}>
-              College Settings
+              Company Settings
             </h2>
           </div>
           <button
@@ -319,35 +286,35 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
         </div>
 
         {/* Success Message */}
-        {success && (
+        {success && !error && (
           <div style={{
+            background: '#dcfce7',
+            color: '#166534',
             padding: '12px 16px',
-            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-            color: '#fff',
             borderRadius: '8px',
-            marginBottom: '20px',
-            fontSize: '14px',
-            fontWeight: '500',
+            marginBottom: '24px',
             display: 'flex',
             alignItems: 'center',
             gap: '8px'
           }}>
             <FaSave />
-            College information updated successfully!
+            Changes saved successfully!
           </div>
         )}
 
         {/* Error Message */}
         {error && (
           <div style={{
+            background: '#fee2e2',
+            color: '#991b1b',
             padding: '12px 16px',
-            background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-            color: '#fff',
             borderRadius: '8px',
-            marginBottom: '20px',
-            fontSize: '14px',
-            fontWeight: '500'
+            marginBottom: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
           }}>
+            <FaTimes />
             {error}
           </div>
         )}
@@ -381,7 +348,7 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                 }}>
                   <img
                     src={imagePreview}
-                    alt="College Profile"
+                    alt="Company Profile"
                     style={{
                       width: '100%',
                       height: '100%',
@@ -437,10 +404,10 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#374151', marginBottom: '4px' }}>
-                    College Profile Image
+                    Company Profile Image
                   </h3>
                   <p style={{ fontSize: '14px', color: '#6b7280' }}>
-                    Upload a professional photo of your college
+                    Upload a professional photo of your company
                   </p>
                 </div>
               </div>
@@ -470,7 +437,7 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                     color: '#374151',
                     marginBottom: '6px'
                   }}>
-                    College Name *
+                    Company Name *
                   </label>
                   <input
                     type="text"
@@ -512,12 +479,11 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                     color: '#374151',
                     marginBottom: '6px'
                   }}>
-                    College Code *
+                    Company Type *
                   </label>
-                  <input
-                    type="text"
-                    name="code"
-                    value={formData.code}
+                  <select
+                    name="type"
+                    value={formData.type}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     required
@@ -531,21 +497,94 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                       color: '#374151',
                       transition: 'all 0.2s ease'
                     }}
-                    onFocus={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#6366f1';
-                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
-                      }
-                    }}
-                    onBlur={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#e5e7eb';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }
+                  >
+                    <option value="">Select Type</option>
+                    <option value="MNC">MNC</option>
+                    <option value="Startup">Startup</option>
+                    <option value="SME">SME</option>
+                    <option value="Government">Government</option>
+                    <option value="NGO">NGO</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px'
+                  }}>
+                    Industry *
+                  </label>
+                  <input
+                    type="text"
+                    name="industry"
+                    value={formData.industry}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '2px solid #e5e7eb',
+                      fontSize: '14px',
+                      background: isEditing ? '#fff' : '#f9fafb',
+                      color: '#374151',
+                      transition: 'all 0.2s ease'
                     }}
                   />
                 </div>
 
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px'
+                  }}>
+                    Website
+                  </label>
+                  <input
+                    type="url"
+                    name="website"
+                    value={formData.website}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '2px solid #e5e7eb',
+                      fontSize: '14px',
+                      background: isEditing ? '#fff' : '#f9fafb',
+                      color: '#374151',
+                      transition: 'all 0.2s ease'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div>
+              <h3 style={{
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <FaPhone />
+                Contact Information
+              </h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
                   <label style={{
                     display: 'block',
@@ -572,18 +611,6 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                       background: isEditing ? '#fff' : '#f9fafb',
                       color: '#374151',
                       transition: 'all 0.2s ease'
-                    }}
-                    onFocus={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#6366f1';
-                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
-                      }
-                    }}
-                    onBlur={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#e5e7eb';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }
                     }}
                   />
                 </div>
@@ -615,18 +642,6 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                       color: '#374151',
                       transition: 'all 0.2s ease'
                     }}
-                    onFocus={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#6366f1';
-                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
-                      }
-                    }}
-                    onBlur={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#e5e7eb';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }
-                    }}
                   />
                 </div>
 
@@ -657,65 +672,12 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                       color: '#374151',
                       transition: 'all 0.2s ease'
                     }}
-                    onFocus={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#6366f1';
-                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
-                      }
-                    }}
-                    onBlur={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#e5e7eb';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#374151',
-                    marginBottom: '6px'
-                  }}>
-                    Website
-                  </label>
-                  <input
-                    type="url"
-                    name="website"
-                    value={formData.website}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      borderRadius: '8px',
-                      border: '2px solid #e5e7eb',
-                      fontSize: '14px',
-                      background: isEditing ? '#fff' : '#f9fafb',
-                      color: '#374151',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onFocus={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#6366f1';
-                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
-                      }
-                    }}
-                    onBlur={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#e5e7eb';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }
-                    }}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Placement Officer Information */}
+            {/* Additional Information */}
             <div>
               <h3 style={{
                 fontSize: '18px',
@@ -726,8 +688,8 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                 alignItems: 'center',
                 gap: '8px'
               }}>
-                <FaUserTie />
-                Placement Officer
+                <FaUsers />
+                Additional Information
               </h3>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -739,13 +701,132 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                     color: '#374151',
                     marginBottom: '6px'
                   }}>
-                    Officer Name
+                    Company Size *
+                  </label>
+                  <select
+                    name="companySize"
+                    value={formData.companySize}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '2px solid #e5e7eb',
+                      fontSize: '14px',
+                      background: isEditing ? '#fff' : '#f9fafb',
+                      color: '#374151',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <option value="">Select Size</option>
+                    <option value="1-50">1-50 employees</option>
+                    <option value="51-200">51-200 employees</option>
+                    <option value="201-500">201-500 employees</option>
+                    <option value="501-1000">501-1000 employees</option>
+                    <option value="1000+">1000+ employees</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px'
+                  }}>
+                    Founded Year *
+                  </label>
+                  <input
+                    type="number"
+                    name="foundedYear"
+                    value={formData.foundedYear}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    min="1800"
+                    max={new Date().getFullYear()}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '2px solid #e5e7eb',
+                      fontSize: '14px',
+                      background: isEditing ? '#fff' : '#f9fafb',
+                      color: '#374151',
+                      transition: 'all 0.2s ease'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px'
+                  }}>
+                    Description *
+                  </label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    required
+                    rows="4"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '2px solid #e5e7eb',
+                      fontSize: '14px',
+                      background: isEditing ? '#fff' : '#f9fafb',
+                      color: '#374151',
+                      transition: 'all 0.2s ease',
+                      resize: 'vertical'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Admin Contact */}
+            <div>
+              <h3 style={{
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#374151',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <FaUserTie />
+                Admin Contact
+              </h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px'
+                  }}>
+                    Name *
                   </label>
                   <input
                     type="text"
-                    value={formData.placementOfficer.name}
-                    onChange={(e) => handlePlacementOfficerChange('name', e.target.value)}
+                    name="adminContact.name"
+                    value={formData.adminContact.name}
+                    onChange={handleInputChange}
                     disabled={!isEditing}
+                    required
                     style={{
                       width: '100%',
                       padding: '12px 16px',
@@ -755,18 +836,6 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                       background: isEditing ? '#fff' : '#f9fafb',
                       color: '#374151',
                       transition: 'all 0.2s ease'
-                    }}
-                    onFocus={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#6366f1';
-                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
-                      }
-                    }}
-                    onBlur={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#e5e7eb';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }
                     }}
                   />
                 </div>
@@ -779,13 +848,15 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                     color: '#374151',
                     marginBottom: '6px'
                   }}>
-                    Officer Email
+                    Email *
                   </label>
                   <input
                     type="email"
-                    value={formData.placementOfficer.email}
-                    onChange={(e) => handlePlacementOfficerChange('email', e.target.value)}
+                    name="adminContact.email"
+                    value={formData.adminContact.email}
+                    onChange={handleInputChange}
                     disabled={!isEditing}
+                    required
                     style={{
                       width: '100%',
                       padding: '12px 16px',
@@ -795,18 +866,6 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                       background: isEditing ? '#fff' : '#f9fafb',
                       color: '#374151',
                       transition: 'all 0.2s ease'
-                    }}
-                    onFocus={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#6366f1';
-                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
-                      }
-                    }}
-                    onBlur={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#e5e7eb';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }
                     }}
                   />
                 </div>
@@ -819,13 +878,15 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                     color: '#374151',
                     marginBottom: '6px'
                   }}>
-                    Officer Phone
+                    Phone *
                   </label>
                   <input
                     type="tel"
-                    value={formData.placementOfficer.phone}
-                    onChange={(e) => handlePlacementOfficerChange('phone', e.target.value)}
+                    name="adminContact.phone"
+                    value={formData.adminContact.phone}
+                    onChange={handleInputChange}
                     disabled={!isEditing}
+                    required
                     style={{
                       width: '100%',
                       padding: '12px 16px',
@@ -836,266 +897,38 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                       color: '#374151',
                       transition: 'all 0.2s ease'
                     }}
-                    onFocus={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#6366f1';
-                        e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
-                      }
-                    }}
-                    onBlur={(e) => {
-                      if (isEditing) {
-                        e.currentTarget.style.borderColor = '#e5e7eb';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }
+                  />
+                </div>
+
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px'
+                  }}>
+                    Designation *
+                  </label>
+                  <input
+                    type="text"
+                    name="adminContact.designation"
+                    value={formData.adminContact.designation}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '2px solid #e5e7eb',
+                      fontSize: '14px',
+                      background: isEditing ? '#fff' : '#f9fafb',
+                      color: '#374151',
+                      transition: 'all 0.2s ease'
                     }}
                   />
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Additional Information */}
-          <div style={{ marginTop: '32px' }}>
-            <h3 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#374151',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <FaGlobe />
-              Additional Information
-            </h3>
-            
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '24px'
-            }}>
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  color: '#374151',
-                  marginBottom: '6px'
-                }}>
-                  Established Year *
-                </label>
-                <input
-                  type="number"
-                  name="establishedYear"
-                  value={formData.establishedYear}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  min="1800"
-                  max={new Date().getFullYear()}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    borderRadius: '8px',
-                    border: '2px solid #e5e7eb',
-                    fontSize: '14px',
-                    background: isEditing ? '#fff' : '#f9fafb',
-                    color: '#374151',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onFocus={(e) => {
-                    if (isEditing) {
-                      e.currentTarget.style.borderColor = '#6366f1';
-                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
-                    }
-                  }}
-                  onBlur={(e) => {
-                    if (isEditing) {
-                      e.currentTarget.style.borderColor = '#e5e7eb';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{
-                  display: 'block',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  color: '#374151',
-                  marginBottom: '6px'
-                }}>
-                  Campus Size (Acres) *
-                </label>
-                <input
-                  type="number"
-                  name="campusSize"
-                  value={formData.campusSize}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  min="1"
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    borderRadius: '8px',
-                    border: '2px solid #e5e7eb',
-                    fontSize: '14px',
-                    background: isEditing ? '#fff' : '#f9fafb',
-                    color: '#374151',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onFocus={(e) => {
-                    if (isEditing) {
-                      e.currentTarget.style.borderColor = '#6366f1';
-                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
-                    }
-                  }}
-                  onBlur={(e) => {
-                    if (isEditing) {
-                      e.currentTarget.style.borderColor = '#e5e7eb';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Departments */}
-            <div style={{ marginTop: '24px' }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '12px'
-              }}>
-                <label style={{
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  color: '#374151'
-                }}>
-                  Departments
-                </label>
-                {isEditing && (
-                  <button
-                    type="button"
-                    onClick={addDepartment}
-                    style={{
-                      padding: '6px 12px',
-                      background: '#6366f1',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseOver={(e) => e.currentTarget.style.background = '#5855eb'}
-                    onMouseOut={(e) => e.currentTarget.style.background = '#6366f1'}
-                  >
-                    Add Department
-                  </button>
-                )}
-              </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {formData.departments.map((dept, index) => (
-                  <div key={index} style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: '1fr 1fr auto', 
-                    gap: '8px',
-                    alignItems: 'center'
-                  }}>
-                    <input
-                      type="text"
-                      value={dept.name || ''}
-                      onChange={(e) => handleDepartmentChange(index, 'name', e.target.value)}
-                      disabled={!isEditing}
-                      placeholder="Department name"
-                      style={{
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                        border: '2px solid #e5e7eb',
-                        fontSize: '14px',
-                        background: isEditing ? '#fff' : '#f9fafb',
-                        color: '#374151',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onFocus={(e) => {
-                        if (isEditing) {
-                          e.currentTarget.style.borderColor = '#6366f1';
-                          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
-                        }
-                      }}
-                      onBlur={(e) => {
-                        if (isEditing) {
-                          e.currentTarget.style.borderColor = '#e5e7eb';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }
-                      }}
-                    />
-                    <input
-                      type="text"
-                      value={dept.code || ''}
-                      onChange={(e) => handleDepartmentChange(index, 'code', e.target.value)}
-                      disabled={!isEditing}
-                      placeholder="Department code"
-                      style={{
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                        border: '2px solid #e5e7eb',
-                        fontSize: '14px',
-                        background: isEditing ? '#fff' : '#f9fafb',
-                        color: '#374151',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onFocus={(e) => {
-                        if (isEditing) {
-                          e.currentTarget.style.borderColor = '#6366f1';
-                          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
-                        }
-                      }}
-                      onBlur={(e) => {
-                        if (isEditing) {
-                          e.currentTarget.style.borderColor = '#e5e7eb';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }
-                      }}
-                    />
-                    {isEditing && (
-                      <button
-                        type="button"
-                        onClick={() => removeDepartment(index)}
-                        style={{
-                          padding: '8px 12px',
-                          background: '#ef4444',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.background = '#dc2626'}
-                        onMouseOut={(e) => e.currentTarget.style.background = '#ef4444'}
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {formData.departments.length === 0 && !isEditing && (
-                  <div style={{
-                    padding: '12px',
-                    background: '#f9fafb',
-                    borderRadius: '6px',
-                    color: '#6b7280',
-                    fontSize: '14px',
-                    textAlign: 'center'
-                  }}>
-                    No departments added yet
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -1104,7 +937,7 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
           <div style={{
             display: 'flex',
             justifyContent: 'flex-end',
-            gap: '12px',
+            gap: '16px',
             marginTop: '32px',
             paddingTop: '24px',
             borderTop: '2px solid #f3f4f6'
@@ -1144,20 +977,26 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
               <>
                 <button
                   type="button"
-                  onClick={handleCancel}
+                  onClick={() => setIsEditing(false)}
                   style={{
                     padding: '12px 24px',
-                    background: '#f3f4f6',
-                    color: '#374151',
-                    border: 'none',
+                    background: '#fff',
+                    color: '#4b5563',
+                    border: '2px solid #e5e7eb',
                     borderRadius: '8px',
                     fontSize: '14px',
                     fontWeight: '600',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.background = '#e5e7eb'}
-                  onMouseOut={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = '#f9fafb';
+                    e.currentTarget.style.borderColor = '#d1d5db';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = '#fff';
+                    e.currentTarget.style.borderColor = '#e5e7eb';
+                  }}
                 >
                   Cancel
                 </button>
@@ -1166,9 +1005,7 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                   disabled={loading}
                   style={{
                     padding: '12px 24px',
-                    background: loading 
-                      ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)' 
-                      : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    background: 'linear-gradient(135deg, #6366f1 0%, #5855eb 100%)',
                     color: '#fff',
                     border: 'none',
                     borderRadius: '8px',
@@ -1179,7 +1016,8 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
                     alignItems: 'center',
                     gap: '8px',
                     transition: 'all 0.2s ease',
-                    boxShadow: loading ? 'none' : '0 4px 6px rgba(0, 0, 0, 0.1)'
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                    opacity: loading ? 0.7 : 1
                   }}
                   onMouseOver={(e) => {
                     if (!loading) {
@@ -1218,15 +1056,8 @@ const CollegeSettingsModal = ({ isOpen, onClose, college, onUpdate }) => {
           </div>
         </form>
       </div>
-
-      <style jsx>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
 
-export default CollegeSettingsModal; 
+export default CompanySettingsModal; 

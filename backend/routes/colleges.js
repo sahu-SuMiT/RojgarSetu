@@ -5,7 +5,8 @@ const College = require('../models/College');
 const CollegeStudent = require('../models/collegeStudent.model');
 const RegistrationOtp = require('../models/RegistrationOtp');
 const {emailTransport} = require('../config/email');
-
+const cloudinary = require('../config/cloudinary');
+const {isCollegeAuthenticated,isCollegeAdmin} = require('../middleware/auth');
 // app.get('/api/college/:collegeId/student/:studentId') ..... Get a single student by ID and college
 // app.put('/api/college/:collegeId/student/:studentId') .....Put endpoint for updating college student profiles
 // app.post('/api/college/register/initiate') .....Post Initiate college registration: send OTP
@@ -33,7 +34,7 @@ router.get('/:collegeId/student/:studentId', async (req, res) => {
   }
 });
 
-router.put('/:collegeId/student/:studentId', async (req, res) => {
+router.put('/:collegeId/student/:studentId',isCollegeAuthenticated,isCollegeAdmin, async (req, res) => {
   try {
     
     const student = await CollegeStudent.findOneAndUpdate(
@@ -190,9 +191,10 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.get('/api/colleges', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const colleges = await College.find().sort({ name: 1 });
+    let limit = req.query.limit || 10;
+    const colleges = await College.find().sort({ name: 1 }).limit(limit).offset(req.query.offset || 0);
     if (colleges.length === 0) {
       res.json("no college in database")
     }
@@ -206,7 +208,7 @@ router.get('/api/colleges', async (req, res) => {
   }
 });
 
-router.get('/api/colleges/email/:email', async (req, res) => {
+router.get('/email/:email', async (req, res) => {
   try {
     const college = await College.findOne({ contactEmail: req.params.email });
     if (!college) {
@@ -218,10 +220,74 @@ router.get('/api/colleges/email/:email', async (req, res) => {
   }
 });
 
-// PUT endpoint for editing college information
-router.put('/:id/edit', async (req, res) => {
+// Edit college information
+router.put('/:id/edit',isCollegeAuthenticated,isCollegeAdmin, async (req, res) => {
   try {
-    const {
+    const { id } = req.params;
+    const { 
+      name, code, location, website, contactEmail, contactPhone,
+      placementOfficer, departments, establishedYear, campusSize,
+      profileImage
+    } = req.body;
+
+    // Check if this is an image-only update
+    const isImageOnlyUpdate = Object.keys(req.body).length === 1 && req.body.profileImage;
+
+    if (isImageOnlyUpdate) {
+      try {
+        // Upload to Cloudinary
+        const result = await cloudinary.uploader.upload(profileImage, {
+          folder: 'college_profiles',
+          transformation: [
+            { width: 800, height: 800, crop: 'limit' },
+            { quality: 'auto' }
+          ]
+        });
+
+        // Update college with Cloudinary URL
+        const updatedCollege = await College.findByIdAndUpdate(
+          id,
+          { $set: { profileImage: result.secure_url } },
+          { new: true }
+        ).select('-password');
+
+        return res.json(updatedCollege);
+      } catch (uploadError) {
+        console.error('Error uploading to Cloudinary:', uploadError);
+        return res.status(500).json({ error: 'Failed to upload image' });
+      }
+    }
+
+    // Validate required fields for full profile update
+    if (!name || !code || !location || !contactEmail || !contactPhone || !establishedYear || !campusSize) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Validate data types
+    if (isNaN(establishedYear) || isNaN(campusSize)) {
+      return res.status(400).json({ error: 'Established year and campus size must be numbers' });
+    }
+
+    // Check if college exists
+    const college = await College.findById(id);
+    if (!college) {
+      return res.status(404).json({ error: 'College not found' });
+    }
+
+    // Check for duplicate code or email
+    const existingCollege = await College.findOne({
+      $or: [
+        { code: code, _id: { $ne: id } },
+        { contactEmail: contactEmail, _id: { $ne: id } }
+      ]
+    });
+
+    if (existingCollege) {
+      return res.status(400).json({ error: 'College code or email already exists' });
+    }
+
+    // Prepare update data
+    const updateData = {
       name,
       code,
       location,
@@ -232,60 +298,19 @@ router.put('/:id/edit', async (req, res) => {
       departments,
       establishedYear,
       campusSize
-    } = req.body;
+    };
 
-    // Validate required fields
-    if (!name || !code || !location || !contactEmail || !contactPhone || !establishedYear || !campusSize) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    // Check if college exists
-    const existingCollege = await College.findById(req.params.id);
-    if (!existingCollege) {
-      return res.status(404).json({ error: 'College not found' });
-    }
-
-    // Check for duplicate code or email (excluding the current college)
-    const duplicateCheck = await College.findOne({
-      $or: [
-        { code, _id: { $ne: req.params.id } },
-        { contactEmail, _id: { $ne: req.params.id } },
-        { code, _id: { $ne: req.params.id } }
-      ]
-    });
-
-    if (duplicateCheck) {
-      return res.status(409).json({ error: 'College with this code or email already exists' });
-    }
-
-    // Update the college
+    // Update college information
     const updatedCollege = await College.findByIdAndUpdate(
-      req.params.id,
-      {
-        name,
-        code,
-        location,
-        website,
-        contactEmail,
-        contactPhone,
-        placementOfficer,
-        departments,
-        establishedYear,
-        campusSize
-      },
-      { new: true, runValidators: true }
-    );
+      id,
+      { $set: updateData },
+      { new: true }
+    ).select('-password');
 
-    // Remove password from response
-    const { password, ...collegeData } = updatedCollege.toObject();
-
-    res.json(collegeData);
+    res.json(updatedCollege);
   } catch (error) {
     console.error('Error updating college:', error);
-    res.status(500).json({ 
-      error: 'Failed to update college information',
-      details: error.message 
-    });
+    res.status(500).json({ error: 'Failed to update college information' });
   }
 });
 

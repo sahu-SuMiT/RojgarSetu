@@ -9,6 +9,8 @@ const RegistrationOtp = require('../models/RegistrationOtp');
 const Interview = require('../models/Interview');
 const Application = require('../models/CollegeApplication');
 const {emailTransport} = require('../config/email');
+const cloudinary = require('../config/cloudinary');
+const {isCompanyAuthenticated,isCompanyHR,isCompanyAdmin,isCompanyOwner} = require('../middleware/auth');
 //INDEX
 // app.get('/api/company/auth') ..... company authentication
 // app.get('/api/company/:companyid/roles') .....get roles by company Id  
@@ -27,7 +29,7 @@ const {emailTransport} = require('../config/email');
 // app.get('/api/company/:companyid/applications/complete') .....get Optimized endpoint for company applications with all related data
 // app.get('/api/company/:companyid/interviews/complete') .....Optimized endpoint for company scheduled interviews with all related data
 
-router.post('auth', async (req, res) => {
+router.post('/auth',  async (req, res) => {
   const { email, password } = req.body;
   try {
     const company = await Company.findOne({ contactEmail: email });
@@ -45,7 +47,7 @@ router.post('auth', async (req, res) => {
   }
 });
 
-router.get('/:companyId/roles', async (req, res) => {
+router.get('/:companyId/roles',isCompanyAuthenticated, async (req, res) => {
   try {
     const roles = await Role.find({ companyId: req.params.companyId })
       .populate('companyId', 'name')
@@ -55,7 +57,7 @@ router.get('/:companyId/roles', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-router.post('/:companyId/roles', async (req, res) => {
+router.post('/:companyId/roles',isCompanyAuthenticated,isCompanyAdmin, async (req, res) => {
   try {
     const {companyId} = req.params;
     var role = {...req.body,companyId:companyId.toString()};
@@ -66,7 +68,7 @@ router.post('/:companyId/roles', async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
-router.get('/:companyId', async (req, res) => {
+router.get('/:companyId',isCompanyAuthenticated, async (req, res) => {
   try { 
     const company = await Company.findById(req.params.companyId);
     
@@ -79,7 +81,7 @@ router.get('/:companyId', async (req, res) => {
   }
 });
 
-router.get('/applications/:companyId', async (req, res) => {
+router.get('/applications/:companyId',isCompanyAuthenticated, async (req, res) => {
   try {
     const applications = await Application.find({ applicationTo: req.params.companyId })
       .populate('applicationFrom', 'name')
@@ -91,7 +93,7 @@ router.get('/applications/:companyId', async (req, res) => {
   }
 });
 
-router.patch('/applications/:applicationId/status', async (req, res) => {
+router.patch('/applications/:applicationId/status',isCompanyAuthenticated, async (req, res) => {
   try {
     const { status } = req.body;
     const application = await Application.findByIdAndUpdate(
@@ -108,7 +110,7 @@ router.patch('/applications/:applicationId/status', async (req, res) => {
   }
 });
 
-router.delete('/applications/:applicationId', async (req, res) => {
+router.delete('/applications/:applicationId',isCompanyAuthenticated,async (req, res) => {
   try {
     const application = await Application.findByIdAndDelete(req.params.applicationId);
     if (!application) {
@@ -120,7 +122,7 @@ router.delete('/applications/:applicationId', async (req, res) => {
   }
 });
 
-router.get('/roles', async (req, res) => {
+router.get('/roles',isCompanyAuthenticated, async (req, res) => {
   try {
     const roles = await Role.find().populate('companyId', 'name').sort({ createdAt: -1 });
     res.json(roles);
@@ -129,7 +131,7 @@ router.get('/roles', async (req, res) => {
   }
 });
 
-router.post('/roles', async (req, res) => {
+router.post('/roles',isCompanyAuthenticated,isCompanyAdmin, async (req, res) => {
   try {
     const role = new Role(req.body);
     await role.save();
@@ -138,7 +140,7 @@ router.post('/roles', async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
-router.put('/roles/:id', async (req, res) => {
+router.put('/roles/:id',isCompanyAuthenticated,isCompanyAdmin, async (req, res) => {
   try {
     const updatedRole = await Role.findByIdAndUpdate(
       req.params.id,
@@ -154,7 +156,7 @@ router.put('/roles/:id', async (req, res) => {
   }
 });
 
-router.delete('/roles/:id', async (req, res) => {
+router.delete('/roles/:id',isCompanyAuthenticated,isCompanyAdmin, async (req, res) => {
   try {
     const deletedRole = await Role.findByIdAndDelete(req.params.id);
     if (!deletedRole) {
@@ -289,7 +291,7 @@ router.post('/register/verify', async (req, res) => {
   }
 });
 
-router.post('/:companyId/employees', async (req, res) => {
+router.post('/:companyId/employees',isCompanyAuthenticated,isCompanyAdmin, async (req, res) => {
   try {
     const { companyId } = req.params;
     const {
@@ -400,7 +402,7 @@ router.post('/:companyId/employees', async (req, res) => {
     res.status(500).json({ error: 'Failed to add employee', details: error.message });
   }
 });
-router.get('/:companyId/applications/complete', async (req, res) => {
+router.get('/:companyId/applications/complete',isCompanyAuthenticated, async (req, res) => {
   try {
     const { companyId } = req.params;
 
@@ -536,7 +538,7 @@ router.get('/:companyId/applications/complete', async (req, res) => {
   }
 });
 
-router.get('/:companyId/interviews/complete', async (req, res) => {
+router.get('/:companyId/interviews/complete',isCompanyAuthenticated, async (req, res) => {
   try {
     const { companyId } = req.params;
 
@@ -623,4 +625,102 @@ router.get('/:companyId/interviews/complete', async (req, res) => {
     res.status(500).json({ message: 'Error fetching interviews data', error: error.message });
   }
 });
+
+// Edit company information
+router.put('/:id/edit',isCompanyAuthenticated,isCompanyAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      type,
+      industry,
+      website,
+      location,
+      contactEmail,
+      contactPhone,
+      adminContact,
+      companySize,
+      foundedYear,
+      description,
+      profileImage
+    } = req.body;
+
+    // Check if this is an image-only update
+    if (Object.keys(req.body).length === 1 && req.body.profileImage) {
+      try {
+        // Upload image to Cloudinary
+        const result = await cloudinary.uploader.upload(profileImage, {
+          folder: 'company_profiles',
+          resource_type: 'auto'
+        });
+
+        // Update company with new image URL
+        const company = await Company.findByIdAndUpdate(
+          id,
+          { profileImage: result.secure_url },
+          { new: true }
+        ).select('-password');
+
+        if (!company) {
+          return res.status(404).json({ error: 'Company not found' });
+        }
+
+        return res.json(company);
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        return res.status(500).json({ error: 'Failed to upload image' });
+      }
+    }
+
+    // Validate required fields for full profile update
+    if (!name || !type || !industry || !location || !contactEmail || !contactPhone || 
+        !adminContact?.name || !adminContact?.email || !adminContact?.phone || !adminContact?.designation ||
+        !companySize || !foundedYear || !description) {
+      return res.status(400).json({ error: 'All required fields must be provided' });
+    }
+
+    // Check if company exists
+    const company = await Company.findById(id);
+    if (!company) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+
+    // Check for duplicate company name or email
+    const existingCompany = await Company.findOne({
+      $and: [
+        { _id: { $ne: id } },
+        { $or: [{ name }, { contactEmail }] }
+      ]
+    });
+
+    if (existingCompany) {
+      return res.status(400).json({ error: 'Company name or email already exists' });
+    }
+
+    // Update company information
+    const updatedCompany = await Company.findByIdAndUpdate(
+      id,
+      {
+        name,
+        type,
+        industry,
+        website,
+        location,
+        contactEmail,
+        contactPhone,
+        adminContact,
+        companySize,
+        foundedYear,
+        description
+      },
+      { new: true }
+    ).select('-password');
+
+    res.json(updatedCompany);
+  } catch (error) {
+    console.error('Error updating company:', error);
+    res.status(500).json({ error: 'Failed to update company information' });
+  }
+});
+
 module.exports = router;
