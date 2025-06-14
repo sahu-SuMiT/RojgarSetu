@@ -1,11 +1,10 @@
 const Job = require('../models/Job');
-const Application = require('../models/CollegeApplication');
+const Application = require('../models/Application');
 const Feedback = require('../models/Feedback');
 const Student = require('../models/Student');
 
 exports.getDashboardData = async (req, res) => {
   try {
-    // 🔒 Session/user check
     if (!req.session || !req.session.user || !req.session.user.id) {
       return res.status(401).json({ message: 'Unauthorized: No session user' });
     }
@@ -16,25 +15,47 @@ exports.getDashboardData = async (req, res) => {
     const totalOpportunities = await Job.countDocuments();
     const savedOpportunities = await Job.countDocuments({ savedBy: userId });
 
-    // Applications grouped by status
+    // Status definitions (UI aligned)
     const statusDefs = [
       { status: "Applied", color: "blue" },
-      { status: "Interview Scheduled", color: "green" },
-      { status: "Offer Received", color: "yellow" },
-      { status: "Rejected", color: "red" }
+      { status: "Under Review", color: "yellow" },
+      { status: "Interview", color: "purple" },
+      { status: "Offered", color: "green" },
+      { status: "Rejected", color: "red" },
+      { status: "Withdrawn", color: "gray" }
     ];
+    // Map DB statuses to UI statuses
+    const dbToUiStatus = {
+      "Applied": "Applied",
+      "Under Review": "Under Review",
+      "Interview Scheduled": "Interview",
+      "Interview": "Interview",
+      "Offer Received": "Offered",
+      "Offered": "Offered",
+      "Rejected": "Rejected",
+      "Withdrawn": "Withdrawn"
+    };
+
+    // Applications overview
     const applicationsOverview = [];
     for (const { status, color } of statusDefs) {
-      const count = await Application.countDocuments({ student: userId, status });
+      const possibleDbStatuses = Object.entries(dbToUiStatus)
+        .filter(([db, ui]) => ui === status)
+        .map(([db]) => db);
+
+      const count = await Application.countDocuments({
+        student: userId,
+        status: { $in: possibleDbStatuses }
+      });
       if (count > 0) applicationsOverview.push({ status, count, color });
     }
 
-    // Notifications (stub -- replace with real notifications if you have a model)
+    // Notifications (stub, you can replace with real notifications)
     const notificationsList = [
       { date: new Date().toLocaleDateString(), text: "Welcome to your dashboard!" }
     ];
 
-    // Recent feedback
+    // Recent feedback (ensure your Feedback model has student, company, title, rating, message/feedback, date)
     const recentFeedback = await Feedback.find({ student: userId })
       .sort({ date: -1 })
       .limit(4)
@@ -43,7 +64,7 @@ exports.getDashboardData = async (req, res) => {
     // Interview schedule
     const interviewApplications = await Application.find({
       student: userId,
-      status: 'Interview Scheduled',
+      status: { $in: ["Interview Scheduled", "Interview"] },
       interviewDate: { $gte: new Date() }
     })
       .sort({ interviewDate: 1 })
@@ -55,15 +76,26 @@ exports.getDashboardData = async (req, res) => {
       id: app._id,
       company: app.job?.company || "",
       title: app.job?.title || "",
-      date: app.interviewDate ? app.interviewDate.toLocaleDateString() : "",
-      time: app.interviewDate ? app.interviewDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
+      date: app.interviewDate ? new Date(app.interviewDate).toLocaleDateString() : "",
+      time: app.interviewDate ? new Date(app.interviewDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
     }));
 
-    const student = await Student.findById(userId).select('name email').lean();
-    const profileCompletion = 100; // Compute as needed
+    // Student basic info
+    const student = await Student.findById(userId).lean();
+
+    // Profile completion logic
+    let profileCompletion = 0;
+    if (student) {
+      if (student.name) profileCompletion += 20;
+      if (student.email) profileCompletion += 20;
+      if ((student.programmingLanguages && student.programmingLanguages.length) || (student.skills && student.skills.length)) profileCompletion += 20;
+      if (student.resume) profileCompletion += 20;
+      if ((student.experience && student.experience.length) || (student.workExperience && student.workExperience.length)) profileCompletion += 20;
+      if (profileCompletion > 100) profileCompletion = 100;
+    }
 
     res.json({
-      student,
+      student: student ? { name: student.name, email: student.email } : {},
       profileCompletion,
       opportunitiesOverview: { total: totalOpportunities, saved: savedOpportunities },
       applicationsOverview,
@@ -74,7 +106,7 @@ exports.getDashboardData = async (req, res) => {
         title: fb.title || "",
         rating: fb.rating || 0,
         comment: fb.message || fb.feedback || "",
-        date: fb.date ? fb.date.toLocaleDateString() : "",
+        date: fb.date ? new Date(fb.date).toLocaleDateString() : "",
       })),
       interviewSchedule
     });
@@ -82,4 +114,4 @@ exports.getDashboardData = async (req, res) => {
     console.error('Dashboard error:', err.message);
     res.status(500).json({ error: 'Dashboard data fetch failed' });
   }
-};
+}; 

@@ -3,7 +3,7 @@ import {
   Star, Building2, Users, Calendar, Filter, Search, Plus, Eye, MessageSquare, ThumbsUp, Trash2, X, Check
 } from 'lucide-react';
 
-const API_BASE = "https://campusadmin.onrender.com/api/feedback";
+const API_BASE = "http://localhost:5000/api/feedback";
 
 const FeedbackCenter = () => {
   const [activeTab, setActiveTab] = useState('received');
@@ -57,6 +57,7 @@ const FeedbackCenter = () => {
       })
       .finally(() => setLoading(false));
     // Only run on mount
+    // eslint-disable-next-line
   }, []);
 
   const filteredReceived = receivedFeedbackList.filter(item => {
@@ -133,7 +134,7 @@ const FeedbackCenter = () => {
       } else {
         alert(data.message || "Failed to submit feedback.");
       }
-    } catch {
+    } catch  {
       alert("Could not submit feedback.");
     } finally {
       setLoading(false);
@@ -178,7 +179,7 @@ const FeedbackCenter = () => {
       } else {
         alert(data.message || 'Failed to update feedback.');
       }
-    } catch {
+    } catch  {
       alert('Could not update feedback.');
     } finally {
       setLoading(false);
@@ -206,7 +207,7 @@ const FeedbackCenter = () => {
       } else {
         alert(data.message || 'Failed to delete feedback.');
       }
-    } catch {
+    } catch  {
       alert('Could not delete feedback.');
     } finally {
       setLoading(false);

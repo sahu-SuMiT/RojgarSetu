@@ -5,4 +5,4 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 router.get('/', authMiddleware, getDashboardData);
 
-module.exports = router;
+module.exports = router; 
