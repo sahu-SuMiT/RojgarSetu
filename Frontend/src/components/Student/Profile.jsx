@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Target, ShieldAlert } from 'lucide-react';
 
-const API_URL = "https://campusadmin.onrender.com";
+const API_URL = "http://localhost:5000"; // Update with your actual API URL
 
 const Profile = () => {
   const [profileData, setProfileData] = useState(null);
@@ -29,16 +29,17 @@ const Profile = () => {
           credentials: 'include',
         });
 
-        if (response.status === 401 || response.status === 403) {
-          window.location.href = '/auth';
-          return;
-        }
+        // if (response.status === 401 || response.status === 403) {
+        //   window.location.href = '/auth';
+        //   return;
+        // }
 
         if (!response.ok) {
           throw new Error('Failed to fetch profile data');
         }
 
         const data = await response.json();
+        console.log('Profile data:', response);
         setProfileData(data);
       } catch (err) {
         setError(err.message || 'Unknown error');
@@ -129,9 +130,9 @@ const Profile = () => {
     return <div className="p-10 text-center text-lg">Loading...</div>;
   }
 
-  if (error) {
-    return <div className="p-10 text-center text-red-600">Error: {error}</div>;
-  }
+  // if (error) {
+  //   return <div className="p-10 text-center text-red-600">Error: {error}</div>;
+  // }
 
   if (!profileData) {
     return <div className="p-10 text-center text-gray-500">No profile data found.</div>;

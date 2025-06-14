@@ -16,10 +16,21 @@ const Sidebar = ({
   isOpen, 
   onClose, 
   user = { initials: '', name: '', role: '' },
-  onLogout, // <-- Accept onLogout as a prop from App!
+  // onLogout, // <-- Accept onLogout as a prop from App!
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const onLogout = async () => {
+    try {
+      await fetch('https://campusadmin.onrender.com/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // Ignore logout errors
+    }
+    localStorage.removeItem('studentId');
+  };
 
   const navigationItems = [
     { icon: FileText, label: 'Dashboard', path: '/dashboard' },

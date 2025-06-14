@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export const AuthPage = ({ onAuthSuccess }) => {
+  const navigate = useNavigate();
   const [currentView, setCurrentView] = useState("login"); // "login" or "signup"
   const [formData, setFormData] = useState({
     name: "",
@@ -85,6 +87,11 @@ export const AuthPage = ({ onAuthSuccess }) => {
               ? "Login successful! Redirecting..."
               : "Account created! Redirecting...",
         });
+
+        setTimeout(() => {
+          navigate("/dashboard"); // or wherever you want to redirect
+        }, 1000);
+
         if (onAuthSuccess) onAuthSuccess(data);
       } else {
         setMessage({

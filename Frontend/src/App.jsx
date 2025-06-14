@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Menu } from 'lucide-react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 
@@ -72,7 +72,7 @@ const AppLayout = ({ user, onLogout, sidebarOpen, toggleSidebar }) => {
             >
               <Menu size={24} />
             </button>
-            <h1 className="ml-4 text-lg font-semibold">Campus Portal</h1>
+            <h1 className="ml-4 text-lg font-semibold">Rojgar Setu</h1>
           </div>
           <div className="flex items-center space-x-2">
             {user && (
@@ -99,125 +99,127 @@ const AppLayout = ({ user, onLogout, sidebarOpen, toggleSidebar }) => {
 };
 
 // Route for protected pages
-const ProtectedRoute = ({ isAuthenticated, children }) => {
-  if (!isAuthenticated) {
-    return <Navigate to="/auth" replace />;
-  }
-  return children;
-};
+// const ProtectedRoute = ({ isAuthenticated, children }) => {
+//   // if (loading) {
+//   //   return <div>Loading...</div>;
+//   // }
+//   if (!isAuthenticated) {
+//     return <Navigate to="/website" replace />;
+//   }
+//   return children;
+// };
+
 
 // Route for auth pages (login/signup) when not authenticated
-const AuthRoute = ({ isAuthenticated, children }) => {
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
-  return children;
-};
+// const AuthRoute = ({ isAuthenticated, children }) => {
+//   if (isAuthenticated) {
+//     return <Navigate to="/" replace />;
+//   }
+//   return children;
+// };
 
 const App = () => {
-   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  //  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // const [user, setUser] = useState(null);
+  // const [loading, setLoading] = useState(true);
 
   // Check authentication status on app load (cookie/session-based)
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      try {
-        // Make a request to a backend route that requires authentication
-        const res = await fetch('https://campusadmin.onrender.com/api/dashboard', {
-          credentials: 'include',
-        });
-        if (res.ok) {
-          // Authenticated, optionally extract user info from response
-          const data = await res.json();
-          // setIsAuthenticated(true);
-          setUser(data.student || {});
-        } else {
-          // setIsAuthenticated(false);
-          setUser(null);
-        }
-      } catch {
-        // setIsAuthenticated(false);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkAuthStatus();
-  }, []);
+  // useEffect(() => {
+  //   const checkAuthStatus = async () => {
+  //     try {
+  //       // Make a request to a backend route that requires authentication
+  //       const res = await fetch('https://campusadmin.onrender.com/api/dashboard', {
+  //         credentials: 'include',
+  //       });
+  //       if (res.ok) {
+  //         // Authenticated, optionally extract user info from response
+  //         const data = await res.json();
+  //         // setIsAuthenticated(true);
+  //         setUser(data.student || {});
+  //       } else {
+  //         // setIsAuthenticated(false);
+  //         setUser(null);
+  //       }
+  //     } catch {
+  //       // setIsAuthenticated(false);
+  //       setUser(null);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   checkAuthStatus();
+  // }, []);
 
-  const toggleSidebar = () => setSidebarOpen((prev) => !prev);
+  // const toggleSidebar = () => setSidebarOpen((prev) => !prev);
 
   // Handle successful login/signup
-  const handleAuthSuccess = (userData) => {
-    if (userData?.studentId) localStorage.setItem('studentId', userData.studentId);
-    setIsAuthenticated(true);
-    setUser(userData.user || userData);
-  };
+  // const handleAuthSuccess = (userData) => {
+  //   if (userData?.studentId) localStorage.setItem('studentId', userData.studentId);
+  //   setIsAuthenticated(true);
+  //   setUser(userData.user || userData);
+  // };
 
   // Handle logout
-  const handleLogout = async () => {
-    try {
-      await fetch('https://campusadmin.onrender.com/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-    } catch {
-      // Ignore logout errors
-    }
-    localStorage.removeItem('studentId');
-    setIsAuthenticated(false);
-    setUser(null);
-  };
+  // const handleLogout = async () => {
+  //   try {
+  //     await fetch('https://campusadmin.onrender.com/api/auth/logout', {
+  //       method: 'POST',
+  //       credentials: 'include',
+  //     });
+  //   } catch {
+  //     // Ignore logout errors
+  //   }
+  //   localStorage.removeItem('studentId');
+  //   setIsAuthenticated(false);
+  //   setUser(null);
+  // };
 
   // Show loading spinner while checking auth status
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center min-h-screen bg-gray-100">
+  //       <div className="text-center">
+  //         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+  //         <p className="mt-4 text-gray-600">Loading...</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   // Only ONE Router in main.jsx/index.jsx! Not here.
 
   return (
     <Routes>
       {/* Auth page (handles both login & signup) */}
-       <Route
+       {/* <Route
         path="/website"
         element={
           <AuthRoute isAuthenticated={isAuthenticated}>
             <AuthPage onAuthSuccess={handleAuthSuccess} />
           </AuthRoute>
         }
-      />
+      /> */}
 
       {/* Protected routes */}
       <Route
-        path="/"
-        element={
-          <ProtectedRoute isAuthenticated={isAuthenticated}>
-            <AppLayout
-              user={user}
-              onLogout={handleLogout}
-              sidebarOpen={sidebarOpen}
-              toggleSidebar={toggleSidebar}
-            />
-          </ProtectedRoute>
-        }
+        // path="/"
+        // element={
+        //   <ProtectedRoute isAuthenticated={isAuthenticated}>
+        //     <AppLayout
+        //       user={user}
+        //       onLogout={handleLogout}
+        //       sidebarOpen={sidebarOpen}
+        //       toggleSidebar={toggleSidebar}
+        //     />
+        //   </ProtectedRoute>
+        // }
       >
         {/* <Route index element={<Dashboard user={user} />} /> */}
         <Route path="/*" element={<Index_Website />} />
-
-        <Route path="/website " element={<Index_Website />} />
         <Route path="/login_panel" element={<Login />} />
-        <Route path="dashboard" element={<Dashboard user={user} />} />
-        <Route path="profile" element={<Profile user={user} />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="profile" element={<Profile />} />
         <Route path="jobs" element={<Jobs />} />
         <Route path="applications" element={<Applications />} />
         <Route path="interviews" element={<Interviews />} />

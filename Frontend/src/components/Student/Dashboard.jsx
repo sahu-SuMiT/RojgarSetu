@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
+import Sidebar from './Sidebar';
 import {
   UserCircle, FileText, Star, Bell, TrendingUp, Calendar, MessageSquare, Clock,
   Target, Award, Users, Eye, CheckCircle, AlertCircle, XCircle, PauseCircle,
-  Send, ChevronRight, ShieldAlert
+  Send, ChevronRight, ShieldAlert, LayoutDashboard
 } from "lucide-react";
 
 // Safe fetch helper
@@ -225,26 +226,36 @@ const Dashboard = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
-        <ModernCard className="p-8 text-center max-w-md">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h2>
-          <p className="text-red-600 mb-4">{error}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Try Again
-          </button>
-        </ModernCard>
-      </div>
-    );
-  }
+  // if (error) {
+  //   return (
+  //     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+  //       <ModernCard className="p-8 text-center max-w-md">
+  //         <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+  //         <h2 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h2>
+  //         <p className="text-red-600 mb-4">{error}</p>
+  //         <button 
+  //           onClick={() => window.location.reload()}
+  //           className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+  //         >
+  //           Try Again
+  //         </button>
+  //       </ModernCard>
+  //     </div>
+  //   );
+  // }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="flex min-h-screen">
+      <Sidebar
+        user={{
+        initials: student?.name?.[0]?.toUpperCase() || '',
+        name: student?.name || 'Student',
+        role: student?.role || 'Student'
+      }}
+        sectionLabel="CAMPUS SERVICES"
+      />
+      {/* Main Content */}
+      <div className="flex-1">
       {/* Header ---------------------- */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700" />
@@ -304,6 +315,7 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      
 
       <div className="px-6 lg:px-8 -mt-8 relative z-10">
         <div className="mx-auto max-w-7xl space-y-8">
@@ -482,6 +494,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
