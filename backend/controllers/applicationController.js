@@ -1,4 +1,4 @@
-const Application = require('../models/CollegeApplication');
+const Application = require('../models/Application');
 const Job = require('../models/Job');
 
 // List student's applications

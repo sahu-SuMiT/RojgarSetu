@@ -232,7 +232,7 @@ const App = () => {
         <Route path="/sales" element={<Sales />} />
 
         {/* College and Compay */}
-        <Route path="/student-login" element={<StudentLogin />} />
+        <Route path="/student-login" element={<AuthPage />} /> {/* Updated to use AuthPage */}
         <Route path="/college-login" element={<CollegeLogin />} />
         <Route path="/company-login" element={<CompanyLogin />} />
         <Route path="/sales-login" element={<SalesLogin />} />
