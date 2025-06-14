@@ -159,7 +159,7 @@ const App = () => {
   // Handle logout
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:5000/api/auth/logout', {
+      await fetch('https://campusadmin.onrender.com/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
       });
@@ -189,7 +189,7 @@ const App = () => {
     <Routes>
       {/* Auth page (handles both login & signup) */}
        <Route
-        path="/auth"
+        path="/website"
         element={
           <AuthRoute isAuthenticated={isAuthenticated}>
             <AuthPage onAuthSuccess={handleAuthSuccess} />
@@ -214,7 +214,7 @@ const App = () => {
         {/* <Route index element={<Dashboard user={user} />} /> */}
         <Route path="/*" element={<Index_Website />} />
 
-
+        <Route path="/website " element={<Index_Website />} />
         <Route path="/login_panel" element={<Login />} />
         <Route path="dashboard" element={<Dashboard user={user} />} />
         <Route path="profile" element={<Profile user={user} />} />
