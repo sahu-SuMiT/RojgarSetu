@@ -7,6 +7,7 @@ axios.defaults.withCredentials = true;
 import SearchBar from '../SearchBar';
 import calculateCampusScore from '../utils/calculateCampusScore';
 import CompanySettingsModal from './CompanySettingsModal';
+import Loader from '../components/Loader';
 const apiUrl = import.meta.env.VITE_API_URL;
 
 
@@ -452,11 +453,16 @@ const ViewApplications = () => {
   };
 
   if (loading) {
-  return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="COMPANY SERVICES" />
-        <div className="main-container" style={{ marginLeft: 260, width: '100%', padding: '24px' }}>
-          <div>Loading applications...</div>
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh' }}>
+        <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="COMPANY SERVICES" />
+        <div className="main-container" style={{ marginLeft: 260, width: '100%', padding: 0, position: 'relative' }}>
+          <div style={{ padding: '0 24px' }}>
+            <SearchBar onSettingsClick={() => setShowSettings(true)} />
+          </div>
+          <div style={{ padding: '24px' }}>
+            <Loader message="Loading applications..." />
+          </div>
         </div>
       </div>
     );
@@ -595,10 +601,10 @@ const ViewApplications = () => {
                           border: 'none',
                           borderRadius: '6px',
                           background: '#3b82f6',
-                        color: '#fff',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
+                          color: '#fff',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
                           gap: '8px',
                       }}
                     >
@@ -610,9 +616,12 @@ const ViewApplications = () => {
                         padding: '8px 16px',
                         border: 'none',
                         borderRadius: '6px',
-                          background: '#c53030',
+                        background: '#dc2626',
                         color: '#fff',
-                          cursor: 'pointer'
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
                         }}
                       >
                         <FaTimes /> Close

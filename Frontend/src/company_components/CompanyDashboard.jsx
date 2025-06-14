@@ -4,6 +4,7 @@ import SearchBar from '../SearchBar';
 import Sidebar from '../Sidebar';
 import Analytics from './Analytics';
 import CompanySettingsModal from './CompanySettingsModal';
+import Loader from '../components/Loader';
 import { FaChevronRight, FaTicketAlt, FaChartLine, FaUserGraduate, FaCog } from 'react-icons/fa';
 import axios from 'axios';
 axios.defaults.withCredentials = true;
@@ -164,8 +165,34 @@ const Dashboard = () => {
     return (
       <div style={{ display: 'flex', minHeight: '100vh' }}>
         <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="COMPANY SERVICES" />
-        <div className="main-container" style={{ marginLeft: 260, width: '100%', padding: '24px' }}>
-          <div>Loading...</div>
+        <div className="main-container" style={{ marginLeft: 260, width: '100%', padding: 0, position: 'relative' }}>
+          <div style={{ padding: '0 24px' }}>
+            <SearchBar onSettingsClick={() => setShowSettings(true)} />
+          </div>
+          <div style={{ padding: '24px' }}>
+            <div style={{ marginBottom: '32px' }}>
+              <h2 style={{ 
+                fontSize: '1.8rem', 
+                fontWeight: 700, 
+                color: '#1e293b',
+                marginBottom: '24px'
+              }}>Company Dashboard</h2>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center',
+                minHeight: '400px',
+                background: 'white',
+                borderRadius: '8px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+              }}>
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  <span className="ml-3 text-gray-600">Loading company dashboard...</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

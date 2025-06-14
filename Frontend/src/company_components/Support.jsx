@@ -9,7 +9,7 @@ import CompanySettingsModal from './CompanySettingsModal';
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Support = () => {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([{message: 'Type your query here', sender: 'Support Bot', senderType: 'support_bot', timestamp: new Date().toISOString()}]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -18,6 +18,7 @@ const Support = () => {
   const [tickets, setTickets] = useState([]);
   const [showTicketList, setShowTicketList] = useState(false);
   const [quickHelpTopics, setQuickHelpTopics] = useState([]);
+  const [isBotTyping, setIsBotTyping] = useState(false);
   const messagesEndRef = useRef(null);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -76,6 +77,19 @@ const Support = () => {
 
     try {
       let response;
+      const userMessage = {
+        message: newMessage,
+        sender: company.name,
+        senderType: 'user',
+        timestamp: new Date().toISOString()
+      };
+      
+      // First, add user's message to the UI
+      setMessages(prev => [...prev, userMessage]);
+      setNewMessage('');
+      
+      // Show bot typing indicator
+      setIsBotTyping(true);
       
       if (!currentTicket) {
         // Create new ticket
@@ -87,7 +101,17 @@ const Support = () => {
         });
         
         setCurrentTicket(response.data.ticket);
-        setMessages(response.data.ticket.messages || []);
+        // Add bot's response after a delay
+        setTimeout(() => {
+          setIsBotTyping(false);
+          setMessages(prev => [...prev, {
+            message: response.data.ticket.messages[1].message,
+            sender: 'Support Bot',
+            senderType: 'support_bot',
+            timestamp: new Date().toISOString()
+          }]);
+        }, 2000);
+        
         setTickets(prev => [response.data.ticket, ...prev]);
       } else {
         // Add message to existing ticket
@@ -97,13 +121,21 @@ const Support = () => {
         });
         
         setCurrentTicket(response.data.ticket);
-        setMessages(response.data.ticket.messages || []);
+        // Add bot's response after a delay
+        setTimeout(() => {
+          setIsBotTyping(false);
+          setMessages(prev => [...prev, {
+            message: response.data.ticket.messages[response.data.ticket.messages.length - 1].message,
+            sender: 'Support Bot',
+            senderType: 'support_bot',
+            timestamp: new Date().toISOString()
+          }]);
+        }, 2000);
       }
-      
-      setNewMessage('');
       
     } catch (err) {
       setError('Failed to send message. Please try again.');
+      setIsBotTyping(false);
     } finally {
       setLoading(false);
     }
@@ -370,72 +402,135 @@ const Support = () => {
                     {currentTicket ? 'No messages in this ticket' : 'Start a conversation with our support bot!'}
                   </div>
                 ) : (
-                  messages.map((message, index) => (
-                    <div
-                      key={index}
-                      style={{
+                  <>
+                    {messages.map((message, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          marginBottom: '16px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: message.senderType === 'user' ? 'flex-end' : 'flex-start',
+                          animation: 'slideInUp 0.3s ease-out',
+                          animationFillMode: 'both',
+                          animationDelay: `${index * 0.1}s`
+                        }}
+                      >
+                        <div style={{
+                          background: message.senderType === 'user' 
+                            ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+                            : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                          color: '#fff',
+                          padding: '16px 20px',
+                          borderRadius: message.senderType === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                          maxWidth: '75%',
+                          position: 'relative',
+                          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          backdropFilter: 'blur(10px)',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15)';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                        }}
+                        >
+                          <div style={{ 
+                            fontSize: '0.875rem',
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            marginBottom: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontWeight: 500
+                          }}>
+                            {message.senderType === 'support_bot' && <FaRobot style={{ color: '#ffd700' }} />}
+                            {message.sender}
+                          </div>
+                          <div style={{ 
+                            whiteSpace: 'pre-line',
+                            lineHeight: '1.6',
+                            fontSize: '0.95rem'
+                          }}>
+                            {message.message}
+                          </div>
+                          <div style={{ 
+                            fontSize: '0.75rem',
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            marginTop: '8px',
+                            textAlign: 'right'
+                          }}>
+                            {formatDate(message.timestamp)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {isBotTyping && (
+                      <div style={{
                         marginBottom: '16px',
                         display: 'flex',
                         flexDirection: 'column',
-                        alignItems: message.senderType === 'user' ? 'flex-end' : 'flex-start',
-                        animation: 'slideInUp 0.3s ease-out',
-                        animationFillMode: 'both',
-                        animationDelay: `${index * 0.1}s`
-                      }}
-                    >
-                      <div style={{
-                        background: message.senderType === 'user' 
-                          ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                          : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                        color: '#fff',
-                        padding: '16px 20px',
-                        borderRadius: message.senderType === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                        maxWidth: '75%',
-                        position: 'relative',
-                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        backdropFilter: 'blur(10px)',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15)';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-                      }}
-                      >
-                        <div style={{ 
-                          fontSize: '0.875rem',
-                          color: 'rgba(255, 255, 255, 0.9)',
-                          marginBottom: '8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          fontWeight: 500
+                        alignItems: 'flex-start',
+                        animation: 'slideInUp 0.3s ease-out'
+                      }}>
+                        <div style={{
+                          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                          color: '#fff',
+                          padding: '16px 20px',
+                          borderRadius: '18px 18px 18px 4px',
+                          maxWidth: '75%',
+                          position: 'relative',
+                          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          backdropFilter: 'blur(10px)'
                         }}>
-                          {message.senderType === 'support_bot' && <FaRobot style={{ color: '#ffd700' }} />}
-                          {message.sender}
-                        </div>
-                        <div style={{ 
-                          whiteSpace: 'pre-line',
-                          lineHeight: '1.6',
-                          fontSize: '0.95rem'
-                        }}>
-                          {message.message}
-                        </div>
-                        <div style={{ 
-                          fontSize: '0.75rem',
-                          color: 'rgba(255, 255, 255, 0.7)',
-                          marginTop: '8px',
-                          textAlign: 'right'
-                        }}>
-                          {formatDate(message.timestamp)}
+                          <div style={{ 
+                            fontSize: '0.875rem',
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            marginBottom: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontWeight: 500
+                          }}>
+                            <FaRobot style={{ color: '#ffd700' }} />
+                            Support Bot
+                          </div>
+                          <div style={{ 
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            <div style={{
+                              width: '8px',
+                              height: '8px',
+                              background: '#fff',
+                              borderRadius: '50%',
+                              animation: 'bounce 1s infinite'
+                            }} />
+                            <div style={{
+                              width: '8px',
+                              height: '8px',
+                              background: '#fff',
+                              borderRadius: '50%',
+                              animation: 'bounce 1s infinite 0.2s'
+                            }} />
+                            <div style={{
+                              width: '8px',
+                              height: '8px',
+                              background: '#fff',
+                              borderRadius: '50%',
+                              animation: 'bounce 1s infinite 0.4s'
+                            }} />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    )}
+                  </>
                 )}
                 <div ref={messagesEndRef} />
               </div>
@@ -658,6 +753,11 @@ const Support = () => {
           0%, 100% { transform: translateX(0); }
           25% { transform: translateX(-5px); }
           75% { transform: translateX(5px); }
+        }
+
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
         }
       `}</style>
     </div>

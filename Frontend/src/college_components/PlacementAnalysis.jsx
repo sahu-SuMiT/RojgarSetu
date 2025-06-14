@@ -3,7 +3,9 @@ import { FaChevronRight, FaTicketAlt, FaChartLine, FaDownload, FaUserGraduate } 
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
 import CollegeSettingsModal from './CollegeSettingsModal';
+import Loader from '../components/Loader';
 import axios from 'axios';
+axios.defaults.withCredentials = true;
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 const apiUrl = import.meta.env.VITE_API_URL;
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
@@ -148,7 +150,7 @@ const PlacementAnalysis = () => {
           </div>
 
           {loading ? (
-            <div>Loading placement data...</div>
+            <Loader message="Loading placement data..." />
           ) : error ? (
             <div style={{ color: '#dc2626' }}>{error}</div>
           ) : (

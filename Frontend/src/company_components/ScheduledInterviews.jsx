@@ -4,7 +4,7 @@ const ZOOM_API_SECRET = import.meta.env ? import.meta.env.VITE_REACT_APP_ZOOM_AP
 const ZOOM_USER_ID = import.meta.env ? import.meta.env.VITE_REACT_APP_ZOOM_USER_ID : process.env.REACT_APP_ZOOM_USER_ID;
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import SearchBar from '../SearchBar';
 import Sidebar from '../Sidebar';
 import { FaChevronRight, FaCalendarAlt, FaClock, FaVideo, FaTimes, FaSpinner, FaTicketAlt, FaChartLine, FaUserGraduate, FaCheck, FaTrash, FaEye, FaCopy, FaFileAlt, FaExternalLinkAlt } from 'react-icons/fa';
@@ -15,6 +15,8 @@ import '../index.css'; // Ensure global styles are applied
 import calculateCampusScore from '../utils/calculateCampusScore';
 const apiUrl = import.meta.env.VITE_API_URL;
 import CompanySettingsModal from './CompanySettingsModal';
+import { CSSTransition } from 'react-transition-group';
+import { formatDistanceToNow } from 'date-fns';
 
 const ScheduledInterviews = () => {
   const [showFilter, setShowFilter] = useState(false);
@@ -88,6 +90,7 @@ const ScheduledInterviews = () => {
   const [selectedLink, setSelectedLink] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+  const { companyId } = useParams();
 
   const roles = [
     { id: 'all', name: 'All Roles' },
@@ -2644,249 +2647,277 @@ ${company?.name || 'The Hiring Team'}`);
                 <thead>
                   <tr>
                     <th>Candidate</th>
-                    <th>Position</th>
+                    <th>Role</th>
                     <th>Interviewer</th>
                     <th>Date</th>
                     <th>Time</th>
                     <th>Status</th>
-                    <th>Campus Score</th>
-                    <th>Interview Score</th>
-                    <th>Link</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedInterviews.map((interview) => (
-                    <tr key={interview._id}>
-                      <td>
-                        <span 
-                          onClick={() => handleViewProfile(interview.studentDetails?._id)} 
-                          style={{ 
-                            color: '#3B82F6', 
-                            cursor: 'pointer',
-                            textDecoration: 'underline',
-                            position: 'relative'
-                          }}
-                          title={`Click to view full profile
+                  {loading ? (
+                    <tr>
+                      <td colSpan="7" style={{ 
+                        padding: '48px',
+                        textAlign: 'center',
+                        background: 'white',
+                        verticalAlign: 'middle',
+                        height: '200px'
+                      }}>
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                          <span className="ml-3 text-gray-600">Loading interviews...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : error ? (
+                    <tr>
+                      <td colSpan="7" style={{ 
+                        color: '#dc2626', 
+                        textAlign: 'center', 
+                        padding: '24px',
+                        verticalAlign: 'middle',
+                        height: '100px'
+                      }}>
+                        {error}
+                      </td>
+                    </tr>
+                  ) : (
+                    <>
+                      {paginatedInterviews.map((interview) => (
+                        <tr key={interview._id}>
+                          <td>
+                            <span 
+                              onClick={() => handleViewProfile(interview.studentDetails?._id)} 
+                              style={{ 
+                                color: '#3B82F6', 
+                                cursor: 'pointer',
+                                textDecoration: 'underline',
+                                position: 'relative'
+                              }}
+                              title={`Click to view full profile
 Name: ${interview.candidateName}
 Roll Number: ${interview.studentDetails?.rollNumber || 'N/A'}
 Department: ${interview.studentDetails?.department || 'N/A'}
 CGPA: ${interview.studentDetails?.cgpa || 'N/A'}`}
-                        >
-                          {highlightText(interview.candidateName, filters.searchBy === 'candidate' ? filters.searchQuery : '')}
-                        </span>
-                      </td>
-                      <td>{highlightText(interview.role, filters.searchBy === 'position' ? filters.searchQuery : '')}</td>
-                      <td>
-                        {interview.interviewer ? (
-                          <span 
-                            style={{ 
-                              color: '#4B5563',
-                              fontWeight: '500',
-                              position: 'relative'
-                            }}
-                            title={`Interviewer Details
+                            >
+                              {highlightText(interview.candidateName, filters.searchBy === 'candidate' ? filters.searchQuery : '')}
+                            </span>
+                          </td>
+                          <td>{highlightText(interview.role, filters.searchBy === 'position' ? filters.searchQuery : '')}</td>
+                          <td>
+                            {interview.interviewer ? (
+                              <span 
+                                style={{ 
+                                  color: '#4B5563',
+                                  fontWeight: '500',
+                                  position: 'relative'
+                                }}
+                                title={`Interviewer Details
 Name: ${interview.interviewer.name}
 Email: ${interview.interviewer.email}
 Position: ${interview.interviewer.position || 'N/A'}`}
-                          >
-                            {highlightText(interview.interviewer.name, filters.searchBy === 'interviewer' ? filters.searchQuery : '')}
-                          </span>
-                        ) : (
-                          <span style={{ 
-                            color: '#9CA3AF',
-                            fontStyle: 'italic'
-                          }}>
-                            Not assigned
-                          </span>
-                        )}
-                      </td>
-                      <td>{formatDate(interview.date)}</td>
-                      <td>{formatTime(interview.date)}</td>
-                      <td>
-                        <span style={{ 
-                          padding: '4px 8px', 
-                          borderRadius: 4, 
-                          fontSize: 12,
-                          fontWeight: 500,
-                          background: 
-                            interview.status === 'completed' ? '#dcfce7' : 
-                            interview.status === 'scheduled' ? '#e0f2fe' :
-                            interview.status === 'cancelled' ? '#fee2e2' :
-                            interview.status === 'in-progress' ? '#fef3c7' :
-                            interview.status === 'accepted' ? '#dcfce7' :
-                            interview.status === 'rejected' ? '#fee2e2' :
-                            interview.status === 'selected' ? '#dcfce7' : '#f3f4f6',
-                          color: 
-                            interview.status === 'completed' ? '#059669' :
-                            interview.status === 'scheduled' ? '#0284c7' :
-                            interview.status === 'cancelled' ? '#dc2626' :
-                            interview.status === 'in-progress' ? '#d97706' :
-                            interview.status === 'accepted' ? '#059669' :
-                            interview.status === 'rejected' ? '#dc2626' :
-                            interview.status === 'selected' ? '#059669' : '#6b7280'
-                        }}>
-                          {highlightText(interview.status.charAt(0).toUpperCase() + interview.status.slice(1), filters.searchBy === 'status' ? filters.searchQuery : '')}
-                        </span>
-                      </td>
-                      <td>
-                        {interview.studentDetails?.campusScore !== undefined 
-                          ? interview.studentDetails.campusScore || 'N/A'
-                          : 'N/A'}
-                      </td>
-                      <td>
-                        {interview.feedback ? (
-                          <span
-                            style={{ position: 'relative' }}
-                            title={`Interview Feedback
+                              >
+                                {highlightText(interview.interviewer.name, filters.searchBy === 'interviewer' ? filters.searchQuery : '')}
+                              </span>
+                            ) : (
+                              <span style={{ 
+                                color: '#9CA3AF',
+                                fontStyle: 'italic'
+                              }}>
+                                Not assigned
+                              </span>
+                            )}
+                          </td>
+                          <td>{formatDate(interview.date)}</td>
+                          <td>{formatTime(interview.date)}</td>
+                          <td>
+                            <span style={{ 
+                              padding: '4px 8px', 
+                              borderRadius: 4, 
+                              fontSize: 12,
+                              fontWeight: 500,
+                              background: 
+                                interview.status === 'completed' ? '#dcfce7' : 
+                                interview.status === 'scheduled' ? '#e0f2fe' :
+                                interview.status === 'cancelled' ? '#fee2e2' :
+                                interview.status === 'in-progress' ? '#fef3c7' :
+                                interview.status === 'accepted' ? '#dcfce7' :
+                                interview.status === 'rejected' ? '#fee2e2' :
+                                interview.status === 'selected' ? '#dcfce7' : '#f3f4f6',
+                              color: 
+                                interview.status === 'completed' ? '#059669' :
+                                interview.status === 'scheduled' ? '#0284c7' :
+                                interview.status === 'cancelled' ? '#dc2626' :
+                                interview.status === 'in-progress' ? '#d97706' :
+                                interview.status === 'accepted' ? '#059669' :
+                                interview.status === 'rejected' ? '#dc2626' :
+                                interview.status === 'selected' ? '#059669' : '#6b7280'
+                            }}>
+                              {highlightText(interview.status.charAt(0).toUpperCase() + interview.status.slice(1), filters.searchBy === 'status' ? filters.searchQuery : '')}
+                            </span>
+                          </td>
+                          <td>
+                            {interview.studentDetails?.campusScore !== undefined 
+                              ? interview.studentDetails.campusScore || 'N/A'
+                              : 'N/A'}
+                          </td>
+                          <td>
+                            {interview.feedback ? (
+                              <span
+                                style={{ position: 'relative' }}
+                                title={`Interview Feedback
 Technical Score: ${interview.feedback.technicalScore || 'N/A'}
 Communication Score: ${interview.feedback.communicationScore || 'N/A'}
 Problem Solving Score: ${interview.feedback.problemSolvingScore || 'N/A'}
 Overall Score: ${interview.feedback.overallScore || 'N/A'}
 Comments: ${interview.feedback.comments || 'No comments'}`}
-                          >
-                            {interview.feedback.overallScore || 'N/A'}
-                          </span>
-                        ) : (
-                          'N/A'
-                        )}
-                      </td>
-                      <td>
-                        {interview.link || interview.zoomLink ? (
-                          <div style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '8px'
-                          }}>
-                            <button
-                              onClick={() => handleViewLink(interview.link || interview.zoomLink)}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                color: '#3B82F6',
-                                padding: '4px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                              }}
-                              title="View meeting link"
-                            >
-                              <FaEye />
-                            </button>
-                          </div>
-                        ) : (
-                          <span style={{ color: '#9CA3AF', fontStyle: 'italic' }}>
-                            No link available
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        <div className="action-buttons">
-                          <div className="interview-actions">
-                            <input
-                              type="checkbox"
-                              className="mark-done-checkbox"
-                              checked={interview.isDone}
-                              onChange={(e) => handleMarkAsDone(interview._id, e)}
-                              disabled={interview.status === 'completed' || interview.status === 'rejected' || interview.status === 'accepted'}
-                              style={{ 
-                                marginRight: '10px',
-                                opacity: (interview.status === 'completed' || interview.status === 'rejected' || interview.status === 'accepted') ? '0.5' : '1',
-                                cursor: (interview.status === 'completed' || interview.status === 'rejected' || interview.status === 'accepted') ? 'not-allowed' : 'pointer'
-                              }}
-                            />
-                            <span style={{ 
-                              marginRight: '10px',
-                              opacity: (interview.status === 'completed' || interview.status === 'rejected' || interview.status === 'accepted') ? '0.5' : '1'
-                            }}>Mark as Done</span>
-                            {interview.status === 'scheduled' && (
-                              <div className="action-buttons-container">
-                                <div className="button-group">
-                                  <button 
-                                    className="action-button conduct"
-                                    onClick={() => handleConductInterview(interview._id)}
-                                  >
-                                    <FaVideo style={{ marginRight: '6px' }} />
-                                    Conduct Interview
-                                  </button>
-                                  <button 
-                                    className="action-button cancel"
-                                    onClick={() => handleCancelInterview(interview._id)}
-                                  >
-                                    <FaTimes style={{ marginRight: '6px' }} />
-                                    Cancel Interview
-                                  </button>
-                                </div>
-                              </div>
+                              >
+                                {interview.feedback.overallScore || 'N/A'}
+                              </span>
+                            ) : (
+                              'N/A'
                             )}
-                            {interview.status === 'in-progress' && (
-                              <div className="action-buttons-container">
-                                <div className="button-group">
-                                  <button 
-                                    className="action-button conduct"
-                                    onClick={() => handleConductInterview(interview._id)}
-                                  >
-                                    <FaVideo style={{ marginRight: '6px' }} />
-                                    Continue Interview
-                                  </button>
-                                  <button 
-                                    className="action-button cancel"
-                                    onClick={() => handleCancelInterview(interview._id)}
-                                  >
-                                    <FaTimes style={{ marginRight: '6px' }} />
-                                    Cancel Interview
-                                  </button>
-                                </div>
+                          </td>
+                          <td>
+                            {interview.link || interview.zoomLink ? (
+                              <div style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '8px'
+                              }}>
+                                <button
+                                  onClick={() => handleViewLink(interview.link || interview.zoomLink)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: '#3B82F6',
+                                    padding: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                  }}
+                                  title="View meeting link"
+                                >
+                                  <FaEye />
+                                </button>
                               </div>
+                            ) : (
+                              <span style={{ color: '#9CA3AF', fontStyle: 'italic' }}>
+                                No link available
+                              </span>
                             )}
-                            {interview.isDone && (
-                              <div className="action-buttons-container">
-                                <div className="button-group">
-                                  <button 
-                                    className="action-button accept"
-                                    onClick={() => handleAcceptCandidate(interview._id)}
-                                    disabled={interview.status === 'accepted' || interview.status === 'rejected'}
-                                    style={{
-                                      opacity: (interview.status === 'accepted' || interview.status === 'rejected') ? 0.5 : 1,
-                                      cursor: (interview.status === 'accepted' || interview.status === 'rejected') ? 'not-allowed' : 'pointer'
-                                    }}
-                                  >
-                                    {interview.status === 'accepted' ? (
-                                      <>
-                                        <FaCheck style={{ marginRight: '6px' }} />
-                                        Accepted
-                                      </>
-                                    ) : (
-                                      'Accept Candidate'
-                                    )}
-                                  </button>
-                                  <button 
-                                    className="action-button reject"
-                                    onClick={() => handleRejectCandidate(interview._id)}
-                                    disabled={interview.status === 'accepted' || interview.status === 'rejected'}
-                                    style={{
-                                      opacity: (interview.status === 'accepted' || interview.status === 'rejected') ? 0.5 : 1,
-                                      cursor: (interview.status === 'accepted' || interview.status === 'rejected') ? 'not-allowed' : 'pointer'
-                                    }}
-                                  >
-                                    {interview.status === 'rejected' ? (
-                                      <>
+                          </td>
+                          <td>
+                            <div className="action-buttons">
+                              <div className="interview-actions">
+                                <input
+                                  type="checkbox"
+                                  className="mark-done-checkbox"
+                                  checked={interview.isDone}
+                                  onChange={(e) => handleMarkAsDone(interview._id, e)}
+                                  disabled={interview.status === 'completed' || interview.status === 'rejected' || interview.status === 'accepted'}
+                                  style={{ 
+                                    marginRight: '10px',
+                                    opacity: (interview.status === 'completed' || interview.status === 'rejected' || interview.status === 'accepted') ? '0.5' : '1',
+                                    cursor: (interview.status === 'completed' || interview.status === 'rejected' || interview.status === 'accepted') ? 'not-allowed' : 'pointer'
+                                  }}
+                                />
+                                <span style={{ 
+                                  marginRight: '10px',
+                                  opacity: (interview.status === 'completed' || interview.status === 'rejected' || interview.status === 'accepted') ? '0.5' : '1'
+                                }}>Mark as Done</span>
+                                {interview.status === 'scheduled' && (
+                                  <div className="action-buttons-container">
+                                    <div className="button-group">
+                                      <button 
+                                        className="action-button conduct"
+                                        onClick={() => handleConductInterview(interview._id)}
+                                      >
+                                        <FaVideo style={{ marginRight: '6px' }} />
+                                        Conduct Interview
+                                      </button>
+                                      <button 
+                                        className="action-button cancel"
+                                        onClick={() => handleCancelInterview(interview._id)}
+                                      >
                                         <FaTimes style={{ marginRight: '6px' }} />
-                                        Rejected
-                                      </>
-                                    ) : (
-                                      'Reject Candidate'
-                                    )}
-                                  </button>
-                                </div>
+                                        Cancel Interview
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                                {interview.status === 'in-progress' && (
+                                  <div className="action-buttons-container">
+                                    <div className="button-group">
+                                      <button 
+                                        className="action-button conduct"
+                                        onClick={() => handleConductInterview(interview._id)}
+                                      >
+                                        <FaVideo style={{ marginRight: '6px' }} />
+                                        Continue Interview
+                                      </button>
+                                      <button 
+                                        className="action-button cancel"
+                                        onClick={() => handleCancelInterview(interview._id)}
+                                      >
+                                        <FaTimes style={{ marginRight: '6px' }} />
+                                        Cancel Interview
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                                {interview.isDone && (
+                                  <div className="action-buttons-container">
+                                    <div className="button-group">
+                                      <button 
+                                        className="action-button accept"
+                                        onClick={() => handleAcceptCandidate(interview._id)}
+                                        disabled={interview.status === 'accepted' || interview.status === 'rejected'}
+                                        style={{
+                                          opacity: (interview.status === 'accepted' || interview.status === 'rejected') ? 0.5 : 1,
+                                          cursor: (interview.status === 'accepted' || interview.status === 'rejected') ? 'not-allowed' : 'pointer'
+                                        }}
+                                      >
+                                        {interview.status === 'accepted' ? (
+                                          <>
+                                            <FaCheck style={{ marginRight: '6px' }} />
+                                            Accepted
+                                          </>
+                                        ) : (
+                                          'Accept Candidate'
+                                        )}
+                                      </button>
+                                      <button 
+                                        className="action-button reject"
+                                        onClick={() => handleRejectCandidate(interview._id)}
+                                        disabled={interview.status === 'accepted' || interview.status === 'rejected'}
+                                        style={{
+                                          opacity: (interview.status === 'accepted' || interview.status === 'rejected') ? 0.5 : 1,
+                                          cursor: (interview.status === 'accepted' || interview.status === 'rejected') ? 'not-allowed' : 'pointer'
+                                        }}
+                                      >
+                                        {interview.status === 'rejected' ? (
+                                          <>
+                                            <FaTimes style={{ marginRight: '6px' }} />
+                                            Rejected
+                                          </>
+                                        ) : (
+                                          'Reject Candidate'
+                                        )}
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </>
+                  )}
                 </tbody>
               </table>
               {showAll && (

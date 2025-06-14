@@ -545,6 +545,8 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
               onClick={() => {
                 setShowExpandedView(true);
                 setIsOpen(false);
+                setLoading(true);
+                fetchNotifications();
               }}
               className="text-sm text-gray-600 hover:text-gray-800"
               style={{
@@ -996,7 +998,7 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
               >
                 <FaTimes />
               </button>
-                </div>
+            </div>
 
             <div style={{ 
               flex: 1, 
@@ -1019,58 +1021,68 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
                 }
               }
             }}>
-              {notifications.map((notification) => (
-                <div
-                  key={notification._id}
-                  className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                    !notification.read ? 'bg-blue-50' : ''
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="mt-1">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      {/* Sender Info at the top */}
-                      {notification.sender && (
-                        <div className="mb-1 text-sm font-semibold text-gray-900">
-                          {notification.sender.name}
-                          <span className="ml-2 text-xs font-normal text-gray-500">
-                            ({notification.sender.contactEmail || notification.sender.email})
+              {loading ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  No notifications
+                </div>
+              ) : (
+                notifications.map((notification) => (
+                  <div
+                    key={notification._id}
+                    className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                      !notification.read ? 'bg-blue-50' : ''
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1">
+                        {getNotificationIcon(notification.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {/* Sender Info at the top */}
+                        {notification.sender && (
+                          <div className="mb-1 text-sm font-semibold text-gray-900">
+                            {notification.sender.name}
+                            <span className="ml-2 text-xs font-normal text-gray-500">
+                              ({notification.sender.contactEmail || notification.sender.email})
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="text-sm font-bold italic text-gray-900 truncate">
+                          {notification.title}
+                          </h4>
+                          <span className="text-xs italic text-gray-500 whitespace-nowrap">
+                            {formatTime(notification.createdAt)}
                           </span>
                         </div>
-                      )}
-                      <div className="flex items-center justify-between gap-2">
-                        <h4 className="text-sm font-bold italic text-gray-900 truncate">
-                        {notification.title}
-                        </h4>
-                        <span className="text-xs italic text-gray-500 whitespace-nowrap">
-                          {formatTime(notification.createdAt)}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm text-gray-600">
-                        {notification.message}
-                      </p>
-                      <div className="mt-2 flex items-center gap-3">
-                        {!notification.read && (
+                        <p className="mt-1 text-sm text-gray-600">
+                          {notification.message}
+                        </p>
+                        <div className="mt-2 flex items-center gap-3">
+                          {!notification.read && (
+                            <button
+                              onClick={() => markAsRead(notification._id)}
+                              className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                            >
+                              Mark as read
+                            </button>
+                          )}
                           <button
-                            onClick={() => markAsRead(notification._id)}
-                            className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                            onClick={() => deleteNotification(notification._id)}
+                            className="text-xs font-medium text-red-600 hover:text-red-800"
                           >
-                            Mark as read
+                            Delete
                           </button>
-                        )}
-                        <button
-                          onClick={() => deleteNotification(notification._id)}
-                          className="text-xs font-medium text-red-600 hover:text-red-800"
-                        >
-                          Delete
-                        </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
