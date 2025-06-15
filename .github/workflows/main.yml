@@ -1,8 +1,7 @@
 name: Deploy Fullstack App on EC2
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches:
       - main
 
