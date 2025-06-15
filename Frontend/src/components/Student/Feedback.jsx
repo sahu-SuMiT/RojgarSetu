@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Star, Building2, Users, Calendar, Filter, Search, Plus, Eye, MessageSquare, ThumbsUp, Trash2, X, Check
 } from 'lucide-react';
+import Sidebar from './Sidebar';
 
 const API_BASE = "https://campusadmin.onrender.com/api/feedback";
 
@@ -215,6 +216,12 @@ const FeedbackCenter = () => {
   };
 
   return (
+    <div className="flex min-h-screen">
+      <Sidebar
+        sectionLabel="CAMPUS SERVICES"
+      />
+      {/* Main Content */}
+      <div className="flex-1">
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
@@ -579,6 +586,8 @@ const FeedbackCenter = () => {
           </div>
         </div>
       </div>
+    </div>
+    </div>
     </div>
   );
 };

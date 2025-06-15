@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Search, Filter, MapPin, Clock, DollarSign, Eye, X, Calendar, Users, Building, Award, Loader } from 'lucide-react';
 import API from '../../api';
+import Sidebar from './Sidebar';
 
 const Jobs = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -155,6 +156,12 @@ const Jobs = () => {
   
 
   return (
+    <div className="flex min-h-screen">
+      <Sidebar
+        sectionLabel="CAMPUS SERVICES"
+      />
+      {/* Main Content */}
+      <div className="flex-1">
     <div className="bg-gray-50 min-h-full">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-8 py-4">
@@ -631,6 +638,8 @@ const Jobs = () => {
           </div>
         </div>
       )}
+    </div>
+    </div>
     </div>
   );
 };

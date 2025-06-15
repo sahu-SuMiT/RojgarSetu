@@ -30,6 +30,7 @@ const Sidebar = ({
       // Ignore logout errors
     }
     localStorage.removeItem('studentId');
+    navigate("/");
   };
 
   const navigationItems = [
@@ -40,7 +41,7 @@ const Sidebar = ({
     { icon: Calendar, label: 'Interview Schedule', path: '/interviews' },
     { icon: MessageSquare, label: 'Feedback', path: '/feedback' },
     { icon: Sparkles, label: 'AI Portfolio', path: '/portfolio' },
-    { icon: Bot, label: 'Support Chat', path: '/support' }, // Fixed path to match App.jsx
+    { icon: Bot, label: 'Support Chat', path: '/chat' }, // Fixed path to match App.jsx
   ];
 
   // Fallbacks for user info, omit initials if not present

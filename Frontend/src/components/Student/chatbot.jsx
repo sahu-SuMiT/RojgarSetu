@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, MessageCircle, User, Bot, Clock, CheckCircle } from 'lucide-react';
+import Sidebar from './Sidebar';
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([
@@ -113,6 +114,12 @@ const Chatbot = () => {
   ];
 
   return (
+    <div className="flex min-h-screen">
+      <Sidebar
+        sectionLabel="CAMPUS SERVICES"
+      />
+      {/* Main Content */}
+      <div className="flex-1">
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
@@ -243,6 +250,8 @@ const Chatbot = () => {
           </a>
         </div>
       </div>
+    </div>
+    </div>
     </div>
   );
 };

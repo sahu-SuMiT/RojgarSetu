@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Calendar, MapPin, Building, Eye, Download, X, Clock, DollarSign, Briefcase, Mail, Phone, Globe } from 'lucide-react';
+import Sidebar from './Sidebar';
 
 const Applications = () => {
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -121,6 +122,12 @@ const response = await fetch('https://campusadmin.onrender.com/api/applications/
   };
 
   return (
+    <div className="flex min-h-screen">
+      <Sidebar
+        sectionLabel="CAMPUS SERVICES"
+      />
+      {/* Main Content */}
+      <div className="flex-1">
     <div className="max-w-6xl mx-auto p-6 bg-gray-50 min-h-screen">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Job Applications</h1>
@@ -411,6 +418,8 @@ const response = await fetch('https://campusadmin.onrender.com/api/applications/
         </div>
       )}
     </div>
+    </div>
+      </div>
   );
 };
 

@@ -11,6 +11,7 @@ import Applications from './components/Student/Applications';
 import Interviews from './components/Student/Interviews';
 import FeedbackCenter from './components/Student/Feedback';
 import AIPortfolioSection from './components/Student/AIProfilePortfolio';
+import Chatbot from './components/Student/chatbot';
 import { AuthPage } from './components/Student/AuthPage';
 import Support from "./pages/Support";
 import PlacementAnalysis from "./pages/PlacementAnalysis";
@@ -225,6 +226,8 @@ const App = () => {
         <Route path="interviews" element={<Interviews />} />
         <Route path="feedback" element={<FeedbackCenter />} />
         <Route path="portfolio" element={<AIPortfolioSection />} />
+        <Route path="chat" element={<Chatbot />} />
+
         {/* Sales and Support pages */}
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<SignIn />} />

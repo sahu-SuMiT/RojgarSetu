@@ -1,8 +1,15 @@
 import React from 'react';
 import { Sparkles, RefreshCcw } from 'lucide-react';
+import Sidebar from './Sidebar';
 
 const AIPortfolioButtons = () => {
   return (
+    <div className="flex min-h-screen">
+      <Sidebar
+        sectionLabel="CAMPUS SERVICES"
+      />
+      {/* Main Content */}
+      <div className="flex-1">
     <div className="w-full min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-white p-6">
       <div className="bg-white bg-opacity-80 backdrop-blur-md shadow-xl rounded-2xl max-w-xl w-full px-8 py-10 text-center border border-slate-200">
         <h2 className="text-4xl font-bold text-indigo-600 mb-4">AI Portfolio Generator</h2>
@@ -28,6 +35,8 @@ const AIPortfolioButtons = () => {
           </button>
         </div>
       </div>
+    </div>
+    </div>
     </div>
   );
 };

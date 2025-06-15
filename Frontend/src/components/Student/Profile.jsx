@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Target, ShieldAlert } from 'lucide-react';
+import Sidebar from './Sidebar';
 
-const API_URL = "http://localhost:5000"; // Update with your actual API URL
+const API_URL = "https://campusadmin.onrender.com"; // Update with your actual API URL
 
 const Profile = () => {
   const [profileData, setProfileData] = useState(null);
@@ -252,6 +253,12 @@ const Profile = () => {
   }
 
   return (
+    <div className="flex min-h-screen">
+      <Sidebar
+        sectionLabel="CAMPUS SERVICES"
+      />
+      {/* Main Content */}
+      <div className="flex-1">
     <div className="bg-gray-50 min-h-full">
       <div className="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-40">
         <div className="flex items-center justify-between">
@@ -577,6 +584,8 @@ const Profile = () => {
           </button>
         </div>
       </div>
+    </div>
+    </div>
     </div>
   );
 };

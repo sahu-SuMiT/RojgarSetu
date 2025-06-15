@@ -9,6 +9,7 @@ import {
   User,
   AlertCircle
 } from 'lucide-react';
+import Sidebar from './Sidebar';
 
 const Interviews = () => {
   const [selectedView, setSelectedView] = useState('upcoming');
@@ -156,6 +157,12 @@ const Interviews = () => {
   };
 
   return (
+    <div className="flex min-h-screen">
+      <Sidebar
+        sectionLabel="CAMPUS SERVICES"
+      />
+      {/* Main Content */}
+      <div className="flex-1">
     <div className="bg-gray-50 min-h-full">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-8 py-4">
@@ -382,6 +389,8 @@ const Interviews = () => {
           </>
         )}
       </div>
+    </div>
+    </div>
     </div>
   );
 };
