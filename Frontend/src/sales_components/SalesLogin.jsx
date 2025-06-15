@@ -50,7 +50,7 @@ const SalesLogin = () => {
             </div>
               <LoginForm
                 type="Sales"
-                apiEndpoint="https://campusadmin.onrender.com/api/v1/user/login"
+                apiEndpoint="http://localhost:5000/api/v1/user/login"
                 redirectPath="/sales"
               />
           </div>

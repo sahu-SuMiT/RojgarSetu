@@ -4,7 +4,7 @@ import { FaBuilding } from 'react-icons/fa';
 import axios from 'axios';
 import './CompanyLogin.css';
 
-const apiUrl = import.meta.env.VITE_API_URL;
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const initialRegisterData = {
   name: '',
@@ -96,7 +96,7 @@ const CompanyLogin = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${apiUrl}/api/auth/company-admin`, formData, { withCredentials: true });
+      const response = await axios.post(`${apiUrl}/auth/company-admin`, formData, { withCredentials: true });
       const { _id, name, role } = response.data;
 
       localStorage.setItem('companyId', _id);
@@ -154,7 +154,7 @@ const CompanyLogin = () => {
     setRegisterSuccess('');
 
     try {
-      const res = await axios.post(`${apiUrl}/api/auth/register/check-otp`, {
+      const res = await axios.post(`${apiUrl}/auth/register/check-otp`, {
         email: registerData.contactEmail,
         otp: otp,
         type: 'company'
@@ -187,7 +187,7 @@ const CompanyLogin = () => {
     setRegisterSuccess('');
 
     try {
-      const res = await axios.post(`${apiUrl}/api/${registerType}/register/initiate`, {
+      const res = await axios.post(`${apiUrl}/${registerType}/register/initiate`, {
         ...registerData,
         type: registerType
       });
@@ -218,7 +218,7 @@ const CompanyLogin = () => {
         description: registerData.description
       };
 
-      const res = await axios.post(`${apiUrl}/api/company/register/initiate`, registrationData);
+      const res = await axios.post(`${apiUrl}/company/register/initiate`, registrationData);
 
       setRegisterSuccess(res.data.message || 'OTP sent to your email.');
       setRegisterStep(2);
@@ -249,7 +249,7 @@ const CompanyLogin = () => {
         return;
       }
 
-      const res = await axios.post(`${apiUrl}/api/company/register/verify`, {
+      const res = await axios.post(`${apiUrl}/company/register/verify`, {
         email: registerData.contactEmail,
         otp: otpInputs.join(''),
         password: password,

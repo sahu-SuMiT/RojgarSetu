@@ -4,7 +4,8 @@ import {
 } from 'lucide-react';
 import Sidebar from './Sidebar';
 
-const API_BASE = "https://campusadmin.onrender.com/api/feedback";
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE = `${apiUrl}/feedback`;
 
 const FeedbackCenter = () => {
   const [activeTab, setActiveTab] = useState('received');

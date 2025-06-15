@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Target, ShieldAlert } from 'lucide-react';
 import Sidebar from './Sidebar';
 
-const API_URL = "https://campusadmin.onrender.com"; // Update with your actual API URL
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const Profile = () => {
   const [profileData, setProfileData] = useState(null);
@@ -25,7 +25,7 @@ const Profile = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`${API_URL}/api/students/${studentId}`, {
+        const response = await fetch(`${API_URL}/students/${studentId}`, {
           method: 'GET',
           credentials: 'include',
         });
@@ -86,7 +86,7 @@ const Profile = () => {
   const handleSave = async () => {
     try {
       // Update main profile
-      const response = await fetch(`${API_URL}/api/students/${studentId}`, {
+      const response = await fetch(`${API_URL}/students/${studentId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -103,7 +103,7 @@ const Profile = () => {
       if (profilePicFile) {
         const formData = new FormData();
         formData.append('profilePic', profilePicFile);
-        const picRes = await fetch(`${API_URL}/api/students/${studentId}/profile-pic`, {
+        const picRes = await fetch(`${API_URL}/students/${studentId}/profile-pic`, {
           method: 'POST',
           credentials: 'include',
           body: formData,
@@ -143,7 +143,7 @@ const Profile = () => {
   const getProfilePicUrl = () => {
     if (previewUrl) return previewUrl;
     if (profileData && profileData._id)
-      return `${API_URL}/api/students/${profileData._id}/profile-pic?${Date.now()}`;
+      return `${API_URL}/students/${profileData._id}/profile-pic?${Date.now()}`;
     if (profileData && profileData.profileImage) return profileData.profileImage;
     return '';
   };

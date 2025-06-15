@@ -6,7 +6,7 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 import CompanySettingsModal from './CompanySettingsModal';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const Support = () => {
   const [messages, setMessages] = useState([{message: 'Type your query here', sender: 'Support Bot', senderType: 'support_bot', timestamp: new Date().toISOString()}]);
@@ -33,7 +33,7 @@ const Support = () => {
   useEffect(() => {
     const companyId = localStorage.getItem('companyId');
     if (companyId) {
-      axios.get(`${apiUrl}/api/company/${companyId}`)
+      axios.get(`${apiUrl}/company/${companyId}`)
         .then(res => {
           setCompany(res.data);
         })
@@ -48,7 +48,7 @@ const Support = () => {
 
   const fetchTickets = async (userId) => {
     try {
-      const response = await axios.get(`${apiUrl}/api/support/tickets/${userId}`);
+      const response = await axios.get(`${apiUrl}/support/tickets/${userId}`);
       setTickets(response.data.tickets || []);
     } catch (error) {
       // Error handling without console logging
@@ -57,7 +57,7 @@ const Support = () => {
 
   const fetchQuickHelpTopics = async () => {
     try {
-      const response = await axios.get(`${apiUrl}/api/support/quick-help/company`);
+      const response = await axios.get(`${apiUrl}/support/quick-help/company`);
       setQuickHelpTopics(response.data.topics || []);
     } catch (error) {
       // Error handling without console logging
@@ -93,7 +93,7 @@ const Support = () => {
       
       if (!currentTicket) {
         // Create new ticket
-        response = await axios.post(`${apiUrl}/api/support/tickets`, {
+        response = await axios.post(`${apiUrl}/support/tickets`, {
           userId: company._id,
           userType: 'company',
           subject: newMessage.substring(0, 50) + (newMessage.length > 50 ? '...' : ''),
@@ -115,7 +115,7 @@ const Support = () => {
         setTickets(prev => [response.data.ticket, ...prev]);
       } else {
         // Add message to existing ticket
-        response = await axios.post(`${apiUrl}/api/support/tickets/${company._id}/${currentTicket.ticketId}/messages`, {
+        response = await axios.post(`${apiUrl}/support/tickets/${company._id}/${currentTicket.ticketId}/messages`, {
           message: newMessage,
           userType: 'company'
         });
@@ -143,7 +143,7 @@ const Support = () => {
 
   const handleTicketClick = async (ticket) => {
     try {
-      const response = await axios.get(`${apiUrl}/api/support/tickets/${company._id}/${ticket.ticketId}`);
+      const response = await axios.get(`${apiUrl}/support/tickets/${company._id}/${ticket.ticketId}`);
       setCurrentTicket(response.data.ticket);
       setMessages(response.data.ticket.messages || []);
       setShowTicketList(false);
@@ -163,7 +163,7 @@ const Support = () => {
     if (!currentTicket || !company?._id) return;
     
     try {
-      await axios.patch(`${apiUrl}/api/support/tickets/${company._id}/${currentTicket.ticketId}/status`, {
+      await axios.patch(`${apiUrl}/support/tickets/${company._id}/${currentTicket.ticketId}/status`, {
         status: 'closed'
       });
       

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Calendar, MapPin, Building, Eye, Download, X, Clock, DollarSign, Briefcase, Mail, Phone, Globe } from 'lucide-react';
 import Sidebar from './Sidebar';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const Applications = () => {
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -40,7 +41,7 @@ const Applications = () => {
       try {
         setLoading(true);
         setError(null);
-const response = await fetch('https://campusadmin.onrender.com/api/applications/my', {
+const response = await fetch(`${apiUrl}/applications/my`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
