@@ -7,7 +7,6 @@ on:
 
 jobs:
   deploy:
-    if: github.event.pull_request.merged == true
     runs-on: self-hosted
 
     strategy:
@@ -61,7 +60,7 @@ jobs:
       - name: Deploy frontend to Nginx
         run: |
           sudo rm -rf /var/www/html/*
-          sudo cp -r ./client/dist/* /var/www/html/
+          sudo cp -r ./Frontend/dist/* /var/www/html/
 
       # ------------------------------
       # ADMIN FRONTEND SETUP
@@ -80,4 +79,4 @@ jobs:
       - name: Deploy admin to Nginx (subdomain)
         run: |
           sudo rm -rf /var/www/admin/*
-          sudo cp -r ./admin/dist/* /var/www/admin/
+          sudo cp -r ./Admin/dist/* /var/www/admin/
