@@ -3,6 +3,7 @@ import { FaChevronRight, FaTicketAlt, FaChartLine, FaSearch, FaMapMarkerAlt, FaB
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
 import CollegeSettingsModal from './CollegeSettingsModal';
+import Loader from '../components/Loader';
 import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -356,10 +357,10 @@ const ViewJobs = () => {
             </div>
 
           {loading ? (
-              <div>Loading jobs...</div>
+            <Loader message="Loading jobs..." />
           ) : error ? (
             <div style={{ color: '#dc2626' }}>{error}</div>
-            ) : filteredRoles.length === 0 ? (
+          ) : filteredRoles.length === 0 ? (
               <div style={{ 
                 textAlign: 'center', 
                 padding: '48px',

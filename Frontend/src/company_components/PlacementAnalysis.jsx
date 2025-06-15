@@ -37,6 +37,7 @@ const PlacementAnalysis = () => {
           setError('Error loading company information');
         });
     }
+    fetchPlacementData();
   }, []);
 
   // Navigation items with company ID
@@ -102,6 +103,61 @@ const PlacementAnalysis = () => {
     alert('Report download functionality will be implemented soon!');
   };
 
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh' }}>
+        <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="COMPANY SERVICES" />
+        <div className="main-container" style={{ marginLeft: 260, width: '100%', padding: 0, position: 'relative' }}>
+          <div style={{ padding: '0 24px' }}>
+            <SearchBar onSettingsClick={() => setShowSettings(true)} />
+          </div>
+          <div style={{ padding: '24px' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '24px' 
+            }}>
+              <h2 style={{ color: '#1f2937' }}>Placement Analysis</h2>
+              <button
+                onClick={handleDownloadReport}
+                style={{
+                  padding: '8px 16px',
+                  background: '#6366f1',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <FaDownload />
+                Download Report
+              </button>
+            </div>
+
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              minHeight: '400px',
+              background: 'white',
+              borderRadius: '8px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            }}>
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <span className="ml-3 text-gray-600">Loading placement data...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="COMPANY SERVICES" />
@@ -136,9 +192,7 @@ const PlacementAnalysis = () => {
             </button>
           </div>
 
-          {loading ? (
-            <div>Loading placement data...</div>
-          ) : error ? (
+          {error ? (
             <div style={{ color: '#dc2626' }}>{error}</div>
           ) : (
             <div style={{ display: 'grid', gap: '24px' }}>

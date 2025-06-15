@@ -6,6 +6,7 @@ import { FaChevronRight, FaTicketAlt, FaChartLine, FaBuilding, FaUserGraduate, F
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
 import CollegeSettingsModal from './CollegeSettingsModal';
+import Loader from '../components/Loader';
 import { formatDistanceToNow } from 'date-fns';
 import calculateCampusScore from '../utils/calculateCampusScore';
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -382,6 +383,18 @@ const ScheduledApplications = () => {
     setCollegeName(updatedCollege.name);
   };
 
+  if (loading && !college) {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh' }}>
+        <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="CAMPUS SERVICES" />
+        <div className='main-container' style={{ marginLeft: 260, padding: '2rem', width: '100%' }}>
+          <SearchBar onSettingsClick={() => setShowSettings(true)} />
+          <Loader message="Loading applications..." />
+        </div>
+      </div>
+    );
+  }
+
   if (!collegeId) {
     return (
       <div style={{ 
@@ -389,7 +402,8 @@ const ScheduledApplications = () => {
         justifyContent: 'center', 
         alignItems: 'center', 
         height: '100vh',
-        color: '#dc2626'
+        color: '#dc2626',
+        background: '#f9fafb'
       }}>
         College ID not found. Please log in again.
       </div>
@@ -408,7 +422,7 @@ const ScheduledApplications = () => {
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center',
-            marginBottom: '24px' 
+            marginBottom: '24px'
           }}>
             <h2 style={{ color: '#1f2937' }}>Scheduled Applications</h2>
             <div style={{ position: 'relative', width: '300px' }}>
@@ -436,14 +450,13 @@ const ScheduledApplications = () => {
           </div>
 
           {loading ? (
-            <div style={{ 
-              textAlign: 'center', 
-              padding: '48px',
-              background: '#fff',
-              borderRadius: '12px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '200px'
             }}>
-              Loading applications...
+              <Loader message="Loading applications..." />
             </div>
           ) : error ? (
             <div style={{ 
@@ -467,63 +480,103 @@ const ScheduledApplications = () => {
               <p style={{ color: '#6b7280' }}>No applications found</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+              gap: '1rem',
+              width: '100%'
+            }}>
               {filteredApplications.map(application => (
                 <div
                   key={application._id}
                   style={{
                     background: '#fff',
                     borderRadius: '12px',
-                    padding: '20px',
+                    padding: '1rem',
                     position: 'relative',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1)',
+                    border: '1px solid #f3f4f6',
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer',
+                    height: 'fit-content'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1)';
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                    <div>
-                      <h3 style={{ margin: '0 0 8px 0', color: '#1f2937', fontSize: '1.1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                    <div style={{ maxWidth: '70%' }}>
+                      <h3 style={{ 
+                        margin: '0 0 0.25rem 0', 
+                        color: '#111827', 
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        letterSpacing: '-0.025em',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}>
                         {application.applicationToCompany?.name || 'Company Name Not Available'}
                       </h3>
-                      <p style={{ margin: '0 0 8px 0', color: '#4b5563', fontSize: '0.9rem' }}>
-                        Role: {application.roleId?.jobTitle || 'Role Not Specified'}
+                      <p style={{ 
+                        margin: '0', 
+                        color: '#4b5563', 
+                        fontSize: '0.875rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}>
+                        <FaBuilding style={{ color: '#6b7280', fontSize: '0.875rem', flexShrink: 0 }} />
+                        {application.roleId?.jobTitle || 'Role Not Specified'}
                       </p>
                     </div>
                     <div style={{
-                      padding: '4px 12px',
-                      borderRadius: '999px',
-                      fontSize: '0.875rem',
-                      fontWeight: 500,
-                      backgroundColor: application.status === 'active' ? '#d1fae5' : application.status === 'closed' ? '#fee2e2' : '#f3f4f6',
-                      color: application.status === 'active' ? '#065f46' : application.status === 'closed' ? '#991b1b' : '#4b5563',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '9999px',
+                      fontSize: '0.75rem',
+                      fontWeight: '500',
+                      backgroundColor: application.status === 'active' ? '#dcfce7' : application.status === 'closed' ? '#fee2e2' : '#f3f4f6',
+                      color: application.status === 'active' ? '#166534' : application.status === 'closed' ? '#991b1b' : '#4b5563',
+                      border: '1px solid',
+                      borderColor: application.status === 'active' ? '#bbf7d0' : application.status === 'closed' ? '#fecaca' : '#e5e7eb',
+                      flexShrink: 0
                     }}>
                       {application.status || 'Pending'}
                     </div>
                   </div>
 
-                  <div style={
-                    {
-                      borderTop: '1px solid #e5e7eb',
-                      paddingTop: '16px',
-                      marginTop: '16px',
-                    }
-                  }>
+                  <div style={{
+                    borderTop: '1px solid #f3f4f6',
+                    paddingTop: '0.75rem',
+                    marginTop: '0.5rem',
+                  }}>
                     <div style={{
-                      fontSize: '0.875rem',
+                      fontSize: '0.75rem',
                       color: '#6b7280',
-                      marginBottom: '8px'
+                      marginBottom: '0.5rem',
+                      fontWeight: '500',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
                     }}>
-                      Students:
+                      Students
                     </div>
-                    {/* Display initial students and a button to view more */}
                     {renderStudentList(application.students, application._id)}
                   </div>
 
                   <div style={{
                     position: 'absolute',
-                    bottom: '20px',
-                    right: '20px',
+                    bottom: '1rem',
+                    right: '1rem',
                     display: 'flex',
-                    gap: '8px',
+                    gap: '0.5rem',
                     zIndex: 10,
                   }}>
                     {confirmingDelete === application._id ? (
@@ -531,13 +584,15 @@ const ScheduledApplications = () => {
                         <button
                           onClick={() => setConfirmingDelete(null)}
                           style={{
-                            padding: '6px 12px',
+                            padding: '0.25rem 0.5rem',
                             border: '1px solid #e5e7eb',
-                            borderRadius: '6px',
+                            borderRadius: '0.375rem',
                             background: '#fff',
                             color: '#4b5563',
                             cursor: 'pointer',
-                            transition: 'all 0.2s'
+                            transition: 'all 0.2s',
+                            fontSize: '0.75rem',
+                            fontWeight: '500'
                           }}
                           onMouseOver={(e) => {
                             e.currentTarget.style.borderColor = '#d1d5db';
@@ -553,13 +608,15 @@ const ScheduledApplications = () => {
                         <button
                           onClick={() => handleDeleteApplication(application._id)}
                           style={{
-                            padding: '6px 12px',
+                            padding: '0.25rem 0.5rem',
                             border: 'none',
-                            borderRadius: '6px',
+                            borderRadius: '0.375rem',
                             background: '#dc2626',
                             color: '#fff',
                             cursor: 'pointer',
-                            transition: 'all 0.2s'
+                            transition: 'all 0.2s',
+                            fontSize: '0.75rem',
+                            fontWeight: '500'
                           }}
                           onMouseOver={(e) => (e.currentTarget.style.background = '#b91c1c')}
                           onMouseOut={(e) => (e.currentTarget.style.background = '#dc2626')}
@@ -571,16 +628,17 @@ const ScheduledApplications = () => {
                       <button
                         onClick={() => setConfirmingDelete(application._id)}
                         style={{
-                          padding: '8px',
+                          padding: '0.375rem',
                           border: 'none',
-                          borderRadius: '6px',
+                          borderRadius: '0.375rem',
                           background: '#fee2e2',
                           color: '#dc2626',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          transition: 'all 0.2s'
+                          transition: 'all 0.2s',
+                          fontSize: '0.75rem'
                         }}
                         onMouseOver={(e) => (e.currentTarget.style.background = '#fecaca')}
                         onMouseOut={(e) => (e.currentTarget.style.background = '#fee2e2')}

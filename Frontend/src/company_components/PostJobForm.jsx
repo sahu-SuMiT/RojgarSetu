@@ -9,6 +9,7 @@ import './ScheduledInterviews.css';
 import SearchBar from '../SearchBar';
 import { formatDistanceToNow } from 'date-fns';
 import CompanySettingsModal from './CompanySettingsModal';
+import Loader from '../components/Loader';
 const apiUrl = import.meta.env.VITE_API_URL;
 const PostJobForm = () => {
   const { companyId } = useParams();
@@ -380,7 +381,7 @@ const PostJobForm = () => {
               </button>
             </div>
             {loading ? (
-              <div>Loading roles...</div>
+              <Loader message="Loading roles..." />
             ) : error ? (
               <div style={{ color: '#dc2626' }}>{error}</div>
             ) : (

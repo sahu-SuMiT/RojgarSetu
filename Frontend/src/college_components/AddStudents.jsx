@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 axios.defaults.withCredentials = true;
 import { 
   FaUserGraduate, 
@@ -8,11 +9,13 @@ import {
   FaTicketAlt, 
   FaChartLine,
   FaPlus,
-  FaTimes
+  FaTimes,
+  FaFileExcel
 } from 'react-icons/fa';
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
 import CollegeSettingsModal from './CollegeSettingsModal';
+import Loader from '../components/Loader';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -24,6 +27,11 @@ const AddStudents = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [excelFile, setExcelFile] = useState(null);
+  const [excelUploadLoading, setExcelUploadLoading] = useState(false);
+  const [excelUploadSuccess, setExcelUploadSuccess] = useState(false);
+  const [excelUploadError, setExcelUploadError] = useState(null);
+  const [skipInserting, setSkipInserting] = useState(false);
   const [students, setStudents] = useState([{
     name: '',
     email: '',
@@ -33,10 +41,7 @@ const AddStudents = () => {
     joiningYear: '',
     graduationYear: '',
     cgpa: '',
-    skills: [],
-    extracurricular: [],
-    research: [],
-    hackathons: []
+    password: ''
   }]);
 
   const navItems = [
@@ -79,10 +84,7 @@ const AddStudents = () => {
       joiningYear: '',
       graduationYear: '',
       cgpa: '',
-      skills: [],
-      extracurricular: [],
-      research: [],
-      hackathons: []
+      password: ''
     }]);
   };
 
@@ -96,6 +98,76 @@ const AddStudents = () => {
     const newStudents = [...students];
     newStudents[index][field] = value;
     setStudents(newStudents);
+  };
+
+  const handleExcelUpload = (e) => {
+    const file = e.target.files[0];
+    setExcelFile(file);
+    setSuccess(false);
+    setError(null);
+  };
+
+  const handleExcelSubmit = async (e, skipDuplicates = false) => {
+    if (e) e.preventDefault();
+    setExcelUploadLoading(true);
+    setExcelUploadSuccess(false);
+    setExcelUploadError(null);
+
+    console.log('collegeId for Excel upload:', collegeId);
+    if (!collegeId) {
+      setExcelUploadError('College ID is missing. Please access this page from the correct college dashboard URL.');
+      setExcelUploadLoading(false);
+      return;
+    }
+
+    if (!excelFile) {
+      setExcelUploadError('Please select an Excel file to upload.');
+      setExcelUploadLoading(false);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', excelFile);
+      formData.append('collegeId', collegeId);
+      const url = skipDuplicates
+        ? `${apiUrl}/api/students/excel-sheet?query=skip-duplicates`
+        : `${apiUrl}/api/students/excel-sheet`;
+      const response = await axios.post(url, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      if (response.data && response.data.message && response.data.message.includes('No new students to insert')) {
+        setExcelUploadError(response.data.message);
+        setExcelUploadSuccess(false);
+      } else if (response.data && response.data.message) {
+        setExcelUploadSuccess(response.data.message);
+        setExcelFile(null);
+        setExcelUploadError(null);
+      } else {
+        setExcelUploadSuccess('Excel sheet uploaded successfully!');
+        setExcelFile(null);
+        setExcelUploadError(null);
+      }
+    } catch (err) {
+      if (err.response?.status === 409 && err.response?.data?.existingStudents) {
+        const duplicates = err.response.data.existingStudents
+          .map(s => `<span style='color:#F59E0B'>• Email: <b>${s.email}</b>, Roll: <b>${s.rollNumber}</b></span>`)
+          .join('<br/>');
+        setExcelUploadError(
+          `<div>Some students already exist:<br/>${duplicates}</div>`
+        );
+      } else {
+        setExcelUploadError(
+          err.response?.data?.error ||
+          err.response?.data?.message ||
+          'Error uploading Excel sheet'
+        );
+      }
+    } finally {
+      setExcelUploadLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -122,10 +194,7 @@ const AddStudents = () => {
         joiningYear: '',
         graduationYear: '',
         cgpa: '',
-        skills: [],
-        extracurricular: [],
-        research: [],
-        hackathons: []
+        password: ''
       }]);
     } catch (err) {
       setError(err.response?.data?.message || 'Error adding students');
@@ -138,13 +207,17 @@ const AddStudents = () => {
     setCollege(updatedCollege);
   };
 
+  // Helper to check if error is a duplicate list
+  const isDuplicateList = excelUploadError && /Some students already exist/.test(excelUploadError);
+  const isAllDuplicatesInfo = typeof excelUploadError === 'string' && excelUploadError.includes('No new students to insert');
+
   if (loading && !college) {
     return (
       <div style={{ display: 'flex', minHeight: '100vh' }}>
         <Sidebar navItems={navItems} user={sidebarUser} sectionLabel="CAMPUS SERVICES" />
-        <div className='main-container' style={{ marginLeft: 260, padding: '2rem' }}>
+        <div className='main-container' style={{ marginLeft: 260, padding: '2rem', width: '100%' }}>
           <SearchBar onSettingsClick={() => setShowSettings(true)} />
-          <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>
+          <Loader message="Loading college data..." />
         </div>
       </div>
     );
@@ -202,6 +275,124 @@ const AddStudents = () => {
             </div>
           )}
 
+          {/* Excel Upload Section */}
+          <div style={{ 
+            background: '#f3f4f6',
+            padding: '1.5rem',
+            borderRadius: '8px',
+            marginBottom: '1.5rem',
+            border: '2px dashed #d1d5db'
+          }}>
+            <h2 style={{ 
+              fontSize: '1.25rem', 
+              fontWeight: 600, 
+              color: '#1f2937',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <FaFileExcel style={{ color: '#059669' }} />
+              Upload Students from Excel
+            </h2>
+            <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
+              Upload an Excel file with student information. The file should have the following columns:
+              <b>Name, Email, Roll Number, Department, Batch, Joining Year, Graduation Year, CGPA, Password</b>
+            </p>
+            <input
+              type="file"
+              accept=".xlsx, .xls"
+              onChange={handleExcelUpload}
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '0.75rem',
+                background: '#fff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                marginBottom: '1rem'
+              }}
+            />
+            <button
+              onClick={() => handleExcelSubmit(null)}
+              disabled={excelUploadLoading || !excelFile}
+              style={{
+                background: '#059669',
+                color: '#fff',
+                padding: '0.75rem 1.5rem',
+                border: 'none',
+                borderRadius: '6px',
+                fontWeight: 600,
+                fontSize: '1rem',
+                cursor: excelUploadLoading || !excelFile ? 'not-allowed' : 'pointer',
+                opacity: excelUploadLoading || !excelFile ? 0.6 : 1
+              }}
+            >
+              {excelUploadLoading ? 'Submitting...' : 'Submit Excel Sheet'}
+            </button>
+            {excelUploadSuccess && (
+              <div style={{
+                background: '#dcfce7',
+                color: '#059669',
+                padding: '1rem',
+                borderRadius: '8px',
+                marginTop: '1rem',
+                fontWeight: 500
+              }}>
+                {excelUploadSuccess}
+              </div>
+            )}
+            {excelUploadError && (
+              <div style={{ position: 'relative', marginBottom: isDuplicateList ? '2.5rem' : undefined }}>
+                <div
+                  style={{
+                    background: isAllDuplicatesInfo ? '#FEF08A' : '#fee2e2',
+                    color: isAllDuplicatesInfo ? '#92400E' : '#dc2626',
+                    padding: '1rem',
+                    borderRadius: '8px',
+                    marginTop: '1rem',
+                    maxHeight: isDuplicateList ? 220 : undefined,
+                    overflowY: isDuplicateList ? 'auto' : undefined,
+                    position: 'relative',
+                    fontWeight: isAllDuplicatesInfo ? 500 : undefined
+                  }}
+                  dangerouslySetInnerHTML={{ __html: excelUploadError }}
+                />
+                {isDuplicateList && excelFile && (
+                  <button
+                    onClick={() => handleExcelSubmit(null, true)}
+                    style={{
+                      position: 'absolute',
+                      right: '1.5rem',
+                      bottom: '-2.2rem',
+                      background: '#F59E0B',
+                      color: '#fff',
+                      padding: '0.6rem 1.2rem',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      cursor: excelUploadLoading ? 'not-allowed' : 'pointer',
+                      opacity: excelUploadLoading ? 0.7 : 1,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                    }}
+                    disabled={excelUploadLoading}
+                  >
+                    Skip and Insert Non-Duplicates
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+           <h1 style={{ 
+            fontSize: '1.5rem', 
+            fontWeight: 700, 
+            color: '#1f2937',
+            marginBottom: '1rem'
+          }}>
+            Add Manually
+          </h1>
           <form onSubmit={handleSubmit}>
             {students.map((student, index) => (
               <div key={index} style={{
@@ -451,7 +642,9 @@ const AddStudents = () => {
                   opacity: loading ? 0.7 : 1
                 }}
               >
-                {loading ? 'Adding Students...' : 'Add Students'}
+                {loading ? (
+                  <Loader message="Adding students..." />
+                ) : 'Add Students'}
               </button>
             </div>
           </form>
