@@ -59,6 +59,8 @@ const allowedOrigins = [
   'http://localhost:5174',
   'https://campusadmin-y4hh.vercel.app',
   'https://campusadmin.vercel.app',
+  'https://www.rojgarsetu.org',
+  'https://company.rojgarsetu.org',
   'https://campusconnect-sumit-sahus-projects-83ef9bf1.vercel.app',
   'https://campusconnect-git-main-sumit-sahus-projects-83ef9bf1.vercel.app',
   'https://campusconnect-dk9xkuzk0-sumit-sahus-projects-83ef9bf1.vercel.app'

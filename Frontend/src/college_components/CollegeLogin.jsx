@@ -5,7 +5,7 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 import './CollegeLogin.css';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const initialRegisterData = {
   name: '',
@@ -98,7 +98,7 @@ const CollegeLogin = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${apiUrl}/auth/college-admin`, formData);
+      const response = await axios.post(`${apiUrl}/api/auth/college-admin`, formData);
       const { _id, name, role } = response.data;
 
       // Store admin data in localStorage
@@ -153,7 +153,7 @@ const CollegeLogin = () => {
     setEmailCheckLoading(true);
     try {
       // Send all registration data (except password) to initiate endpoint
-      const res = await axios.post(`${apiUrl}/colleges/register/initiate`, {
+      const res = await axios.post(`${apiUrl}/api/colleges/register/initiate`, {
         name: registerData.name,
         code: registerData.code,
         location: registerData.location,
@@ -205,7 +205,7 @@ const CollegeLogin = () => {
 
     setRegisterLoading(true);
     try {
-      const res = await axios.post(`${apiUrl}/colleges/register/verify`, {
+      const res = await axios.post(`${apiUrl}/api/colleges/register/verify`, {
         email: contactEmail,
         otp: otp,
         password,
@@ -244,7 +244,7 @@ const CollegeLogin = () => {
 
     try {
       // Send minimal data required by initiate endpoint to resend OTP
-      const res = await axios.post(`${apiUrl}/colleges/register/initiate`, {
+      const res = await axios.post(`${apiUrl}/api/colleges/register/initiate`, {
         contactEmail: registerData.contactEmail,
         // Include other necessary identification if your backend initiate endpoint requires it, like type
         type: 'college', // Ensure type is sent
@@ -304,7 +304,7 @@ const CollegeLogin = () => {
 
     try {
       // Call the new backend endpoint to check OTP validity without completing registration
-      const res = await axios.post(`${apiUrl}/auth/register/check-otp`, {
+      const res = await axios.post(`${apiUrl}/api/auth/register/check-otp`, {
         email: registerData.contactEmail,
         otp: otp,
         type: 'college' // Specify the type

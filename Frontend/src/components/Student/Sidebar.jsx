@@ -11,7 +11,7 @@ import {
   Bot
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Sidebar = ({ 
   isOpen, 
@@ -23,7 +23,7 @@ const Sidebar = ({
   const location = useLocation();
   const onLogout = async () => {
     try {
-      await fetch(`${apiUrl}/auth/logout`, {
+      await fetch(`${apiUrl}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });

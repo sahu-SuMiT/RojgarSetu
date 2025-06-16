@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import Sidebar from './Sidebar';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const API_BASE = `${apiUrl}/feedback`;
 
 const FeedbackCenter = () => {

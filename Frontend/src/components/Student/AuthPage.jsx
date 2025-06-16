@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const AuthPage = ({ onAuthSuccess }) => {
   const navigate = useNavigate();
@@ -60,8 +60,8 @@ export const AuthPage = ({ onAuthSuccess }) => {
     try {
       const endpoint =
         currentView === "login"
-          ? `${apiUrl}/auth/login`
-          : `${apiUrl}/auth/signup`;
+          ? `${apiUrl}/api/auth/login`
+          : `${apiUrl}/api/auth/signup`;
       const payload =
         currentView === "login"
           ? { email: formData.email, password: formData.password }

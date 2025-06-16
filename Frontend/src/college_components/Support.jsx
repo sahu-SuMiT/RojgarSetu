@@ -5,7 +5,7 @@ import SearchBar from '../SearchBar';
 import CollegeSettingsModal from './CollegeSettingsModal';
 import axios from 'axios';
 axios.defaults.withCredentials = true;
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Support = () => {
   const [messages, setMessages] = useState([]);
@@ -39,7 +39,7 @@ const Support = () => {
     
     if (id) {
       // Fetch college details
-      axios.get(`${apiUrl}/colleges/${id}`)
+      axios.get(`${apiUrl}/api/colleges/${id}`)
         .then(res => {
           setCollege(res.data);
         })
@@ -54,7 +54,7 @@ const Support = () => {
 
   const fetchTickets = async (userId) => {
     try {
-      const response = await axios.get(`${apiUrl}/support/tickets/${userId}`);
+      const response = await axios.get(`${apiUrl}/api/support/tickets/${userId}`);
       setTickets(response.data.tickets || []);
     } catch (error) {
       // Error handling without console logging
@@ -63,7 +63,7 @@ const Support = () => {
 
   const fetchQuickHelpTopics = async () => {
     try {
-      const response = await axios.get(`${apiUrl}/support/quick-help/college`);
+      const response = await axios.get(`${apiUrl}/api/support/quick-help/college`);
       setQuickHelpTopics(response.data.topics || []);
     } catch (error) {
       // Error handling without console logging
@@ -99,7 +99,7 @@ const Support = () => {
       
       if (!currentTicket) {
         // Create new ticket
-        response = await axios.post(`${apiUrl}/support/tickets`, {
+        response = await axios.post(`${apiUrl}/api/support/tickets`, {
           userId: collegeId,
           userType: 'college',
           subject: newMessage.substring(0, 50) + (newMessage.length > 50 ? '...' : ''),
@@ -121,7 +121,7 @@ const Support = () => {
         setTickets(prev => [response.data.ticket, ...prev]);
       } else {
         // Add message to existing ticket
-        response = await axios.post(`${apiUrl}/support/tickets/${collegeId}/${currentTicket.ticketId}/messages`, {
+        response = await axios.post(`${apiUrl}/api/support/tickets/${collegeId}/${currentTicket.ticketId}/messages`, {
           message: newMessage,
           userType: 'college'
         });
@@ -149,7 +149,7 @@ const Support = () => {
 
   const handleTicketClick = async (ticket) => {
     try {
-      const response = await axios.get(`${apiUrl}/support/tickets/${collegeId}/${ticket.ticketId}`);
+      const response = await axios.get(`${apiUrl}/api/support/tickets/${collegeId}/${ticket.ticketId}`);
       setCurrentTicket(response.data.ticket);
       setMessages(response.data.ticket.messages || []);
       setShowTicketList(false);
@@ -169,7 +169,7 @@ const Support = () => {
     if (!currentTicket) return;
     
     try {
-      await axios.patch(`${apiUrl}/support/tickets/${collegeId}/${currentTicket.ticketId}/status`, {
+      await axios.patch(`${apiUrl}/api/support/tickets/${collegeId}/${currentTicket.ticketId}/status`, {
         status: 'closed'
       });
       

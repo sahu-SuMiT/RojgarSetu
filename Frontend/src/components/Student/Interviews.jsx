@@ -10,7 +10,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import Sidebar from './Sidebar';
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Interviews = () => {
   const [selectedView, setSelectedView] = useState('upcoming');
@@ -24,7 +24,7 @@ const Interviews = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`${apiUrl}/interviews/my`, {
+        const response = await fetch(`${apiUrl}/api/interviews/my`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -102,7 +102,7 @@ const Interviews = () => {
     // PATCH to backend
     const token = localStorage.getItem('token');
     try {
-      await fetch(`${apiUrl}/interviews/${interviewId}/preparation-progress`, {
+      await fetch(`${apiUrl}/api/interviews/${interviewId}/preparation-progress`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

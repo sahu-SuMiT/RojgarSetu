@@ -13,7 +13,7 @@ axios.defaults.withCredentials = true;
 import './ScheduledInterviews.css';
 import '../index.css'; // Ensure global styles are applied
 import calculateCampusScore from '../utils/calculateCampusScore';
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 import CompanySettingsModal from './CompanySettingsModal';
 import { CSSTransition } from 'react-transition-group';
 import { formatDistanceToNow } from 'date-fns';
@@ -167,7 +167,7 @@ const ScheduledInterviews = () => {
         }
 
         // Use the new optimized endpoint
-        const response = await axios.get(`${apiUrl}/company/${companyId}/interviews/complete`);
+        const response = await axios.get(`${apiUrl}/api/company/${companyId}/interviews/complete`);
         setCompany(response.data.company);
         setScheduledInterviews(response.data.interviews);
 
@@ -302,7 +302,7 @@ const ScheduledInterviews = () => {
         zoomPassword: zoomMeeting.password,
         notes: scheduleForm.notes,
       };
-      const res = await axios.post(`${apiUrl}/interviews`, newInterview);
+      const res = await axios.post(`${apiUrl}/api/interviews`, newInterview);
       setScheduledInterviews(prev => [...prev, res.data]);
       setShowScheduleForm(false);
       setSelectedCandidate(null);
@@ -316,7 +316,7 @@ const ScheduledInterviews = () => {
   // Update interview (edit)
   const handleEditInterview = async (id, updatedFields) => {
     try {
-      const res = await axios.put(`${apiUrl}/interviews/${id}`, updatedFields);
+      const res = await axios.put(`${apiUrl}/api/interviews/${id}`, updatedFields);
       setScheduledInterviews(prev => prev.map(i => i._id === id ? res.data : i));
     } catch (error) {
       console.error('Error updating interview:', error);
@@ -326,7 +326,7 @@ const ScheduledInterviews = () => {
   // Delete interview
   const handleDeleteInterview = async (id) => {
     try {
-      await axios.delete(`${apiUrl}/interviews/${id}`);
+      await axios.delete(`${apiUrl}/api/interviews/${id}`);
       setScheduledInterviews(prev => prev.filter(i => i._id !== id));
     } catch (error) {
       console.error('Error deleting interview:', error);
@@ -421,7 +421,7 @@ const ScheduledInterviews = () => {
       };
 
       // Update interview with feedback and status
-      const response = await axios.put(`${apiUrl}/interviews/${selectedInterview._id}`, {
+      const response = await axios.put(`${apiUrl}/api/interviews/${selectedInterview._id}`, {
         feedback,
         status: selectedAction === 'accept' ? 'accepted' : 
                 selectedAction === 'reject' ? 'rejected' : 
@@ -454,7 +454,7 @@ const ScheduledInterviews = () => {
   // Handle closing interview
   const handleCloseInterview = async (interviewId) => {
     try {
-      const response = await axios.put(`${apiUrl}/interviews/${interviewId}`, {
+      const response = await axios.put(`${apiUrl}/api/interviews/${interviewId}`, {
         status: 'cancelled'
       });
 
@@ -488,7 +488,7 @@ const ScheduledInterviews = () => {
 
   const fetchStudentDetails = async (studentId) => {
     try {
-      const res = await axios.get(`${apiUrl}/student/${studentId}`);
+      const res = await axios.get(`${apiUrl}/api/student/${studentId}`);
       setSelectedStudentProfile(res.data);
       setShowProfileModal(true);
     } catch (err) {
@@ -499,7 +499,7 @@ const ScheduledInterviews = () => {
 
   const handleViewProfile = async (studentId) => {
     try {
-      const response = await fetch(`${apiUrl}/students/${studentId}`);
+      const response = await fetch(`${apiUrl}/api/students/${studentId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch student details');
       }
@@ -583,14 +583,14 @@ ${company?.name || 'The Hiring Team'}`);
       setIsSendingEmail(true);
       
       // Send cancellation email
-      await axios.post(`${apiUrl}/interviews/${interviewToCancel._id}/cancel`, {
+      await axios.post(`${apiUrl}/api/interviews/${interviewToCancel._id}/cancel`, {
         studentEmail: interviewToCancel.studentDetails?.email,
         emailTitle: emailTitle,
         emailBody: emailBody
       });
 
       // Update interview status
-      const response = await axios.put(`${apiUrl}/interviews/${interviewToCancel._id}`, {
+      const response = await axios.put(`${apiUrl}/api/interviews/${interviewToCancel._id}`, {
         status: 'cancelled'
       });
 
@@ -660,14 +660,14 @@ ${company?.name || 'The Hiring Team'}`);
       setIsSendingEmail(true);
       
       // Send acceptance email
-      await axios.post(`${apiUrl}/interviews/${interviewToAccept._id}/accept`, {
+      await axios.post(`${apiUrl}/api/interviews/${interviewToAccept._id}/accept`, {
         studentEmail: interviewToAccept.studentDetails?.email,
         emailTitle: acceptEmailTitle,
         emailBody: acceptEmailBody
       });
 
       // Update interview status
-      const response = await axios.put(`${apiUrl}/interviews/${interviewToAccept._id}`, {
+      const response = await axios.put(`${apiUrl}/api/interviews/${interviewToAccept._id}`, {
         status: 'accepted'
       });
 
@@ -706,14 +706,14 @@ ${company?.name || 'The Hiring Team'}`);
       setIsSendingEmail(true);
       
       // Send rejection email
-      await axios.post(`${apiUrl}/interviews/${interviewToReject._id}/reject`, {
+      await axios.post(`${apiUrl}/api/interviews/${interviewToReject._id}/reject`, {
         studentEmail: interviewToReject.studentDetails?.email,
         emailTitle: rejectEmailTitle,
         emailBody: rejectEmailBody
       });
 
       // Update interview status
-      const response = await axios.put(`${apiUrl}/interviews/${interviewToReject._id}`, {
+      const response = await axios.put(`${apiUrl}/api/interviews/${interviewToReject._id}`, {
         status: 'rejected'
       });
 
@@ -751,7 +751,7 @@ ${company?.name || 'The Hiring Team'}`);
   const handleConductInterview = async (interviewId) => {
     try {
       // Update interview status to in-progress
-      const response = await axios.put(`${apiUrl}/interviews/${interviewId}`, {
+      const response = await axios.put(`${apiUrl}/api/interviews/${interviewId}`, {
         status: 'in-progress'
       });
 
@@ -781,7 +781,7 @@ ${company?.name || 'The Hiring Team'}`);
   const handleCleanRejected = async () => {
     if (window.confirm('Are you sure you want to delete all rejected interviews? This action cannot be undone.')) {
       try {
-        await axios.delete(`${apiUrl}/interviews/clean-rejected`);
+        await axios.delete(`${apiUrl}/api/interviews/clean-rejected`);
         setScheduledInterviews(scheduledInterviews.filter(interview => interview.status !== 'rejected'));
         toast.success('Successfully cleaned rejected interviews');
       } catch (error) {

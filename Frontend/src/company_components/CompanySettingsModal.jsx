@@ -3,7 +3,7 @@ import { FaTimes, FaSave, FaEdit, FaBuilding, FaMapMarkerAlt, FaPhone, FaEnvelop
 import axios from 'axios';
 axios.defaults.withCredentials = true;
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const CompanySettingsModal = ({ isOpen, onClose, company, onUpdate }) => {
   const [formData, setFormData] = useState({
@@ -96,7 +96,7 @@ const CompanySettingsModal = ({ isOpen, onClose, company, onUpdate }) => {
           try {
             // Update only the profile image
             const response = await axios.put(
-              `${apiUrl}/company/${company._id}/edit`,
+              `${apiUrl}/api/company/${company._id}/edit`,
               { profileImage: reader.result },
               {
                 headers: {
@@ -183,7 +183,7 @@ const CompanySettingsModal = ({ isOpen, onClose, company, onUpdate }) => {
       const { profileImage, ...updateData } = formData;
 
       const response = await axios.put(
-        `${apiUrl}/company/${company._id}/edit`,
+        `${apiUrl}/api/company/${company._id}/edit`,
         updateData,
         {
           headers: {

@@ -23,7 +23,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import '../college_components/CollegeLogin.css';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 // const apiUrl = 'http://localhost:5000';
 
 const initialRegisterData = {
@@ -151,7 +151,7 @@ const StudentLogin = () => {
     setEmailCheckLoading(true);
     try {
       // Send all registration data (except password) to initiate endpoint
-      const res = await axios.post(`${apiUrl}/student/register/initiate`, {
+      const res = await axios.post(`${apiUrl}/api/student/register/initiate`, {
         university: registerData.university,
         name: registerData.name,
         studentName: registerData.studentName,
@@ -203,7 +203,7 @@ const StudentLogin = () => {
 
     setRegisterLoading(true);
     try {
-      await axios.post(`${apiUrl}/student/register/verify`, {
+      await axios.post(`${apiUrl}/api/student/register/verify`, {
         email: contactEmail,
         otp: otp,
         password,
@@ -242,7 +242,7 @@ const StudentLogin = () => {
 
     try {
       // Send minimal data required by initiate endpoint to resend OTP
-      await axios.post(`${apiUrl}/student/register/initiate`, {
+      await axios.post(`${apiUrl}/api/student/register/initiate`, {
         contactEmail: registerData.contactEmail,
         // Include other necessary identification if your backend initiate endpoint requires it, like type
         type: 'student', // Ensure type is sent
@@ -303,7 +303,7 @@ const StudentLogin = () => {
 
     try {
       // Call the new backend endpoint to check OTP validity without completing registration
-      const res = await axios.post(`${apiUrl}/register/check-otp`, {
+      const res = await axios.post(`${apiUrl}/api/register/check-otp`, {
         email: registerData.contactEmail,
         otp: otp,
         type: 'student' // Specify the type
@@ -387,7 +387,7 @@ const StudentLogin = () => {
           <>
             <LoginForm
               type="student"
-              apiEndpoint="http://localhost:5000/api/college-students/email"
+              apiEndpoint="https://campusadmin.onrender.com/api/college-students/email"
               redirectPath="/dashboard"
             />
             <div style={{ marginTop: '2rem', textAlign: 'center' }}>

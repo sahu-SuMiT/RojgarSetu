@@ -18,7 +18,7 @@ const Login = () => {
       description: 'Access your sales dashboard',
       icon: FaChartLine,
       color: '#8B5CF6',
-      url: 'https://campusadmin.vercel.app/sales-login' //<- this url is for the external project
+      url: 'https://www.rojgarsetu.org/sales-login' //<- this url is for the external project
     }
   ];
 

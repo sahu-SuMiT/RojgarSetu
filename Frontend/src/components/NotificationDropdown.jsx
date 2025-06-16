@@ -3,7 +3,7 @@ import { FaBell, FaTimes, FaCheck, FaExclamationTriangle, FaPlus, FaSearch, FaUs
 import axios from 'axios';
 import { createNotification, findUserByEmail, searchUsersByName } from '../utils/notificationHelper';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const NotificationDropdown = ({ userId, userType = 'college' }) => {
   const [notifications, setNotifications] = useState([]);
@@ -38,7 +38,7 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${apiUrl}/notifications/${userType}/${userId}`);
+      const response = await axios.get(`${apiUrl}/api/notifications/${userType}/${userId}`);
       setNotifications(response.data);
       setUnreadCount(response.data.filter(n => !n.read).length);
     } catch (error) {
@@ -51,7 +51,7 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
   // Mark notification as read
   const markAsRead = async (notificationId) => {
     try {
-      await axios.patch(`${apiUrl}/notifications/${notificationId}/read`);
+      await axios.patch(`${apiUrl}/api/notifications/${notificationId}/read`);
       setNotifications(prev => 
         prev.map(n => n._id === notificationId ? { ...n, read: true } : n)
       );
@@ -64,7 +64,7 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
   // Mark all as read
   const markAllAsRead = async () => {
     try {
-      await axios.patch(`${apiUrl}/notifications/${userType}/${userId}/read-all`);
+      await axios.patch(`${apiUrl}/api/notifications/${userType}/${userId}/read-all`);
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (error) {
@@ -269,7 +269,7 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
   // Add delete function after markAsRead function
   const deleteNotification = async (notificationId) => {
     try {
-      await axios.delete(`${apiUrl}/notifications/${notificationId}`);
+      await axios.delete(`${apiUrl}/api/notifications/${notificationId}`);
       setNotifications(prev => prev.filter(n => n._id !== notificationId));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
@@ -281,7 +281,7 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
   const fetchSentMessages = async () => {
     try {
       setLoadingSentMessages(true);
-      const response = await axios.get(`${apiUrl}/notifications/sent/${userType}/${userId}`);
+      const response = await axios.get(`${apiUrl}/api/notifications/sent/${userType}/${userId}`);
       setSentMessages(response.data);
     } catch (error) {
       console.error('Error fetching sent messages:', error);
@@ -291,7 +291,7 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
   };
   const deleteSentMessage = async (messageId) => {
     try {
-      await axios.delete(`${apiUrl}/notifications/${messageId}`);
+      await axios.delete(`${apiUrl}/api/notifications/${messageId}`);
       setSentMessages(prev => prev.filter(m => m._id !== messageId));
     } catch (error) {
       console.error('Error deleting sent message:', error); 
