@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Users, Calendar, TrendingUp, FileText } from "lucide-react";
 import TicketVolumeChart from "./TicketVolumeChart";
 import AttendanceChart from "./AttendanceChart";
