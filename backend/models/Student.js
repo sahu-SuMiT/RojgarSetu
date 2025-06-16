@@ -1,58 +1,51 @@
 const mongoose = require('mongoose');
 
 const studentSchema = new mongoose.Schema({
-  // Login and basic info
+  // Authentication & Identity
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
 
-  // College relationship
+  // Student Identifiers
+  studentId: { type: String, unique: true, sparse: true }, // Only one unique ID needed
+  // rollNumber: { type: String, unique: true, sparse: true }, // Remove if studentId is enough
+
+  // College Relationship
   college: { type: mongoose.Schema.Types.ObjectId, ref: 'College' },
 
-  // College/roll info
-  rollNumber: { type: String, unique: true, sparse: true },
-  department: String,
-  batch: String,
-  joiningYear: Number,
-  graduationYear: Number,
-
-  // Academic info
+  // Academic Info
   degree: String,
-  major: String,
-  year: String,
-  gpa: String,
+  major: String, // or 'department', pick one
+  batch: String, // e.g. "2020-2024"
+  joiningYear: Number,
+  graduationYear: Number, // Use one graduation date field
+  year: Number, // Current academic year (1, 2, 3, 4)
+  gpa: { type: Number, min: 0, max: 10 },
   cgpa: { type: Number, min: 0, max: 10 },
-  expectedGraduation: String,
 
-  // Scores
-  campusScore: { type: Number, min: 0, max: 10, default: 6.5 },
-
-  // Career & job profile
-  title: String,
+  // Career & Profile
+  headline: String, // replaces "title"
   careerObjective: String,
   portfolioUrl: String,
   githubUrl: String,
   linkedinUrl: String,
+  resume: String, // resume link
 
   // Contact
   phone: String,
   location: String,
 
-  // Personal info
-  studentId: String,
-  dateOfBirth: String,
+  // Personal Info
+  dateOfBirth: Date,
   gender: String,
   nationality: String,
 
-  // Skills and technologies
+  // Skills & Tech
   skills: [{ type: String, trim: true }],
   programmingLanguages: [String],
   technologies: [String],
 
-  // Resume
-  resume: String,
-
-  // Projects
+  // Projects / Achievements / Certifications / Activities
   projects: [{
     title: String,
     description: String,
@@ -61,39 +54,29 @@ const studentSchema = new mongoose.Schema({
     endDate: Date,
     link: String
   }],
-
-  // Achievements
   achievements: [{
     title: String,
     description: String,
     date: Date,
     issuer: String
   }],
-
-  // Certifications
   certifications: [{
     name: String,
     issuer: String,
     date: Date,
     link: String
   }],
-
-  // Extracurricular
   extracurricular: [{
     activity: String,
     role: String,
     achievement: String
   }],
-
-  // Research
   research: [{
     title: String,
     role: String,
     year: Number,
     description: String
   }],
-
-  // Hackathons
   hackathons: [{
     name: String,
     year: Number,
@@ -104,17 +87,17 @@ const studentSchema = new mongoose.Schema({
   // Saved jobs (for job portal)
   savedJobs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Job' }],
 
-  // Profile picture (support both Buffer and fallback URL)
+  // Profile picture (Buffer and fallback URL)
   profilePic: {
     data: Buffer,
     contentType: String,
   },
   profileImage: {
     type: String,
-    default: 'https://plus.unsplash.com/premium_photo-1738637233381-6f857ce13eb9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c3R1ZGVudCUyMHByb2ZpbGUlMjBhbmltYXRlZHxlbnwwfHwwfHx8MA%3D%3D'
+    default: 'https://plus.unsplash.com/premium_photo-1738637233381-6f857ce13eb9?w=400&auto=format&fit=crop&q=60'
   },
 
-  // Verifications
+  // Verification & System
   verified: { type: Boolean, default: false },
   isCollegeVerified: { type: Boolean, default: false },
   isSalesVerified: { type: Boolean, default: false },
