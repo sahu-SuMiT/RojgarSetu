@@ -3,6 +3,8 @@ import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
 
+
+import { cn } from "@/lib/utils"
 import { useIsMobile } from "../../hooks/use-mobile"
 import { Button } from "./button"
 import { Input } from "./input"
@@ -14,12 +16,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "./tooltip"
-// import { cn } from "@/lib/utils"
-// Utility function to concatenate class names conditionally
-export function cn(...classes: (string | undefined | false | null)[]): string {
-  return classes.filter(Boolean).join(' ');
-}
+} from "@/components/ui/tooltip"
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7

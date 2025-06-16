@@ -2,12 +2,8 @@ import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 
-import { buttonVariants } from "./button";
-// import { cn } from "@/lib/utils"
-// Utility function to concatenate class names conditionally
-export function cn(...classes: (string | undefined | false | null)[]): string {
-  return classes.filter(Boolean).join(' ');
-}
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
