@@ -1,8 +1,23 @@
 import * as React from "react"
 import * as RechartsPrimitive from "recharts"
 
-import { cn } from "@/lib/utils"
-
+// import { cn } from "@/lib/utils"
+// Utility function to concatenate class names conditionally
+// Enhanced cn function to support object syntax for conditional classes
+export function cn(...classes: (string | undefined | false | null | Record<string, boolean>)[]): string {
+  return classes
+    .flatMap(cls => {
+      if (!cls) return [];
+      if (typeof cls === "string") return [cls];
+      if (typeof cls === "object") {
+        return Object.entries(cls)
+          .filter(([_, value]) => Boolean(value))
+          .map(([key]) => key);
+      }
+      return [];
+    })
+    .join(" ");
+}
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const
 
