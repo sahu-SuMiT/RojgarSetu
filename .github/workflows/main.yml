@@ -38,7 +38,7 @@ jobs:
         working-directory: ./backend
         run: |
           /home/ubuntu/.nvm/versions/node/v22.16.0/bin/pm2 restart backend || \
-          /home/ubuntu/.nvm/versions/node/v22.16.0/bin/pm2 start index.js --name backend
+          /home/ubuntu/.nvm/versions/node/v22.16.0/bin/pm2 start server.js --name backend
 
       # ------------------------------
       # FRONTEND SETUP
@@ -65,18 +65,18 @@ jobs:
       # ------------------------------
       # ADMIN FRONTEND SETUP
       # ------------------------------
-      - name: Install admin dependencies
-        working-directory: ./Admin
-        run: |
-          rm -rf node_modules package-lock.json
-          npm cache clean --force
-          npm install
+      # - name: Install admin dependencies
+      #   working-directory: ./Admin
+      #   run: |
+      #     rm -rf node_modules package-lock.json
+      #     npm cache clean --force
+      #     npm install
 
-      - name: Build admin panel
-        working-directory: ./Admin
-        run: npm run build
+      # - name: Build admin panel
+      #   working-directory: ./Admin
+      #   run: npm run build
 
-      - name: Deploy admin to Nginx (subdomain)
-        run: |
-          sudo rm -rf /var/www/admin/*
-          sudo cp -r ./Admin/dist/* /var/www/admin/
+      # - name: Deploy admin to Nginx (subdomain)
+      #   run: |
+      #     sudo rm -rf /var/www/admin/*
+      #     sudo cp -r ./Admin/dist/* /var/www/admin/
