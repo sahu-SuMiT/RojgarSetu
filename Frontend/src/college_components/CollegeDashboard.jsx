@@ -529,7 +529,9 @@ const CollegeDashboard = () => {
                   textAlign: 'center',
                   minHeight: 200
                 }}>
-                  <div style={{ fontSize: 24, fontWeight: 700, marginBottom: '1rem' }}>Overall Campus Score</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, marginBottom: '1rem' }}>
+                    Overall Campus Score
+                  </div>
                   <div style={{ 
                     fontSize: 48, 
                     fontWeight: 800, 
@@ -545,7 +547,19 @@ const CollegeDashboard = () => {
                   }}>
                     {metrics.avgCampusScore}
                   </div>
-                  <div style={{ fontSize: 14, opacity: 0.9 }}>Average of all student scores</div>
+                  <div style={{ fontSize: 14, opacity: 0.9, marginBottom: '0.5rem' }}>
+                    Average of all student scores
+                  </div>
+                  <div style={{ 
+                    fontSize: 12, 
+                    opacity: 0.8, 
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '8px',
+                    marginTop: '0.5rem'
+                  }}>
+                    Based on: 40% Internships, 40% Interviews, 20% CGPA
+                  </div>
                 </div>
 
                 {/* Campus Comparison Card */}
@@ -865,7 +879,7 @@ const CollegeDashboard = () => {
                         <Pie
                           data={[
                             { name: 'Avg Campus Score', value: Number(metrics.avgCampusScore) },
-                            { name: 'Avg CGPA', value: Number(metrics.avgCGPA) * 10 },
+                            { name: 'Avg CGPA', value: Number(metrics.avgCGPA) },
                           ]}
                           dataKey="value"
                           nameKey="name"
@@ -877,14 +891,7 @@ const CollegeDashboard = () => {
                           <Cell fill="#6366f1" />
                           <Cell fill="#82ca9d" />
                         </Pie>
-                        <Tooltip 
-                          contentStyle={{ 
-                            background: '#fff',
-                            border: 'none',
-                            borderRadius: 8,
-                            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
-                          }}
-                        />
+                        <Tooltip />
                         <Legend />
                       </PieChart>
                     </ResponsiveContainer>
