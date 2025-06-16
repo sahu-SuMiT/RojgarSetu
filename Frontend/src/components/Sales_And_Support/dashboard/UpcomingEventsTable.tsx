@@ -1,6 +1,8 @@
 
 import React from 'react';
+// Update the path below to the correct relative path for your project structure
 import { Badge } from '../../ui/badge';
+
 const UpcomingEventsTable = () => {
   const events = [
     {

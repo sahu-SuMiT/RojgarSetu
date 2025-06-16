@@ -11,9 +11,9 @@ import {
   User,
   LogOut
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "../../components/ui/input";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../../components/ui/dropdown-menu";
+import { Badge } from "../../components/ui/badge";
 import { toast } from "sonner";
 
 interface AppLayoutProps {
@@ -24,11 +24,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([
-    { id: 1, message: "New job application received", time: "5 minutes ago", unread: true, type: "application" },
-    { id: 2, message: "KYC verification pending", time: "1 hour ago", unread: true, type: "kyc" },
-    { id: 3, message: "Listing approved: Software Engineer", time: "2 hours ago", unread: true, type: "approval" },
-    { id: 4, message: "Application deadline reminder", time: "1 day ago", unread: false, type: "reminder" },
-    { id: 5, message: "Profile update required", time: "2 days ago", unread: false, type: "profile" }
+    { id: 1, message: "KYC verification completed", time: "2 hours ago", unread: true },
+    { id: 2, message: "Document uploaded successfully", time: "1 day ago", unread: true },
+    { id: 3, message: "Verification ticket approved", time: "3 days ago", unread: false }
   ]);
   
   const isActive = (path: string) => {
@@ -36,18 +34,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   };
 
   const handleLogout = () => {
-    // Clear any stored data
-    localStorage.clear();
-    sessionStorage.clear();
+    // In a real app, you would clear tokens, session data, etc.
     toast.success("Logged out successfully");
-    
-    // In a real app, this would redirect to login page
-    // For now, redirect to support page as requested
-    navigate("/support");
-  };
-
-  const handleProfile = () => {
-    navigate("/profile");
+    navigate("/support"); // Redirect to support page or login page
   };
 
   const markNotificationAsRead = (notificationId: number) => {
@@ -60,33 +49,15 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     );
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notification => ({ ...notification, unread: false }))
-    );
-    toast.success("All notifications marked as read");
-  };
-
   const unreadCount = notifications.filter(n => n.unread).length;
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'application': return '👤';
-      case 'kyc': return '🛡️';
-      case 'approval': return '✅';
-      case 'reminder': return '⏰';
-      case 'profile': return '📝';
-      default: return '📢';
-    }
-  };
 
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className="w-64 bg-blue-900 text-white">
+      <div className="w-64 bg-campus-blue text-white" style={{ backgroundColor: "#1e40af" }}>
         <div className="p-4 font-bold text-xl">
           <Link to="/support" className="flex items-center">
-            Campus Connect
+          ROJGAR SETU
           </Link>
         </div>
         
@@ -128,13 +99,14 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           </Link>
         </nav>
         
-        <div className="absolute bottom-0 w-64 p-4 bg-blue-900 border-t border-blue-800">
+        <div className="absolute bottom-0 w-64 p-4 bg-campus-blue border-t border-blue-800">
           <div className="flex items-center">
-            <div className="h-8 w-8 rounded-full bg-white text-blue-900 flex items-center justify-center mr-3">
+            <div className="h-8 w-8 rounded-full bg-white text-campus-blue flex items-center justify-center mr-3"  style={{ color: "#1e40af" }}>
               <span className="font-semibold">AJ</span>
             </div>
             <div>
               <div className="text-sm font-semibold">Alex Johnson</div>
+              <div className="text-xs text-gray-300">Student</div>
             </div>
           </div>
         </div>
@@ -143,7 +115,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Topbar */}
-        <header className="bg-white border-b p-4 flex items-center justify-between shadow-sm">
+        <header className="bg-white border-b p-4 flex items-center justify-between">
           <div className="w-1/3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -154,11 +126,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            {/* Enhanced Notification Button */}
+            {/* Notification Button */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-2 rounded-full hover:bg-gray-100 relative bg-white border border-gray-200 shadow-sm">
-                  <Bell className="h-5 w-5 text-gray-600" />
+                <button className="p-2 rounded-full hover:bg-gray-100 relative">
+                  <Bell className="h-5 w-5 text-gray-500" />
                   {unreadCount > 0 && (
                     <Badge 
                       variant="destructive" 
@@ -169,72 +141,49 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80 bg-white border border-gray-200 shadow-lg z-50">
-                <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
-                  <DropdownMenuLabel className="text-gray-900 font-semibold">Notifications</DropdownMenuLabel>
-                  {unreadCount > 0 && (
-                    <button 
-                      onClick={markAllAsRead}
-                      className="text-xs text-blue-600 hover:text-blue-800"
-                    >
-                      Mark all read
-                    </button>
-                  )}
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  {notifications.map((notification) => (
-                    <DropdownMenuItem 
-                      key={notification.id} 
-                      className="flex flex-col items-start p-3 cursor-pointer hover:bg-gray-50 border-b border-gray-50"
-                      onClick={() => markNotificationAsRead(notification.id)}
-                    >
-                      <div className="flex items-start justify-between w-full">
-                        <div className="flex items-start gap-2">
-                          <span className="text-sm">{getNotificationIcon(notification.type)}</span>
-                          <div className="flex-1">
-                            <span className={`text-sm ${notification.unread ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
-                              {notification.message}
-                            </span>
-                            <div className="text-xs text-gray-500 mt-1">{notification.time}</div>
-                          </div>
-                        </div>
-                        {notification.unread && (
-                          <div className="h-2 w-2 bg-blue-500 rounded-full mt-1"></div>
-                        )}
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-                </div>
-                {notifications.length === 0 && (
-                  <div className="p-4 text-center text-gray-500 text-sm">
-                    No notifications
-                  </div>
-                )}
+              <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {notifications.map((notification) => (
+                  <DropdownMenuItem 
+                    key={notification.id} 
+                    className="flex flex-col items-start p-3 cursor-pointer"
+                    onClick={() => markNotificationAsRead(notification.id)}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className={`text-sm ${notification.unread ? 'font-semibold' : ''}`}>
+                        {notification.message}
+                      </span>
+                      {notification.unread && (
+                        <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-500 mt-1">{notification.time}</span>
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Enhanced Profile Dropdown */}
+            {/* Profile Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-2 rounded-full hover:bg-gray-100 bg-white border border-gray-200 shadow-sm">
-                  <User className="h-5 w-5 text-gray-600" />
+                <button className="p-2 rounded-full hover:bg-gray-100">
+                  <User className="h-5 w-5 text-gray-500" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg z-50">
-                <DropdownMenuLabel className="text-gray-900">Alex Johnson</DropdownMenuLabel>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Alex Johnson</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={handleProfile}
-                  className="cursor-pointer hover:bg-gray-50"
-                >
+                <DropdownMenuItem>
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Shield className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={handleLogout} 
-                  className="text-red-600 cursor-pointer hover:bg-red-50"
-                >
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Logout</span>
                 </DropdownMenuItem>
