@@ -5,7 +5,7 @@ import {
 import Sidebar from './Sidebar';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const API_BASE = `${apiUrl}/feedback`;
+const API_BASE = `${apiUrl}/api/feedback`;
 
 const FeedbackCenter = () => {
   // Sidebar open state for mobile

@@ -19,7 +19,7 @@ const Profile = () => {
 
   useEffect(() => {
     if (!studentId) {
-      window.location.href = '/auth';
+      window.location.href = '/student-login';
     }
   }, [studentId]);
 
@@ -28,7 +28,7 @@ const Profile = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`${API_URL}/api/students/${studentId}`, {
+        const response = await fetch(`${API_URL}/api/studentsProfile/${studentId}`, {
           method: 'GET',
           credentials: 'include',
         });
@@ -79,7 +79,7 @@ const Profile = () => {
   const handleSave = async () => {
     try {
       // Update main profile
-      const response = await fetch(`${API_URL}/api/students/${studentId}`, {
+      const response = await fetch(`${API_URL}/api/studentsProfile/${studentId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -96,7 +96,7 @@ const Profile = () => {
       if (profilePicFile) {
         const formData = new FormData();
         formData.append('profilePic', profilePicFile);
-        const picRes = await fetch(`${API_URL}/api/students/${studentId}/profile-pic`, {
+        const picRes = await fetch(`${API_URL}/api/studentsProfile/${studentId}/profile-pic`, {
           method: 'POST',
           credentials: 'include',
           body: formData,
@@ -132,7 +132,7 @@ const Profile = () => {
   const getProfilePicUrl = () => {
     if (previewUrl) return previewUrl;
     if (profileData && profileData._id)
-      return `${API_URL}/api/students/${profileData._id}/profile-pic?${Date.now()}`;
+      return `${API_URL}/api/studentsProfile/${profileData._id}/profile-pic?${Date.now()}`;
     if (profileData && profileData.profileImage) return profileData.profileImage;
     return '';
   };

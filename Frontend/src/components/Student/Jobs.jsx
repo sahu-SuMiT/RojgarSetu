@@ -68,7 +68,7 @@ const Jobs = () => {
   const handleViewDetails = async (job) => {
     try {
       if (!job.responsibilities || job.responsibilities.length === 0) {
-        const response = await API.get(`/jobs/${job._id}`);
+        const response = await API.get(`/api/studentJobs/${job._id}`);
         if (response.data.success) {
           setSelectedJob(response.data.job);
         } else {
@@ -125,7 +125,7 @@ const Jobs = () => {
       setApplying(true);
 
       const res = await API.post(
-        `/jobs/${applicationJob._id}/apply`,
+        `/api/studentJobs/${applicationJob._id}/apply`,
         applicationData,
         { headers: { 'Content-Type': 'application/json' } }
       );

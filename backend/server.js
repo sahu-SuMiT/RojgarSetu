@@ -9,7 +9,7 @@ const MongoStore = require('connect-mongo');
 
 
 // Route modules
-const authRoutes = require('./routes/authRoutes');
+const authRoutes = require('./routes/authRoutes')
 const jobRoutes = require('./routes/jobRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const interviewRoutes = require('./routes/interviewRoutes');
@@ -49,8 +49,12 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
-  cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 * 24 }, // 1 day
-}));
+  cookie: { secure: process.env.NODE_ENV === 'production', 
+            httpOnly: true, 
+            maxAge: 1000 * 60 * 60 * 24,
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        }, // 1 day
+    }));
 
 // CORS setup
 const allowedOrigins = [
@@ -112,17 +116,25 @@ db.once('open', () => {
   console.log('MongoDB connection established successfully');
 });
 
+//additional routes that are not included here from routes folder
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/jobs', require('./routes/jobs'));
+app.use('/api/interviews', require('./routes/interviews'));
+app.use('/api/applications', require('./routes/applications'));
+app.use('/api/students', require('./routes/students'));
+
+
 // API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/jobs', jobRoutes);
+app.use('/api/student', authRoutes);
+app.use('/api/studentJobs', jobRoutes);
 app.use('/api/internships', internshipsRoutes);
-app.use('/api/interviews', interviewRoutes);
-app.use('/api/applications', applicationRoutes);
+app.use('/api/studentInterviews', interviewRoutes);
+app.use('/api/studentApplications', applicationRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/roles', rolesRoutes);
 app.use('/api/employees', employeesRoutes);
 app.use('/api/colleges', collegesRoutes);
-app.use('/api/students', studentRoutes);
+app.use('/api/studentsProfile', studentRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/dashboard', dashboardRoutes);
