@@ -18,6 +18,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const notificationRoutes = require('./routes/notifications');
 
+
 // Additional "Raj Sir part" and others
 const studentRegisterRoutes = require('./routes/studentRegister');
 const userRoutes = require('./routes/user');
@@ -28,6 +29,7 @@ const employeesRoutes = require('./routes/employees');
 const collegesRoutes = require('./routes/colleges');
 const internshipsRoutes = require('./routes/internships');
 const supportRoutes = require('./routes/support');
+const studentMatchingRoutes = require('./routes/studentMatchingRoutes');
 
 const bcrypt = require('bcrypt');
 
@@ -80,7 +82,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
   optionsSuccessStatus: 200,
 }));
 
@@ -98,7 +100,7 @@ mongoose.connect(process.env.MONGODB_URI, {
     minute: '2-digit',
     hour12: true
   });
-  console.log(`Connected to Database: ${process.env.MONGODB_URI} | ${formattedDate}`);
+  console.log(`Connected to Database: ${process.env.MONGODB_URI} | ${formattedDate} | ${process.env.MONGODB_URI}`);
 }).catch((err) => {
   console.error('MongoDB connection error:', err);
   process.exit(1);
@@ -182,6 +184,9 @@ app.use((err, req, res, next) => {
 // Other Sales and Support routes
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/placement', placementRoutes);
+
+// Add after other app.use for routes
+app.use('/api/student-matching', studentMatchingRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

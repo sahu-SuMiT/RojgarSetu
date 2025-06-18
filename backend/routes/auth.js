@@ -91,46 +91,40 @@ router.post('/company-admin', async (req, res) => {
         return res.status(404).json({ error: 'Company not found' });
       }
 
-      // Create JWT token
-      const token = jwt.sign(
-        { 
-          id: employee._id,
-          type: 'employee',
-          role: employee.type
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-
-      // Verify the token immediately after creation
-      try {
-        jwt.verify(token, process.env.JWT_SECRET);
-      } catch (error) {
-        console.error('Token verification failed:', error.message);
-        return res.status(500).json({ error: 'Failed to verify token' });
-      }
-
-      // Set token in HTTP-only cookie
-      res.cookie('token', token, {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-        maxAge: 86400000 // 24 hours
-      });
-
-      const response = {
-        _id: company._id,
-        name: company.name,
-        email: company.contactEmail,
-        role: employee.type,
-        employeeId: employee._id,
-        employeeName: employee.name,
-        employeeEmail: employee.email,
-        employeeType: employee.type,
-        loginType: 'employee'
+      // Create JWT payload
+      const payload = {
+        user: {
+          id: company._id,
+          role: employee.type,
+          email: employee.email
+        }
       };
 
-      return res.json(response);
+      // Sign and return JWT token
+      jwt.sign(
+        payload,
+        process.env.SESSION_SECRET,
+        { expiresIn: 360000 }, // 100 hours
+        (err, token) => {
+          if (err) {
+            console.error('Token generation error:', err);
+            throw err;
+          }
+          console.log('Token generated successfully for employee:', employee.email);
+          return res.json({
+            _id: company._id,
+            name: company.name,
+            email: company.contactEmail,
+            role: employee.type,
+            employeeId: employee._id,
+            employeeName: employee.name,
+            employeeEmail: employee.email,
+            employeeType: employee.type,
+            loginType: 'employee',
+            token: token
+          });
+        }
+      );
     }
 
     // If no employee found, try company login
@@ -148,34 +142,36 @@ router.post('/company-admin', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Create JWT token
-    const token = jwt.sign(
-      { 
+    // Create JWT payload
+    const payload = {
+      user: {
         id: company._id,
-        type: 'company',
-        role: 'company_owner'
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+        role: 'company_admin',
+        email: company.contactEmail
+      }
+    };
+
+    // Sign and return JWT token
+    jwt.sign(
+      payload,
+      process.env.SESSION_SECRET,
+      { expiresIn: 360000 }, // 100 hours
+      (err, token) => {
+        if (err) {
+          console.error('Token generation error:', err);
+          throw err;
+        }
+        console.log('Token generated successfully for company:', company.contactEmail);
+        res.json({
+          _id: company._id,
+          name: company.name,
+          email: company.contactEmail,
+          role: 'company_admin',
+          loginType: 'company',
+          token: token
+        });
+      }
     );
-
-    // Verify the token immediately after creation
-
-    // Set token in HTTP-only cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: false,      // Only use true for HTTPS
-      sameSite: 'lax',
-      maxAge: 86400000     // 24 hours
-    });
-
-    res.json({
-      _id: company._id,
-      name: company.name,
-      email: company.contactEmail,
-      role: 'company_owner',
-      loginType: 'company'
-    });
   } catch (error) {
     console.error('Error verifying company admin:', error);
     res.status(500).json({ error: 'Error verifying credentials' });
