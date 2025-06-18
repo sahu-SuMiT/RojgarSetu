@@ -66,10 +66,10 @@ exports.login = async (req, res) => {
         student: req.session.user
       });
     });
-    res.status(200).json({
-      studentId: student._id,
-      student: req.session.user
-    });
+    // res.status(200).json({
+    //   studentId: student._id,
+    //   student: req.session.user
+    // });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

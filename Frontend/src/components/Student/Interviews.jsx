@@ -23,13 +23,15 @@ const Interviews = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    // const token = localStorage.getItem('token');
     async function fetchInterviews() {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`${apiUrl}/api/interviews/my`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch(`${apiUrl}/api/studentInterviews/my`, {
+          method: 'GET',
+          credentials: 'include',
+          // headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
         if (data.success) {
@@ -106,7 +108,7 @@ const Interviews = () => {
     // PATCH to backend
     const token = localStorage.getItem('token');
     try {
-      await fetch(`${apiUrl}/api/interviews/${interviewId}/preparation-progress`, {
+      await fetch(`${apiUrl}/api/studentInterviews/${interviewId}/preparation-progress`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

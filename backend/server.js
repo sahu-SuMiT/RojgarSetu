@@ -121,16 +121,16 @@ app.use('/api/students', require('./routes/students'));
 
 
 // API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/jobs', jobRoutes);
+app.use('/api/student', authRoutes);
+app.use('/api/studentJobs', jobRoutes);
 app.use('/api/internships', internshipsRoutes);
-app.use('/api/interviews', interviewRoutes);
-app.use('/api/applications', applicationRoutes);
+app.use('/api/studentInterviews', interviewRoutes);
+app.use('/api/studentApplications', applicationRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/roles', rolesRoutes);
 app.use('/api/employees', employeesRoutes);
 app.use('/api/colleges', collegesRoutes);
-app.use('/api/students', studentRoutes);
+app.use('/api/studentsProfile', studentRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/dashboard', dashboardRoutes);

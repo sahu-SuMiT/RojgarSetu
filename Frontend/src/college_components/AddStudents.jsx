@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import * as XLSX from 'xlsx';
+// import * as XLSX from 'xlsx';
 axios.defaults.withCredentials = true;
 import { 
   FaUserGraduate, 

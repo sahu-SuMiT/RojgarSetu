@@ -39,13 +39,15 @@ const Applications = () => {
 
   // Fetch applications
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    // const token = localStorage.getItem('token');
     async function fetchApplications() {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`${apiUrl}/api/applications/my`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch(`${apiUrl}/api/studentApplications/my`, {
+          method: 'GET',
+          credentials: 'include',
+          // headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
         if (data.success && Array.isArray(data.applications)) {
