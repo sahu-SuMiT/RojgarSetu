@@ -48,8 +48,8 @@ router.post('/college-admin', async (req, res) => {
     
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production', // Use true for HTTPS
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 86400000 // 24 hours
     });
 
@@ -113,8 +113,8 @@ router.post('/company-admin', async (req, res) => {
       // Set token in HTTP-only cookie
       res.cookie('token', token, {
         httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production', // Use true for HTTPS
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 86400000 // 24 hours
       });
 
@@ -164,8 +164,8 @@ router.post('/company-admin', async (req, res) => {
     // Set token in HTTP-only cookie
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false,      // Only use true for HTTPS
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',      // Only use true for HTTPS
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 86400000     // 24 hours
     });
 
@@ -258,7 +258,7 @@ router.post('/register', [
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 3600000 // 1 hour
     });
 
@@ -322,7 +322,7 @@ router.post('/login', [
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 3600000 // 1 hour
     });
 
