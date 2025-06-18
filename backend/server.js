@@ -9,7 +9,7 @@ const MongoStore = require('connect-mongo');
 
 
 // Route modules
-const authRoutes = require('./routes/authRoutes');
+const authRoutes = require('./routes/authRoutes')
 const jobRoutes = require('./routes/jobRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const interviewRoutes = require('./routes/interviewRoutes');
@@ -111,6 +111,14 @@ db.on('error', (error) => {
 db.once('open', () => {
   console.log('MongoDB connection established successfully');
 });
+
+//additional routes that are not included here from routes folder
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/jobs', require('./routes/jobs'));
+app.use('/api/interviews', require('./routes/interviews'));
+app.use('/api/applications', require('./routes/applications'));
+app.use('/api/students', require('./routes/students'));
+
 
 // API Routes
 app.use('/api/auth', authRoutes);
