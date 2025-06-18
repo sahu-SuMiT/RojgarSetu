@@ -49,8 +49,12 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
-  cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 * 24 }, // 1 day
-}));
+  cookie: { secure: process.env.NODE_ENV === 'production', 
+            httpOnly: true, 
+            maxAge: 1000 * 60 * 60 * 24,
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        }, // 1 day
+    }));
 
 // CORS setup
 const allowedOrigins = [
