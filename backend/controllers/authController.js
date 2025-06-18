@@ -5,7 +5,9 @@ const Student = require('../models/Student');
 // Student signup
 exports.signup = async (req, res) => {
   try {
+    
     const { name, email, password } = req.body;
+    console.log(Student.schema.obj);
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Name, email, and password are required" });
     }
@@ -63,6 +65,10 @@ exports.login = async (req, res) => {
         studentId: student._id,
         student: req.session.user
       });
+    });
+    res.status(200).json({
+      studentId: student._id,
+      student: req.session.user
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

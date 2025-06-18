@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Calendar, Target, ShieldAlert } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Calendar, Target, ShieldAlert, Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Profile = () => {
+  // Sidebar open state for mobile
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -107,7 +110,7 @@ const Profile = () => {
       setIsEditing(false);
       setPreviewUrl('');
       setProfilePicFile(null);
-    } catch (err) {
+    } catch  {
       alert('Failed to update profile');
     }
   };
@@ -240,9 +243,21 @@ const Profile = () => {
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar sectionLabel="CAMPUS SERVICES" />
+      {/* Sidebar for desktop and mobile */}
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        sectionLabel="CAMPUS SERVICES"
+      />
       {/* Main Content */}
-      <div className="flex-1">
+      <div className="flex-1 flex flex-col">
+        {/* Mobile Header */}
+        <div className="lg:hidden p-4 bg-white shadow flex items-center">
+          <button onClick={() => setSidebarOpen(true)}>
+            <Menu size={24} />
+          </button>
+          <span className="ml-4 font-bold">Rojgar Setu</span>
+        </div>
         <div className="bg-gray-50 min-h-full">
           <div className="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-40">
             <div className="flex items-center justify-between">

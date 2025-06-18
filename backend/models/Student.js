@@ -1,51 +1,52 @@
 const mongoose = require('mongoose');
 
 const studentSchema = new mongoose.Schema({
-  // Authentication & Identity
+  // Login and basic info
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
 
-  // Student Identifiers
-  studentId: { type: String, unique: true, sparse: true }, // Only one unique ID needed
-  // rollNumber: { type: String, unique: true, sparse: true }, // Remove if studentId is enough
-
-  // College Relationship
+  // College relationship
   college: { type: mongoose.Schema.Types.ObjectId, ref: 'College' },
 
-  // Academic Info
-  degree: String,
-  major: String, // or 'department', pick one
-  batch: String, // e.g. "2020-2024"
+  // Academic info
+
+  rollNumber: { type: String, unique: true },
+  department: String,
+  batch: String,
   joiningYear: Number,
-  graduationYear: Number, // Use one graduation date field
-  year: Number, // Current academic year (1, 2, 3, 4)
-  gpa: { type: Number, min: 0, max: 10 },
+  graduationYear: Number,
+  degree: String,
+  major: String,
+  year: Number,
+  gpa: Number,
   cgpa: { type: Number, min: 0, max: 10 },
 
-  // Career & Profile
-  headline: String, // replaces "title"
+  // Career & job profile
+  headline: String,
   careerObjective: String,
   portfolioUrl: String,
   githubUrl: String,
   linkedinUrl: String,
-  resume: String, // resume link
 
   // Contact
   phone: String,
   location: String,
 
-  // Personal Info
+  // Personal info
   dateOfBirth: Date,
   gender: String,
   nationality: String,
 
-  // Skills & Tech
+  // Skills and technologies
   skills: [{ type: String, trim: true }],
   programmingLanguages: [String],
   technologies: [String],
 
-  // Projects / Achievements / Certifications / Activities
+  // Resume
+  resume: String,
+
+  // Projects, Achievements, Certifications, Extracurricular, Research, Hackathons
   projects: [{
     title: String,
     description: String,
@@ -97,7 +98,7 @@ const studentSchema = new mongoose.Schema({
     default: 'https://plus.unsplash.com/premium_photo-1738637233381-6f857ce13eb9?w=400&auto=format&fit=crop&q=60'
   },
 
-  // Verification & System
+  // Verifications
   verified: { type: Boolean, default: false },
   isCollegeVerified: { type: Boolean, default: false },
   isSalesVerified: { type: Boolean, default: false },
@@ -106,7 +107,6 @@ const studentSchema = new mongoose.Schema({
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
 
-  // Timestamps
   createdAt: { type: Date, default: Date.now }
 }, {
   timestamps: true

@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, MessageCircle, User, Bot, Clock, CheckCircle } from 'lucide-react';
+import { Send, MessageCircle, User, Bot, Clock, CheckCircle, Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 
 const Chatbot = () => {
+  // Sidebar open state for mobile
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -53,15 +56,11 @@ const Chatbot = () => {
 
   const getBotResponse = (userMessage) => {
     const lowerMessage = userMessage.toLowerCase();
-    
-    // Check for exact matches first
     for (const [key, response] of Object.entries(faqData)) {
       if (lowerMessage.includes(key)) {
         return response;
       }
     }
-    
-    // Default response if no match found
     return "I understand you're looking for help, but I'm not sure how to assist with that specific question. Please try rephrasing your question or contact our support team at support@campus.edu for personalized assistance.";
   };
 
@@ -79,7 +78,6 @@ const Chatbot = () => {
     setInputMessage('');
     setIsTyping(true);
 
-    // Simulate bot thinking time
     setTimeout(() => {
       const botResponse = {
         id: Date.now() + 1,
@@ -87,7 +85,6 @@ const Chatbot = () => {
         sender: 'bot',
         timestamp: new Date()
       };
-      
       setMessages(prev => [...prev, botResponse]);
       setIsTyping(false);
     }, 1000 + Math.random() * 1000);
@@ -115,143 +112,153 @@ const Chatbot = () => {
 
   return (
     <div className="flex min-h-screen">
+      {/* Sidebar for desktop and mobile */}
       <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
         sectionLabel="CAMPUS SERVICES"
       />
       {/* Main Content */}
-      <div className="flex-1">
-    <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-t-xl shadow-lg p-6 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <div className="bg-indigo-600 p-2 rounded-full">
-              <MessageCircle className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-800">Campus Support Chat</h1>
-              <div className="flex items-center space-x-1 text-sm text-green-600">
-                <CheckCircle className="w-4 h-4" />
-                <span>Online - Average response time: 30 seconds</span>
+      <div className="flex-1 flex flex-col">
+        {/* Mobile Header */}
+        <div className="lg:hidden p-4 bg-white shadow flex items-center">
+          <button onClick={() => setSidebarOpen(true)}>
+            <Menu size={24} />
+          </button>
+          <span className="ml-4 font-bold">Rojgar Setu</span>
+        </div>
+        <div className="min-h-screen bg-gray-100 p-4 flex-1">
+          <div className="max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="bg-white rounded-t-xl shadow-lg p-6 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="bg-indigo-600 p-2 rounded-full">
+                  <MessageCircle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-800">Campus Support Chat</h1>
+                  <div className="flex items-center space-x-1 text-sm text-green-600">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Online - Average response time: 30 seconds</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Chat Messages */}
-        <div className="bg-white shadow-lg h-96 overflow-y-auto p-4 space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex items-start space-x-3 ${
-                message.sender === 'user' ? 'justify-end' : 'justify-start'
-              }`}
-            >
-              {message.sender === 'bot' && (
-                <div className="bg-indigo-600 p-2 rounded-full flex-shrink-0">
-                  <Bot className="w-4 h-4 text-white" />
+            {/* Chat Messages */}
+            <div className="bg-white shadow-lg h-96 overflow-y-auto p-4 space-y-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex items-start space-x-3 ${
+                    message.sender === 'user' ? 'justify-end' : 'justify-start'
+                  }`}
+                >
+                  {message.sender === 'bot' && (
+                    <div className="bg-indigo-600 p-2 rounded-full flex-shrink-0">
+                      <Bot className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                  
+                  <div
+                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                      message.sender === 'user'
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    <p className="text-sm">{message.text}</p>
+                    <p className={`text-xs mt-1 ${
+                      message.sender === 'user' ? 'text-indigo-100' : 'text-gray-500'
+                    }`}>
+                      {formatTime(message.timestamp)}
+                    </p>
+                  </div>
+
+                  {message.sender === 'user' && (
+                    <div className="bg-gray-600 p-2 rounded-full flex-shrink-0">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
               
-              <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                  message.sender === 'user'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-100 text-gray-800'
-                }`}
-              >
-                <p className="text-sm">{message.text}</p>
-                <p className={`text-xs mt-1 ${
-                  message.sender === 'user' ? 'text-indigo-100' : 'text-gray-500'
-                }`}>
-                  {formatTime(message.timestamp)}
-                </p>
-              </div>
-
-              {message.sender === 'user' && (
-                <div className="bg-gray-600 p-2 rounded-full flex-shrink-0">
-                  <User className="w-4 h-4 text-white" />
+              {isTyping && (
+                <div className="flex items-start space-x-3">
+                  <div className="bg-indigo-600 p-2 rounded-full">
+                    <Bot className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="bg-gray-100 px-4 py-2 rounded-lg">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
-          ))}
-          
-          {isTyping && (
-            <div className="flex items-start space-x-3">
-              <div className="bg-indigo-600 p-2 rounded-full">
-                <Bot className="w-4 h-4 text-white" />
+
+            {/* Quick Actions */}
+            <div className="bg-white shadow-lg px-4 py-3 border-t border-gray-200">
+              <p className="text-sm text-gray-600 mb-2">Quick actions:</p>
+              <div className="flex flex-wrap gap-2">
+                {quickActions.map((action, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setInputMessage(action)}
+                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors"
+                  >
+                    {action}
+                  </button>
+                ))}
               </div>
-              <div className="bg-gray-100 px-4 py-2 rounded-lg">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
+
+            {/* Input Area */}
+            <div className="bg-white rounded-b-xl shadow-lg p-4">
+              <div className="flex space-x-3">
+                <input
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Type your message here..."
+                  className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim()}
+                  className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white p-2 rounded-lg transition-colors"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
+                <div className="flex items-center space-x-1">
+                  <Clock className="w-3 h-3" />
+                  <span>Typically replies within minutes</span>
                 </div>
+                <span>Press Enter to send</span>
               </div>
             </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
 
-        {/* Quick Actions */}
-        <div className="bg-white shadow-lg px-4 py-3 border-t border-gray-200">
-          <p className="text-sm text-gray-600 mb-2">Quick actions:</p>
-          <div className="flex flex-wrap gap-2">
-            {quickActions.map((action, index) => (
-              <button
-                key={index}
-                onClick={() => setInputMessage(action)}
-                className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-700 transition-colors"
-              >
-                {action}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Input Area */}
-        <div className="bg-white rounded-b-xl shadow-lg p-4">
-          <div className="flex space-x-3">
-            <input
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your message here..."
-              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-            <button
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim()}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white p-2 rounded-lg transition-colors"
-            >
-              <Send className="w-5 h-5" />
-            </button>
-          </div>
-          
-          <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
-            <div className="flex items-center space-x-1">
-              <Clock className="w-3 h-3" />
-              <span>Typically replies within minutes</span>
+            {/* Footer */}
+            <div className="text-center mt-4 text-sm text-gray-600">
+              Need more help? Contact us at{' '}
+              <a href="mailto:support@campus.edu" className="text-indigo-600 hover:underline">
+                support@campus.edu
+              </a>{' '}
+              or call{' '}
+              <a href="tel:+15551234567" className="text-indigo-600 hover:underline">
+                (555) 123-4567
+              </a>
             </div>
-            <span>Press Enter to send</span>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-4 text-sm text-gray-600">
-          Need more help? Contact us at{' '}
-          <a href="mailto:support@campus.edu" className="text-indigo-600 hover:underline">
-            support@campus.edu
-          </a>{' '}
-          or call{' '}
-          <a href="tel:+15551234567" className="text-indigo-600 hover:underline">
-            (555) 123-4567
-          </a>
         </div>
       </div>
-    </div>
-    </div>
     </div>
   );
 };
