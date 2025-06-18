@@ -1,7 +1,6 @@
 const bcrypt = require('bcryptjs');
 const Student = require('../models/Student');
 
-
 // Student signup
 exports.signup = async (req, res) => {
   try {

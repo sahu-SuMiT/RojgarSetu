@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   User, 
   Briefcase, 
@@ -17,10 +17,20 @@ const Sidebar = ({
   isOpen, 
   onClose, 
   user = { initials: '', name: '', role: '' },
-  // onLogout, // <-- Accept onLogout as a prop from App!
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Prevent background scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
+
   const onLogout = async () => {
     try {
       await fetch(`${apiUrl}/api/auth/logout`, {
@@ -42,7 +52,7 @@ const Sidebar = ({
     { icon: Calendar, label: 'Interview Schedule', path: '/interviews' },
     { icon: MessageSquare, label: 'Feedback', path: '/feedback' },
     { icon: Sparkles, label: 'AI Portfolio', path: '/portfolio' },
-    { icon: Bot, label: 'Support Chat', path: '/chat' }, // Fixed path to match App.jsx
+    { icon: Bot, label: 'Support Chat', path: '/chat' },
   ];
 
   // Fallbacks for user info, omit initials if not present
@@ -57,22 +67,28 @@ const Sidebar = ({
 
   return (
     <>
-      {/* Mobile backdrop */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-      
+      {/* Backdrop for mobile only */}
+      <div
+        className={`
+          fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300
+          ${isOpen ? 'block lg:hidden opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}
+        `}
+        onClick={onClose}
+        aria-hidden={!isOpen}
+      />
+
       {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 h-screen w-64 bg-blue-700 text-white z-50 transform transition-transform duration-300 ease-in-out flex flex-col shadow-lg
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:static lg:z-auto
-      `}>
+      <aside
+        className={`
+          fixed top-0 left-0 h-screen w-64 bg-blue-700 text-white z-50 shadow-lg flex flex-col
+          transition-transform duration-300 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0 lg:static lg:z-auto
+        `}
+        aria-label="Sidebar"
+      >
         {/* Top Section - Header */}
         <div className="flex-shrink-0">
-          {/* App Header */}
           <div className="px-8 pt-6 pb-4 border-b border-blue-500 flex items-center justify-between">
             <div className="w-full font-bold text-lg tracking-wide whitespace-nowrap overflow-hidden text-ellipsis leading-tight max-w-38">
               Rojgaar Setu
@@ -80,6 +96,7 @@ const Sidebar = ({
             <button
               onClick={onClose}
               className="lg:hidden text-blue-200 hover:text-white ml-2 flex-shrink-0"
+              aria-label="Close Sidebar"
             >
               <X size={20} />
             </button>
@@ -117,7 +134,7 @@ const Sidebar = ({
           })}
         </nav>
         
-        {/* Logout button positioned at bottom of sidebar */}
+        {/* Logout button */}
         <div className="flex-shrink-0 border-t border-blue-500">
           <button
             onClick={onLogout}

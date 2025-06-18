@@ -60,8 +60,8 @@ export const AuthPage = ({ onAuthSuccess }) => {
     try {
       const endpoint =
         currentView === "login"
-          ? `${apiUrl}/api/auth/login`
-          : `${apiUrl}/api/auth/signup`;
+          ? `${apiUrl}/api/student/login`
+          : `${apiUrl}/api/student/signup`;
       const payload =
         currentView === "login"
           ? { email: formData.email, password: formData.password }

@@ -48,8 +48,8 @@ router.post('/college-admin', async (req, res) => {
     
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production', // Use true for HTTPS
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 86400000 // 24 hours
     });
 
@@ -93,24 +93,32 @@ router.post('/company-admin', async (req, res) => {
 
       // Create JWT payload
       const payload = {
-        user: {
-          id: company._id,
-          role: employee.type,
-          email: employee.email
-        }
+        id: company._id,
+        type: 'employee',
+        role: employee.type,
+        email: employee.email
       };
 
       // Sign and return JWT token
       jwt.sign(
         payload,
-        process.env.SESSION_SECRET,
+        process.env.JWT_SECRET,
         { expiresIn: 360000 }, // 100 hours
         (err, token) => {
           if (err) {
             console.error('Token generation error:', err);
-            throw err;
+            return res.status(500).json({ error: 'Token generation failed' });
           }
           console.log('Token generated successfully for employee:', employee.email);
+          
+          // Set token in HTTP-only cookie
+          res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 360000 // 100 hours
+          });
+          
           return res.json({
             _id: company._id,
             name: company.name,
@@ -125,6 +133,7 @@ router.post('/company-admin', async (req, res) => {
           });
         }
       );
+      return; // Add return to prevent further execution
     }
 
     // If no employee found, try company login
@@ -144,25 +153,33 @@ router.post('/company-admin', async (req, res) => {
 
     // Create JWT payload
     const payload = {
-      user: {
-        id: company._id,
-        role: 'company_admin',
-        email: company.contactEmail
-      }
+      id: company._id,
+      type: 'company',
+      role: 'company_admin',
+      email: company.contactEmail
     };
 
     // Sign and return JWT token
     jwt.sign(
       payload,
-      process.env.SESSION_SECRET,
+      process.env.JWT_SECRET,
       { expiresIn: 360000 }, // 100 hours
       (err, token) => {
         if (err) {
           console.error('Token generation error:', err);
-          throw err;
+          return res.status(500).json({ error: 'Token generation failed' });
         }
         console.log('Token generated successfully for company:', company.contactEmail);
-        res.json({
+        
+        // Set token in HTTP-only cookie
+        res.cookie('token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+          maxAge: 360000 // 100 hours
+        });
+        
+        return res.json({
           _id: company._id,
           name: company.name,
           email: company.contactEmail,
@@ -174,7 +191,7 @@ router.post('/company-admin', async (req, res) => {
     );
   } catch (error) {
     console.error('Error verifying company admin:', error);
-    res.status(500).json({ error: 'Error verifying credentials' });
+    return res.status(500).json({ error: 'Error verifying credentials' });
   }
 });
 
@@ -254,7 +271,7 @@ router.post('/register', [
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 3600000 // 1 hour
     });
 
@@ -318,7 +335,7 @@ router.post('/login', [
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 3600000 // 1 hour
     });
 

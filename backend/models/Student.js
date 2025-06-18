@@ -9,8 +9,7 @@ const studentSchema = new mongoose.Schema({
   // College relationship
   college: { type: mongoose.Schema.Types.ObjectId, ref: 'College' },
 
-  // College/roll info
-  rollNumber: { type: String, unique: true, sparse: true },
+  // College info
   department: String,
   batch: String,
   joiningYear: Number,
