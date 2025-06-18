@@ -9,26 +9,21 @@ const studentSchema = new mongoose.Schema({
   // College relationship
   college: { type: mongoose.Schema.Types.ObjectId, ref: 'College' },
 
-  // College/roll info
-  rollNumber: { type: String, unique: true, sparse: true },
+  // Academic info
+
+  rollNumber: { type: String, unique: true },
   department: String,
   batch: String,
   joiningYear: Number,
   graduationYear: Number,
-
-  // Academic info
   degree: String,
   major: String,
-  year: String,
-  gpa: String,
+  year: Number,
+  gpa: Number,
   cgpa: { type: Number, min: 0, max: 10 },
-  expectedGraduation: String,
-
-  // Scores
-  campusScore: { type: Number, min: 0, max: 10, default: 6.5 },
 
   // Career & job profile
-  title: String,
+  headline: String,
   careerObjective: String,
   portfolioUrl: String,
   githubUrl: String,
@@ -39,8 +34,7 @@ const studentSchema = new mongoose.Schema({
   location: String,
 
   // Personal info
-  studentId: String,
-  dateOfBirth: String,
+  dateOfBirth: Date,
   gender: String,
   nationality: String,
 
@@ -52,7 +46,7 @@ const studentSchema = new mongoose.Schema({
   // Resume
   resume: String,
 
-  // Projects
+  // Projects, Achievements, Certifications, Extracurricular, Research, Hackathons
   projects: [{
     title: String,
     description: String,
@@ -61,39 +55,29 @@ const studentSchema = new mongoose.Schema({
     endDate: Date,
     link: String
   }],
-
-  // Achievements
   achievements: [{
     title: String,
     description: String,
     date: Date,
     issuer: String
   }],
-
-  // Certifications
   certifications: [{
     name: String,
     issuer: String,
     date: Date,
     link: String
   }],
-
-  // Extracurricular
   extracurricular: [{
     activity: String,
     role: String,
     achievement: String
   }],
-
-  // Research
   research: [{
     title: String,
     role: String,
     year: Number,
     description: String
   }],
-
-  // Hackathons
   hackathons: [{
     name: String,
     year: Number,
@@ -104,14 +88,14 @@ const studentSchema = new mongoose.Schema({
   // Saved jobs (for job portal)
   savedJobs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Job' }],
 
-  // Profile picture (support both Buffer and fallback URL)
+  // Profile picture (Buffer and fallback URL)
   profilePic: {
     data: Buffer,
     contentType: String,
   },
   profileImage: {
     type: String,
-    default: 'https://plus.unsplash.com/premium_photo-1738637233381-6f857ce13eb9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c3R1ZGVudCUyMHByb2ZpbGUlMjBhbmltYXRlZHxlbnwwfHwwfHx8MA%3D%3D'
+    default: 'https://plus.unsplash.com/premium_photo-1738637233381-6f857ce13eb9?w=400&auto=format&fit=crop&q=60'
   },
 
   // Verifications
@@ -123,7 +107,6 @@ const studentSchema = new mongoose.Schema({
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
 
-  // Timestamps
   createdAt: { type: Date, default: Date.now }
 }, {
   timestamps: true
