@@ -91,46 +91,49 @@ router.post('/company-admin', async (req, res) => {
         return res.status(404).json({ error: 'Company not found' });
       }
 
-      // Create JWT token
-      const token = jwt.sign(
-        { 
-          id: employee._id,
-          type: 'employee',
-          role: employee.type
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-
-      // Verify the token immediately after creation
-      try {
-        jwt.verify(token, process.env.JWT_SECRET);
-      } catch (error) {
-        console.error('Token verification failed:', error.message);
-        return res.status(500).json({ error: 'Failed to verify token' });
-      }
-
-      // Set token in HTTP-only cookie
-      res.cookie('token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // Use true for HTTPS
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        maxAge: 86400000 // 24 hours
-      });
-
-      const response = {
-        _id: company._id,
-        name: company.name,
-        email: company.contactEmail,
+      // Create JWT payload
+      const payload = {
+        id: company._id,
+        type: 'employee',
         role: employee.type,
-        employeeId: employee._id,
-        employeeName: employee.name,
-        employeeEmail: employee.email,
-        employeeType: employee.type,
-        loginType: 'employee'
+        email: employee.email
       };
 
-      return res.json(response);
+      // Sign and return JWT token
+      jwt.sign(
+        payload,
+        process.env.JWT_SECRET,
+        { expiresIn: 360000 }, // 100 hours
+        (err, token) => {
+          if (err) {
+            console.error('Token generation error:', err);
+            return res.status(500).json({ error: 'Token generation failed' });
+          }
+          console.log('Token generated successfully for employee:', employee.email);
+          
+          // Set token in HTTP-only cookie
+          res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            maxAge: 360000 // 100 hours
+          });
+          
+          return res.json({
+            _id: company._id,
+            name: company.name,
+            email: company.contactEmail,
+            role: employee.type,
+            employeeId: employee._id,
+            employeeName: employee.name,
+            employeeEmail: employee.email,
+            employeeType: employee.type,
+            loginType: 'employee',
+            token: token
+          });
+        }
+      );
+      return; // Add return to prevent further execution
     }
 
     // If no employee found, try company login
@@ -148,37 +151,47 @@ router.post('/company-admin', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Create JWT token
-    const token = jwt.sign(
-      { 
-        id: company._id,
-        type: 'company',
-        role: 'company_owner'
-      },
+    // Create JWT payload
+    const payload = {
+      id: company._id,
+      type: 'company',
+      role: 'company_admin',
+      email: company.contactEmail
+    };
+
+    // Sign and return JWT token
+    jwt.sign(
+      payload,
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: 360000 }, // 100 hours
+      (err, token) => {
+        if (err) {
+          console.error('Token generation error:', err);
+          return res.status(500).json({ error: 'Token generation failed' });
+        }
+        console.log('Token generated successfully for company:', company.contactEmail);
+        
+        // Set token in HTTP-only cookie
+        res.cookie('token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+          maxAge: 360000 // 100 hours
+        });
+        
+        return res.json({
+          _id: company._id,
+          name: company.name,
+          email: company.contactEmail,
+          role: 'company_admin',
+          loginType: 'company',
+          token: token
+        });
+      }
     );
-
-    // Verify the token immediately after creation
-
-    // Set token in HTTP-only cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',      // Only use true for HTTPS
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 86400000     // 24 hours
-    });
-
-    res.json({
-      _id: company._id,
-      name: company.name,
-      email: company.contactEmail,
-      role: 'company_owner',
-      loginType: 'company'
-    });
   } catch (error) {
     console.error('Error verifying company admin:', error);
-    res.status(500).json({ error: 'Error verifying credentials' });
+    return res.status(500).json({ error: 'Error verifying credentials' });
   }
 });
 
