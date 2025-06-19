@@ -70,17 +70,21 @@ export const AuthPage = ({ onAuthSuccess }) => {
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // CRUCIAL for session cookies
+        // credentials: "include", // REMOVE for JWT, not needed
         body: JSON.stringify(payload),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        // Optionally store studentId for UI logic
-        if (data.studentId) {
-          localStorage.setItem("studentId", data.studentId);
+        // JWT: Store token and student info in localStorage
+        if (data.token) {
+          localStorage.setItem("token", data.token);
         }
+        if (data.student && data.student.id) {
+          localStorage.setItem("studentId", data.student.id);
+        }
+
         setMessage({
           type: "success",
           text:
@@ -280,4 +284,4 @@ export const AuthPage = ({ onAuthSuccess }) => {
       </div>
     </div>
   );
-}; 
+};
