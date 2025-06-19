@@ -15,36 +15,43 @@ const Profile = () => {
   const [profilePicFile, setProfilePicFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
 
-  const studentId = localStorage.getItem('studentId');
+  // JWT-based: Get token from localStorage
+  const token = localStorage.getItem('token');
 
+  // On mount, redirect if no token
   useEffect(() => {
-    if (!studentId) {
+    if (!token) {
       window.location.href = '/student-login';
     }
-  }, [studentId]);
+  }, [token]);
 
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`${API_URL}/api/studentsProfile/${studentId}`, {
+        // Fetch profile using JWT in Authorization header
+        const response = await fetch(`${API_URL}/api/student/profile`, {
           method: 'GET',
-          credentials: 'include',
+          headers: { Authorization: `Bearer ${token}` },
         });
+        if (response.status === 401 || response.status === 403) {
+          window.location.href = '/student-login';
+          return;
+        }
         if (!response.ok) {
           throw new Error('Failed to fetch profile data');
         }
         const data = await response.json();
-        setProfileData(data);
+        setProfileData(data.profile || data); // fallback if direct object
       } catch (err) {
         setError(err.message || 'Unknown error');
       } finally {
         setLoading(false);
       }
     };
-    if (studentId) fetchProfileData();
-  }, [studentId, isEditing]);
+    if (token) fetchProfileData();
+  }, [token, isEditing]);
 
   const handleEdit = () => setIsEditing(true);
   const handleCancel = () => {
@@ -79,14 +86,16 @@ const Profile = () => {
   const handleSave = async () => {
     try {
       // Update main profile
-      const response = await fetch(`${API_URL}/api/studentsProfile/${studentId}`, {
+      const response = await fetch(`${API_URL}/api/student/profile`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(profileData),
       });
       if (response.status === 401 || response.status === 403) {
-        window.location.href = '/auth';
+        window.location.href = '/student-login';
         return;
       }
       if (!response.ok) throw new Error('Failed to update profile');
@@ -96,9 +105,11 @@ const Profile = () => {
       if (profilePicFile) {
         const formData = new FormData();
         formData.append('profilePic', profilePicFile);
-        const picRes = await fetch(`${API_URL}/api/studentsProfile/${studentId}/profile-pic`, {
+        const picRes = await fetch(`${API_URL}/api/student/profile/profile-pic`, {
           method: 'POST',
-          credentials: 'include',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
           body: formData,
         });
         if (picRes.ok) {
@@ -106,7 +117,7 @@ const Profile = () => {
         }
       }
 
-      setProfileData(data);
+      setProfileData(data.profile || data);
       setIsEditing(false);
       setPreviewUrl('');
       setProfilePicFile(null);
@@ -132,7 +143,7 @@ const Profile = () => {
   const getProfilePicUrl = () => {
     if (previewUrl) return previewUrl;
     if (profileData && profileData._id)
-      return `${API_URL}/api/studentsProfile/${profileData._id}/profile-pic?${Date.now()}`;
+      return `${API_URL}/api/student/profile/profile-pic?${Date.now()}`;
     if (profileData && profileData.profileImage) return profileData.profileImage;
     return '';
   };
