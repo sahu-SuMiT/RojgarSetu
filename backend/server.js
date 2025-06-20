@@ -30,7 +30,6 @@ const collegesRoutes = require('./routes/colleges');
 const internshipsRoutes = require('./routes/internships');
 const supportRoutes = require('./routes/support');
 const studentMatchingRoutes = require('./routes/studentMatchingRoutes');
-
 const bcrypt = require('bcrypt');
 
 const app = express();
