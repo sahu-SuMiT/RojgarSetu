@@ -64,6 +64,14 @@ const managementItems = [
   },
 ];
 
+const employeeItems = [
+  {
+    title: "Employee Management",
+    icon: Briefcase,
+    view: "employees" as AdminView,
+  },
+];
+
 const systemItems = [
   {
     title: "Platform Settings",
@@ -110,6 +118,26 @@ export function AdminSidebar({ currentView, setCurrentView }: AdminSidebarProps)
           <SidebarGroupContent>
             <SidebarMenu>
               {managementItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    onClick={() => setCurrentView(item.view)}
+                    isActive={currentView === item.view}
+                    className="hover:bg-blue-50 hover:text-blue-700 data-[active=true]:bg-blue-100 data-[active=true]:text-blue-700"
+                  >
+                    <item.icon className="w-5 h-5" />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-white">Employees</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {employeeItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     onClick={() => setCurrentView(item.view)}
