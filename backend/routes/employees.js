@@ -33,7 +33,7 @@ router.put('/:id', isCompanyAuthenticated, isCompanyAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
-
+    console.log(req.body)
 
     const employee = await Employee.findByIdAndUpdate(
       id,
@@ -57,7 +57,6 @@ router.put('/:id', isCompanyAuthenticated, isCompanyAdmin, async (req, res) => {
 router.delete('/:id/company/:companyId/',isCompanyAuthenticated,isCompanyAdmin, async (req, res) => {
   try {
     const { companyId, id } = req.params;
-
     // Find and delete the employee by ID and companyId
     const deletedEmployee = await Employee.findOneAndDelete({
       _id: id,

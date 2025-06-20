@@ -289,14 +289,6 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
       setLoadingSentMessages(false);
     }
   };
-  const deleteSentMessage = async (messageId) => {
-    try {
-      await axios.delete(`${apiUrl}/api/notifications/${messageId}`);
-      setSentMessages(prev => prev.filter(m => m._id !== messageId));
-    } catch (error) {
-      console.error('Error deleting sent message:', error); 
-    }
-  };
 
   useEffect(() => {
     if (userId) {
@@ -545,8 +537,6 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
               onClick={() => {
                 setShowExpandedView(true);
                 setIsOpen(false);
-                setLoading(true);
-                fetchNotifications();
               }}
               className="text-sm text-gray-600 hover:text-gray-800"
               style={{
@@ -998,7 +988,7 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
               >
                 <FaTimes />
               </button>
-            </div>
+                </div>
 
             <div style={{ 
               flex: 1, 
@@ -1026,9 +1016,7 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                 </div>
               ) : notifications.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  No notifications
-                </div>
+                <div className="p-8 text-center text-gray-500">No notifications</div>
               ) : (
                 notifications.map((notification) => (
                   <div
@@ -1185,9 +1173,9 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
                         </p>
                         <div className="mt-2 flex items-center gap-3">
                           <button
-                            onClick={() => deleteSentMessage(message._id)}
+                            onClick={() => deleteNotification(message._id)}
                             className="text-xs font-medium text-red-600 hover:text-red-800"
-                          > 
+                          >
                             Delete
                           </button>
                         </div>

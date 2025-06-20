@@ -24,7 +24,6 @@ const ManageEmployees = () => {
     email: '',
     phone: '',
     department: '',
-    position: '',
     type: 'employee',
     password: ''
   });
@@ -68,7 +67,6 @@ const ManageEmployees = () => {
     if (!newEmployee.email) errors.email = 'Email is required';
     if (!newEmployee.phone) errors.phone = 'Phone is required';
     if (!newEmployee.department) errors.department = 'Department is required';
-    if (!newEmployee.position) errors.position = 'Position is required';
     if (!newEmployee.password) errors.password = 'Password is required';
 
     if (Object.keys(errors).length > 0) {
@@ -90,7 +88,6 @@ const ManageEmployees = () => {
         email: '',
         phone: '',
         department: '',
-        position: '',
         type: 'employee',
         password: ''
       });
@@ -110,7 +107,6 @@ const ManageEmployees = () => {
     if (!selectedEmployee.email) errors.email = 'Email is required';
     if (!selectedEmployee.phone) errors.phone = 'Phone is required';
     if (!selectedEmployee.department) errors.department = 'Department is required';
-    if (!selectedEmployee.position) errors.position = 'Position is required';
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -123,7 +119,6 @@ const ManageEmployees = () => {
         email: selectedEmployee.email,
         phone: selectedEmployee.phone,
         department: selectedEmployee.department,
-        position: selectedEmployee.position,
         type: selectedEmployee.type,
         rating: selectedEmployee.rating || 4,
         verified: selectedEmployee.verified || false,
@@ -396,25 +391,6 @@ const ManageEmployees = () => {
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', marginBottom: '8px', color: '#374151' }}>Position</label>
-                      <input
-                        type="text"
-                        value={newEmployee.position}
-                        onChange={(e) => setNewEmployee({ ...newEmployee, position: e.target.value })}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '14px'
-                        }}
-                      />
-                      {validationErrors.position && (
-                        <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>{validationErrors.position}</div>
-                      )}
-                    </div>
-
-                    <div>
                       <label style={{ display: 'block', marginBottom: '8px', color: '#374151' }}>Type</label>
                       <select
                         value={newEmployee.type}
@@ -579,25 +555,6 @@ const ManageEmployees = () => {
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', marginBottom: '8px', color: '#374151' }}>Position</label>
-                      <input
-                        type="text"
-                        value={selectedEmployee.position}
-                        onChange={(e) => setSelectedEmployee({ ...selectedEmployee, position: e.target.value })}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '14px'
-                        }}
-                      />
-                      {validationErrors.position && (
-                        <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>{validationErrors.position}</div>
-                      )}
-                    </div>
-
-                    <div>
                       <label style={{ display: 'block', marginBottom: '8px', color: '#374151' }}>Type</label>
                       <select
                         value={selectedEmployee.type}
@@ -720,7 +677,6 @@ const ManageEmployees = () => {
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Name</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Email</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Department</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Position</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Type</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Rating</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Status</th>
@@ -733,7 +689,6 @@ const ManageEmployees = () => {
                       <td style={{ padding: '12px 16px' }}>{employee.name}</td>
                       <td style={{ padding: '12px 16px' }}>{employee.email}</td>
                       <td style={{ padding: '12px 16px' }}>{employee.department}</td>
-                      <td style={{ padding: '12px 16px' }}>{employee.position}</td>
                       <td style={{ padding: '12px 16px' }}>{employee.type}</td>
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ 
