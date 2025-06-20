@@ -299,14 +299,13 @@ router.post('/:companyId/employees',isCompanyAuthenticated,isCompanyAdmin, async
       email,
       phone,
       department,
-      position,
       type = 'employee', // Default type is employee
       password,
       addedBy // ID of the employee/company adding this employee
     } = req.body;
 
     // Validate required fields
-    if (!name || !email || !phone || !department || !position || !password) {
+    if (!name || !email || !phone || !department || !password) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -359,7 +358,6 @@ router.post('/:companyId/employees',isCompanyAuthenticated,isCompanyAdmin, async
       email,
       phone,
       department,
-      position,
       type,
       companyId,
       password: hashedPassword,

@@ -461,7 +461,19 @@ const ViewApplications = () => {
             <SearchBar onSettingsClick={() => setShowSettings(true)} />
           </div>
           <div style={{ padding: '24px' }}>
-            <Loader message="Loading applications..." />
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 'calc(100vh - 64px)', // adjust if you have a header
+              width: '100%',
+              background: '#fff'
+            }}>
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600" style={{ fontSize: 16 }}>Loading applications...</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

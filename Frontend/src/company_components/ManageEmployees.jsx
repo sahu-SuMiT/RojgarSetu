@@ -29,6 +29,7 @@ const ManageEmployees = () => {
   });
   const [validationErrors, setValidationErrors] = useState({});
   const [showSettings, setShowSettings] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -74,6 +75,7 @@ const ManageEmployees = () => {
       return;
     }
 
+    setAdding(true);
     try {
       const companyId = localStorage.getItem('companyId');
       const response = await axios.post(`${apiUrl}/api/company/${companyId}/employees`, {
@@ -94,6 +96,8 @@ const ManageEmployees = () => {
     } catch (err) {
       console.error('Error adding employee:', err);
       setError(err.response?.data?.error || 'Failed to add employee');
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -228,7 +232,6 @@ const ManageEmployees = () => {
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Name</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Email</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Department</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Position</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Type</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Rating</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Status</th>
@@ -448,18 +451,32 @@ const ManageEmployees = () => {
                     </button>
                     <button
                       type="submit"
+                      disabled={adding}
                       style={{
                         padding: '8px 16px',
                         backgroundColor: '#2563eb',
                         color: 'white',
                         border: 'none',
                         borderRadius: '6px',
-                        cursor: 'pointer',
+                        cursor: adding ? 'not-allowed' : 'pointer',
                         fontSize: '14px',
-                        fontWeight: 500
+                        fontWeight: 500,
+                        height: 40,
+                        minWidth: 140,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8
                       }}
                     >
-                      Add Employee
+                      {adding ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                          Adding...
+                        </>
+                      ) : (
+                        'Add Employee'
+                      )}
                     </button>
                   </div>
                 </form>
