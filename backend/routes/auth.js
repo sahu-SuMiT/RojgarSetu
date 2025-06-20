@@ -155,7 +155,7 @@ router.post('/company-admin', async (req, res) => {
     const payload = {
       id: company._id,
       type: 'company',
-      role: 'company_admin',
+      role: 'company_owner',
       email: company.contactEmail
     };
 
@@ -169,7 +169,6 @@ router.post('/company-admin', async (req, res) => {
           console.error('Token generation error:', err);
           return res.status(500).json({ error: 'Token generation failed' });
         }
-        console.log('Token generated successfully for company:', company.contactEmail);
         
         // Set token in HTTP-only cookie
         res.cookie('token', token, {
