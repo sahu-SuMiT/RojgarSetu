@@ -8,10 +8,12 @@ import { Analytics } from "@/components/dashboard/Analytics";
 import { ContentModeration } from "@/components/dashboard/ContentModeration";
 import { SupportPanel } from "@/components/dashboard/SupportPanel";
 import { PlatformSettings } from "@/components/dashboard/PlatformSettings";
+import { EmployeeManagement } from "@/components/dashboard/EmployeeManagement";
 
 export type AdminView = 
   | "overview" 
   | "users" 
+  | "employees" 
   | "analytics" 
   | "moderation" 
   | "support" 
@@ -26,6 +28,8 @@ const AdminDashboard = () => {
         return <DashboardOverview />;
       case "users":
         return <UserManagement />;
+      case "employees":
+        return <EmployeeManagement />;
       case "analytics":
         return <Analytics />;
       case "moderation":
