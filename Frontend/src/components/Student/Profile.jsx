@@ -5,9 +5,7 @@ import Sidebar from './Sidebar';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Profile = () => {
-  // Sidebar open state for mobile
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,10 +13,8 @@ const Profile = () => {
   const [profilePicFile, setProfilePicFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
 
-  // JWT-based: Get token from localStorage
   const token = localStorage.getItem('token');
 
-  // On mount, redirect if no token
   useEffect(() => {
     if (!token) {
       window.location.href = '/student-login';
@@ -30,8 +26,7 @@ const Profile = () => {
       try {
         setLoading(true);
         setError(null);
-        // Fetch profile using JWT in Authorization header
-        const response = await fetch(`${API_URL}/api/student/profile`, {
+        const response = await fetch(`${API_URL}/api/student/me`, {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -43,7 +38,7 @@ const Profile = () => {
           throw new Error('Failed to fetch profile data');
         }
         const data = await response.json();
-        setProfileData(data.profile || data); // fallback if direct object
+        setProfileData(data.profile || data);
       } catch (err) {
         setError(err.message || 'Unknown error');
       } finally {
@@ -86,7 +81,7 @@ const Profile = () => {
   const handleSave = async () => {
     try {
       // Update main profile
-      const response = await fetch(`${API_URL}/api/student/profile`, {
+      const response = await fetch(`${API_URL}/api/student/me`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +100,7 @@ const Profile = () => {
       if (profilePicFile) {
         const formData = new FormData();
         formData.append('profilePic', profilePicFile);
-        const picRes = await fetch(`${API_URL}/api/student/profile/profile-pic`, {
+        const picRes = await fetch(`${API_URL}/api/student/me/profile-pic`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
@@ -121,12 +116,11 @@ const Profile = () => {
       setIsEditing(false);
       setPreviewUrl('');
       setProfilePicFile(null);
-    } catch  {
+    } catch {
       alert('Failed to update profile');
     }
   };
 
-  // Handle complete verification button click
   const handleVerification = () => {
     window.location.href = '/profile?tab=verification';
   };
@@ -142,8 +136,8 @@ const Profile = () => {
   // Get profile pic URL for <img> tag
   const getProfilePicUrl = () => {
     if (previewUrl) return previewUrl;
-    if (profileData && profileData._id)
-      return `${API_URL}/api/student/profile/profile-pic?${Date.now()}`;
+    if (profileData)
+      return `${API_URL}/api/student/me/profile-pic?${Date.now()}`;
     if (profileData && profileData.profileImage) return profileData.profileImage;
     return '';
   };
@@ -202,7 +196,6 @@ const Profile = () => {
     { key: "description", label: "Description" }
   ];
 
-  // Dynamic array input section
   function ArraySection({ label, field, fields, emptyObj }) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200 mb-8">
