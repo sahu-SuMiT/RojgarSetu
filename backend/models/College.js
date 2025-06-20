@@ -77,8 +77,8 @@ const collegeSchema = new mongoose.Schema({
   },
   verificationToken: String,
   verificationTokenExpires: Date,
-  resetPasswordToken: String,
-  resetPasswordExpires: Date
+  passwordResetToken: String,
+  passwordResetExpires: Date
 }, {
   timestamps: true
 });

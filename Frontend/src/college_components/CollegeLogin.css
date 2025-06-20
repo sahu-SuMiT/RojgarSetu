@@ -10,4 +10,27 @@
   opacity: 1;
   transform: translateY(0);
   transition: max-height 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.5s, transform 0.5s;
+}
+
+.college-login-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.college-forgot-password-link {
+  font-size: 0.875rem;
+  color: #4f46e5;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.college-forgot-password-link:hover {
+  color: #312e81;
+  text-decoration: underline;
+}
+
+.college-login-button {
+  width: 100%;
 } 

@@ -445,6 +445,12 @@ const CollegeLogin = () => {
                 />
               </div>
 
+              <div className="college-login-actions">
+                <a href="/college/forgot-password" className="college-forgot-password-link">
+                  Forgot Password?
+                </a>
+              </div>
+
               {error && (
                 <div style={{
                   color: '#DC2626',

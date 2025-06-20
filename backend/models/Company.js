@@ -77,12 +77,11 @@ const companySchema = new mongoose.Schema({
   },
   verificationToken: String,
   verificationTokenExpires: Date,
-  resetPasswordToken: String,
-  resetPasswordExpires: Date
+  passwordResetToken: String,
+  passwordResetExpires: Date
 }, {
   timestamps: true
 });
-
 // Remove password validation that checks for googleId
 companySchema.path('password').required(true);
 

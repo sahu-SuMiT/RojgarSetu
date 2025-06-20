@@ -386,6 +386,12 @@ const CompanyLogin = () => {
                 />
               </div>
 
+              <div className="company-login-actions">
+                <a href="/company/forgot-password" className="company-forgot-password-link">
+                  Forgot Password?
+                </a>
+              </div>
+
               {error && (
                 <div style={{
                   color: '#DC2626',

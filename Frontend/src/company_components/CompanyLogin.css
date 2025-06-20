@@ -104,4 +104,27 @@
   100% {
     transform: scale(1);
   }
+}
+
+.company-login-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.company-forgot-password-link {
+  font-size: 0.875rem;
+  color: #4f46e5;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.company-forgot-password-link:hover {
+  color: #312e81;
+  text-decoration: underline;
+}
+
+.company-login-button {
+  width: 100%;
 } 

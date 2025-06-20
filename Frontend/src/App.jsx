@@ -38,6 +38,10 @@ import CompanyLogin from './company_components/CompanyLogin';
 import SalesLogin from './sales_components/SalesLogin';
 import AddStudents from './college_components/AddStudents';
 import ManageEmployees from './company_components/ManageEmployees';
+import CompanyForgotPassword from './company_components/CompanyForgotPassword';
+import CompanyResetPassword from './company_components/CompanyResetPassword';
+import CollegeForgotPassword from './college_components/CollegeForgotPassword';
+import CollegeResetPassword from './college_components/CollegeResetPassword';
 
 import CollegeSupport from './college_components/Support';
 import CollegePlacementAnalysis from './college_components/PlacementAnalysis';
@@ -239,7 +243,11 @@ const App = () => {
         {/* College and Compay */}
         <Route path="/student-login" element={<AuthPage />} /> {/* Updated to use AuthPage */}
         <Route path="/college-login" element={<CollegeLogin />} />
+        <Route path="/college/forgot-password" element={<CollegeForgotPassword />} />
+        <Route path="/college/reset-password/:token" element={<CollegeResetPassword />} />
         <Route path="/company-login" element={<CompanyLogin />} />
+        <Route path="/company/forgot-password" element={<CompanyForgotPassword />} />
+        <Route path="/company/reset-password/:token" element={<CompanyResetPassword />} />
         <Route path="/sales-login" element={<SalesLogin />} />
 
         {/* Company Dashboard Routes */}
