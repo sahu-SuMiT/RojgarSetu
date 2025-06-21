@@ -2,11 +2,7 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const jobSchema = new Schema({
-  studentId: {
-    type: Schema.Types.ObjectId,
-    ref: 'CollegeStudent',
-    required: true
-  },
+  studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student' },
   companyId: {
     type: Schema.Types.ObjectId,
     ref: 'Company',

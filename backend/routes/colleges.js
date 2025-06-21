@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const College = require('../models/College');
-const CollegeStudent = require('../models/collegeStudent.model');
+const Student = require('../models/Student');
 const RegistrationOtp = require('../models/RegistrationOtp');
 const {emailTransport} = require('../config/email');
 const cloudinary = require('../config/cloudinary');
@@ -18,7 +18,7 @@ const {isCollegeAuthenticated,isCollegeAdmin} = require('../middleware/auth');
 router.get('/:collegeId/student/:studentId', async (req, res) => {
   try {
     
-    const student = await CollegeStudent.findOne({
+    const student = await Student.findOne({
       _id: req.params.studentId,
       college: req.params.collegeId
     });
@@ -34,10 +34,9 @@ router.get('/:collegeId/student/:studentId', async (req, res) => {
   }
 });
 
-router.put('/:collegeId/student/:studentId',isCollegeAuthenticated,isCollegeAdmin, async (req, res) => {
+router.put('/:collegeId/student/:studentId', async (req, res) => {
   try {
-    
-    const student = await CollegeStudent.findOneAndUpdate(
+    const student = await Student.findOneAndUpdate(
       {
         _id: req.params.studentId,
         college: req.params.collegeId

@@ -427,7 +427,7 @@ router.get('/:companyId/applications/complete',isCompanyAuthenticated, async (re
       },
       {
         $lookup: {
-          from: 'collegestudents',
+          from: 'students',
           localField: 'students.studentId',
           foreignField: '_id',
           as: 'studentDetails'
@@ -555,7 +555,7 @@ router.get('/:companyId/interviews/complete',isCompanyAuthenticated, async (req,
       { $sort: { date: -1 } },
       {
         $lookup: {
-          from: 'collegestudents',
+          from: 'students',
           localField: 'interviewee',
           foreignField: '_id',
           as: 'studentDetails'
