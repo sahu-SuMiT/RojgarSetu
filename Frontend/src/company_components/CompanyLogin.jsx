@@ -2,49 +2,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaBuilding } from 'react-icons/fa';
 import axios from 'axios';
+axios.defaults.withCredentials = true; // Ensure cookies are sent with requests
 import './CompanyLogin.css';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';// Debug log to check API URL
 
 const initialRegisterData = {
-  name: '',
-  type: '',
-  industry: '',
-  website: '',
-  location: '',
-  contactEmail: '',
-  contactPhone: '',
+  name: '', type: '', industry: '', website: '', location: '',
+  contactEmail: '', contactPhone: '',
   adminContact: { name: '', email: '', phone: '', designation: '' },
-  companySize: '',
-  foundedYear: '',
-  description: ''
-};
-
-const demoCompanyData = {
-  name: 'Techori Solutions',
-  type: 'Startup',
-  industry: 'Technology',
-  website: 'https://techorisolutions.com',
-  location: 'Bangalore, Karnataka',
-  contactEmail: 'contact@techorisolutions.com',
-  contactPhone: '+91 9876543210',
-  adminContact: {
-    name: 'John Doe',
-    email: 'john@techorisolutions.com',
-    phone: '+91 9876543211',
-    designation: 'CEO'
-  },
-  companySize: '51-200',
-  foundedYear: '2023',
-  description: 'Techori Solutions is a cutting-edge technology company specializing in AI and machine learning solutions. We focus on developing innovative software products and providing digital transformation services to businesses worldwide.'
+  companySize: '', foundedYear: '', description: ''
 };
 
 const CompanyLogin = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
@@ -76,37 +48,25 @@ const CompanyLogin = () => {
           return prevTime - 1;
         });
       }, 1000);
-    } else {
-      clearInterval(timer);
     }
-
     return () => clearInterval(timer);
   }, [showRegister, registerStep]);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
       const response = await axios.post(`${apiUrl}/api/auth/company-admin`, formData, { withCredentials: true });
       const { _id, name, role } = response.data;
-
       localStorage.setItem('companyId', _id);
       localStorage.setItem('companyName', name);
       localStorage.setItem('userRole', role);
-
       navigate(`/company/${_id}/dashboard`);
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err.response?.data?.error || 'Error during login. Please try again.');
+      setError(err.response?.data?.error || 'Error during login.');
     } finally {
       setLoading(false);
     }
@@ -116,18 +76,9 @@ const CompanyLogin = () => {
     const { name, value } = e.target;
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
-      setRegisterData(prev => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: value
-        }
-      }));
+      setRegisterData(prev => ({ ...prev, [parent]: { ...prev[parent], [child]: value } }));
     } else {
-      setRegisterData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      setRegisterData(prev => ({ ...prev, [name]: value }));
     }
   };
 
@@ -152,31 +103,25 @@ const CompanyLogin = () => {
     setOtpStatus('verifying');
     setRegisterError('');
     setRegisterSuccess('');
-
     try {
       const res = await axios.post(`${apiUrl}/api/auth/register/check-otp`, {
         email: registerData.contactEmail,
         otp: otp,
         type: 'company'
       });
-
       if (res.data.valid) {
         setOtpStatus('verified');
       } else {
         setOtpStatus('error');
         setRegisterError(res.data.error || 'Invalid OTP.');
         setOtpInputs(Array(6).fill(''));
-        if (otpInputRefs.current[0]) {
-          otpInputRefs.current[0].focus();
-        }
+        if (otpInputRefs.current[0]) otpInputRefs.current[0].focus();
       }
     } catch (err) {
       setOtpStatus('error');
       setRegisterError(err.response?.data?.error || 'Error verifying OTP.');
       setOtpInputs(Array(6).fill(''));
-      if (otpInputRefs.current[0]) {
-        otpInputRefs.current[0].focus();
-      }
+      if (otpInputRefs.current[0]) otpInputRefs.current[0].focus();
     }
   };
 
@@ -185,7 +130,6 @@ const CompanyLogin = () => {
     setResendTime(60);
     setRegisterError('');
     setRegisterSuccess('');
-
     try {
       const res = await axios.post(`${apiUrl}/api/${registerType}/register/initiate`, {
         ...registerData,
@@ -203,28 +147,11 @@ const CompanyLogin = () => {
     setRegisterSuccess('');
     setEmailCheckLoading(true);
     try {
-      // Only send the necessary fields for the first step
-      const registrationData = {
-        name: registerData.name,
-        type: registerData.type,
-        industry: registerData.industry,
-        website: registerData.website,
-        location: registerData.location,
-        contactEmail: registerData.contactEmail,
-        contactPhone: registerData.contactPhone,
-        adminContact: registerData.adminContact,
-        companySize: registerData.companySize,
-        foundedYear: registerData.foundedYear,
-        description: registerData.description
-      };
-
-      const res = await axios.post(`${apiUrl}/api/company/register/initiate`, registrationData);
-
+      const res = await axios.post(`${apiUrl}/api/company/register/initiate`, registerData);
       setRegisterSuccess(res.data.message || 'OTP sent to your email.');
       setRegisterStep(2);
     } catch (err) {
-      console.error('Error initiating registration:', err);
-      setRegisterError(err.response?.data?.error || 'Error initiating registration. Please try again.');
+      setRegisterError(err.response?.data?.error || 'Error initiating registration.');
     } finally {
       setEmailCheckLoading(false);
     }
@@ -238,477 +165,156 @@ const CompanyLogin = () => {
     try {
       const password = e.target.password.value;
       const confirmPassword = e.target.confirmPassword.value;
-
-      if (!password || !confirmPassword) {
-        setRegisterError('Please enter both password and confirm password.');
-        return;
-      }
-
       if (password !== confirmPassword) {
-        setRegisterError('Password and Confirm Password do not match.');
+        setRegisterError('Passwords do not match.');
         return;
       }
-
       const res = await axios.post(`${apiUrl}/api/company/register/verify`, {
         email: registerData.contactEmail,
         otp: otpInputs.join(''),
-        password: password,
-        confirmPassword: confirmPassword
+        password,
+        confirmPassword,
       });
-
-      setRegisterSuccess('Registration successful! Redirecting to login...');
-      
-      // Wait for 2 seconds to show the success message
+      setRegisterSuccess('Registration successful! Please login.');
       setTimeout(() => {
         setShowRegister(false);
         setRegisterStep(1);
         setRegisterData(initialRegisterData);
-        setOtpInputs(Array(6).fill(''));
-        setOtpStatus('idle');
       }, 2000);
-
     } catch (err) {
-      console.error('Error completing registration:', err);
-      setRegisterError(err.response?.data?.error || 'Error completing registration. Please try again.');
+      setRegisterError(err.response?.data?.error || 'Error completing registration.');
     } finally {
       setRegisterLoading(false);
     }
   };
 
-  const handleLoadDemoData = () => {
-    setRegisterData(demoCompanyData);
-  };
-
-  return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: '#F3F4F6',
-      padding: '2rem'
-    }}>
-      <div style={{
-        background: 'white',
-        borderRadius: '1.5rem',
-        padding: '3rem',
-        width: '100%',
-        maxWidth: '600px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-      }}>
-        <div style={{
-          textAlign: 'center',
-          marginBottom: '3rem'
-        }}>
-          <div style={{
-            color: '#10B981',
-            fontSize: '4rem',
-            marginBottom: '1.5rem',
-            display: 'flex',
-            justifyContent: 'center'
-          }}>
-            <FaBuilding />
+  const renderLoginForm = () => (
+    <form className="login-form" onSubmit={handleSubmit}>
+      <div className="form-group">
+        <label className="form-label" htmlFor="email">Email</label>
+        <input className="form-input" id="email" name="email" type="email" value={formData.email} onChange={handleChange} required placeholder="admin@company.com" />
           </div>
-          <h1 style={{
-            fontSize: '2rem',
-            fontWeight: 'bold',
-            color: '#1F2937',
-            marginBottom: '1rem'
-          }}>
-            {showRegister ? (registerStep === 1 ? `Register ${registerType === 'company' ? 'Company' : 'Employee'}` : 'Verify Email & Set Password') : 'Company Admin Login'}
-          </h1>
-          <p style={{
-            color: '#6B7280',
-            fontSize: '1.1rem'
-          }}>
-            {showRegister ? (registerStep === 1 ? `Fill the form to register your ${registerType}` : 'Enter the OTP sent to your email and set a secure password') : 'Sign in to access your company dashboard'}
-          </p>
+      <div className="form-group">
+        <label className="form-label" htmlFor="password">Password</label>
+        <input className="form-input" id="password" name="password" type="password" value={formData.password} onChange={handleChange} required placeholder="••••••••" />
         </div>
-
-        {!showRegister && (
-          <>
-            <form onSubmit={handleSubmit}>
-              <div style={{ marginBottom: '2rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.75rem',
-                  color: '#374151',
-                  fontSize: '1rem',
-                  fontWeight: '500'
-                }}>
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    borderRadius: '0.75rem',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '1rem',
-                    outline: 'none',
-                    transition: 'border-color 0.2s'
-                  }}
-                  placeholder="Enter your company admin email"
-                />
+      <div className="company-login-actions">
+        <a href="/company/forgot-password" className="company-forgot-password-link">Forgot Password?</a>
               </div>
-
-              <div style={{ marginBottom: '2rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.75rem',
-                  color: '#374151',
-                  fontSize: '1rem',
-                  fontWeight: '500'
-                }}>
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    borderRadius: '0.75rem',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '1rem',
-                    outline: 'none',
-                    transition: 'border-color 0.2s'
-                  }}
-                  placeholder="Enter your password"
-                />
-              </div>
-
-              <div className="company-login-actions">
-                <a href="/company/forgot-password" className="company-forgot-password-link">
-                  Forgot Password?
-                </a>
-              </div>
-
-              {error && (
-                <div style={{
-                  color: '#DC2626',
-                  fontSize: '1rem',
-                  marginBottom: '1.5rem',
-                  textAlign: 'center',
-                  padding: '1rem',
-                  background: '#FEE2E2',
-                  borderRadius: '0.5rem'
-                }}>
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  width: '100%',
-                  padding: '1rem',
-                  background: '#10B981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.75rem',
-                  fontSize: '1rem',
-                  fontWeight: '500',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  opacity: loading ? 0.7 : 1,
-                  transition: 'all 0.2s'
-                }}
-              >
+      {error && <div className="login-error-message">{error}</div>}
+      <button type="submit" className="login-submit-button" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>
             </form>
-            <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-              <button
-                type="button"
-                onClick={() => { setShowRegister(true); setRegisterType('company'); }}
-                style={{
-                  background: '#510bf5',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.75rem',
-                  padding: '0.75rem 2rem',
-                  fontSize: '1rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  marginBottom: '1rem',
-                  transition: 'background 0.2s'
-                }}
-              >
-                Register Company
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowRegister(true); setRegisterType('employee'); }}
-                style={{
-                  background: '#be0bf5',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.75rem',
-                  padding: '0.75rem 2rem',
-                  fontSize: '1rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  marginLeft: '1rem',
-                  transition: 'background 0.2s'
-                }}
-              >
-                Register Employee
-              </button>
-            </div>
-          </>
-        )}
+  );
 
-        {showRegister && (
-          <div className={`register-form-anim ${showRegister ? 'show' : ''}`}>
-            <form
-              onSubmit={handleRegisterInfoSubmit}
-              style={{
-                display: registerStep === 1 ? 'block' : 'none',
-                opacity: registerStep === 1 ? 1 : 0,
-                transition: 'opacity 0.5s',
-                marginTop: '1rem'
-              }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {registerType === 'company' ? (
-                  <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <h3 style={{ margin: 0, color: '#374151' }}>Company Details</h3>
-                      <button
-                        type="button"
-                        onClick={handleLoadDemoData}
-                        style={{
-                          background: '#F3F4F6',
-                          color: '#374151',
-                          border: '1px solid #D1D5DB',
-                          borderRadius: '0.5rem',
-                          padding: '0.5rem 1rem',
-                          fontSize: '0.875rem',
-                          fontWeight: '500',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        Load Demo Data
-                      </button>
+  const renderRegisterForm = () => (
+    <div className={`register-form-anim ${showRegister ? 'show' : ''}`}>
+        {registerStep === 1 ? renderStepOne() : renderStepTwo()}
+            </div>
+  );
+  
+  const renderStepOne = () => (
+    <form onSubmit={handleRegisterInfoSubmit} className="registration-form">
+      <h3>Company Details</h3>
+      <div className="form-group">
+        <input className="form-input" name="name" value={registerData.name} onChange={handleRegisterChange} required placeholder="Company Name" />
+      </div>
+      <div className="form-group">
+        <input className="form-input" name="contactEmail" type="email" value={registerData.contactEmail} onChange={handleRegisterChange} required placeholder="Company Email" />
                     </div>
-                    <input name="name" value={registerData.name} onChange={handleRegisterChange} required placeholder="Company Name" style={inputStyle} />
-                    <select name="type" value={registerData.type} onChange={handleRegisterChange} required style={inputStyle}>
-                      <option value="">Select Company Type</option>
-                      <option value="MNC">MNC</option>
-                      <option value="Startup">Startup</option>
-                      <option value="SME">SME</option>
-                      <option value="Government">Government</option>
-                      <option value="NGO">NGO</option>
-                      <option value="Other">Other</option>
-                    </select>
-                    <input name="industry" value={registerData.industry} onChange={handleRegisterChange} required placeholder="Industry" style={inputStyle} />
-                    <input name="website" value={registerData.website} onChange={handleRegisterChange} placeholder="Website" style={inputStyle} />
-                    <input name="location" value={registerData.location} onChange={handleRegisterChange} required placeholder="Location" style={inputStyle} />
-                    <input name="contactEmail" value={registerData.contactEmail} onChange={handleRegisterChange} required placeholder="Contact Email" style={inputStyle} />
-                    <input name="contactPhone" value={registerData.contactPhone} onChange={handleRegisterChange} required placeholder="Contact Phone" style={inputStyle} />
-                    <div style={{ border: '1px solid #e5e7eb', borderRadius: '0.5rem', padding: '1rem', background: '#f9fafb' }}>
-                      <h4 style={{ margin: 0, color: '#10B981' }}>Admin Contact</h4>
-                      <input name="adminContact.name" value={registerData.adminContact.name} onChange={handleRegisterChange} required placeholder="Admin Name" style={inputStyle} />
-                      <input name="adminContact.email" value={registerData.adminContact.email} onChange={handleRegisterChange} required placeholder="Admin Email" style={inputStyle} />
-                      <input name="adminContact.phone" value={registerData.adminContact.phone} onChange={handleRegisterChange} required placeholder="Admin Phone" style={inputStyle} />
-                      <input name="adminContact.designation" value={registerData.adminContact.designation} onChange={handleRegisterChange} required placeholder="Admin Designation" style={inputStyle} />
+      <div className="form-group">
+        <input className="form-input" name="contactPhone" value={registerData.contactPhone} onChange={handleRegisterChange} required placeholder="Contact Phone" />
                     </div>
-                    <select name="companySize" value={registerData.companySize} onChange={handleRegisterChange} required style={inputStyle}>
-                      <option value="">Select Company Size</option>
-                      <option value="1-50">1-50 employees</option>
-                      <option value="51-200">51-200 employees</option>
-                      <option value="201-500">201-500 employees</option>
-                      <option value="501-1000">501-1000 employees</option>
-                      <option value="1000+">1000+ employees</option>
-                    </select>
-                    <input name="foundedYear" value={registerData.foundedYear} onChange={handleRegisterChange} required placeholder="Founded Year" style={inputStyle} />
-                    <textarea name="description" value={registerData.description} onChange={handleRegisterChange} required placeholder="Company Description" style={{ ...inputStyle, minHeight: '100px', resize: 'vertical' }} />
-                  </>
-                ) : (
-                  <>
-                    <input name="name" value={registerData.name} onChange={handleRegisterChange} required placeholder="Full Name" style={inputStyle} />
-                    <input name="contactEmail" value={registerData.contactEmail} onChange={handleRegisterChange} required placeholder="Email" style={inputStyle} />
-                    <input name="contactPhone" value={registerData.contactPhone} onChange={handleRegisterChange} required placeholder="Phone" style={inputStyle} />
-                    <input name="department" value={registerData.department} onChange={handleRegisterChange} required placeholder="Department" style={inputStyle} />
-                    <input name="position" value={registerData.position} onChange={handleRegisterChange} required placeholder="Position" style={inputStyle} />
-                  </>
-                )}
-                {registerError && <div style={{ color: '#DC2626', background: '#FEE2E2', borderRadius: '0.5rem', padding: '0.75rem', textAlign: 'center' }}>{registerError}</div>}
-                <button type="submit" disabled={emailCheckLoading} style={{ ...inputStyle, background: '#10B981', color: 'white', fontWeight: 'bold', cursor: emailCheckLoading ? 'not-allowed' : 'pointer', opacity: emailCheckLoading ? 0.7 : 1 }}>
-                  {emailCheckLoading ? 'Verifying...' : 'Next: Set Password'}
+
+      <button type="submit" className="login-submit-button" disabled={emailCheckLoading}>
+        {emailCheckLoading ? 'Verifying...' : 'Next'}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => { setShowRegister(false); setRegisterStep(1); }}
-                  style={{
-                    background: '#510bf5',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '0.75rem',
-                    padding: '0.75rem 2rem',
-                    fontSize: '1rem',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    marginTop: '1rem',
-                    transition: 'background 0.2s'
-                  }}
-                >
+      <div className="login-links-container">
+        <button type="button" className="login-link" onClick={() => setShowRegister(false)}>
                   Back to Login
                 </button>
               </div>
             </form>
+  );
 
-            <form
-              onSubmit={handleRegisterSubmit}
-              style={{
-                display: registerStep === 2 ? 'block' : 'none',
-                opacity: registerStep === 2 ? 1 : 0,
-                transition: 'opacity 0.5s',
-                marginTop: '1rem'
-              }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  {Array(6).fill('').map((_, index) => (
-                    <input
-                      key={index}
-                      ref={el => otpInputRefs.current[index] = el}
-                      type="text"
-                      maxLength="1"
-                      value={otpInputs[index]}
-                      onChange={(e) => handleOtpInputChange(e, index)}
-                      onKeyDown={(e) => {
+  const renderStepTwo = () => (
+      <form onSubmit={handleRegisterSubmit} className="registration-form">
+          <h3>Verify Email & Set Password</h3>
+          <p className="login-subtitle">Enter the OTP sent to {registerData.contactEmail}</p>
+          <div className="otp-inputs">
+              {Array(6).fill('').map((_, index) => (
+                <input
+                    key={index}
+                    ref={el => otpInputRefs.current[index] = el}
+                    className="otp-input form-input"
+                    type="text"
+                    maxLength="1"
+                    value={otpInputs[index]}
+                    onChange={(e) => handleOtpInputChange(e, index)}
+                    onKeyDown={(e) => {
                         if (e.key === 'Backspace' && !otpInputs[index] && index > 0) {
-                          otpInputRefs.current[index - 1].focus();
+                            otpInputRefs.current[index - 1].focus();
                         }
-                      }}
-                      style={{
-                        ...inputStyle,
-                        width: '40px',
-                        height: '40px',
-                        textAlign: 'center',
-                        padding: '0.5rem 0',
-                        marginBottom: '0',
-                        borderColor: otpStatus === 'error' ? '#EF4444' : (otpStatus === 'verified' ? '#10B981' : '#D1D5DB')
-                      }}
-                    />
-                  ))}
-                  <div style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {otpStatus === 'verifying' && <span style={{ fontSize: '1.2rem' }}>...</span>}
-                    {otpStatus === 'verified' && <span style={{ color: '#10B981', fontSize: '1.5rem' }}>✅</span>}
-                    {otpStatus === 'error' && <span style={{ color: '#EF4444', fontSize: '1.5rem' }}>❌</span>}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleResendOtp}
-                    disabled={resendDisabled}
-                    style={{
-                      background: resendDisabled ? '#D1D5DB' : '#10B981',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '0.5rem',
-                      padding: '0.5rem 1rem',
-                      fontSize: '0.9rem',
-                      fontWeight: '500',
-                      cursor: resendDisabled ? 'not-allowed' : 'pointer',
-                      marginTop: '0',
-                      width: 'fit-content'
                     }}
-                  >
-                    {resendDisabled ? `Resend OTP (${resendTime}s)` : 'Resend OTP'}
-                  </button>
-                </div>
-
-                {registerError && <div style={{ color: '#DC2626', background: '#FEE2E2', borderRadius: '0.5rem', padding: '0.75rem', textAlign: 'center' }}>{registerError}</div>}
-                {registerSuccess && <div style={{ color: '#059669', background: '#D1FAE5', borderRadius: '0.5rem', padding: '0.75rem', textAlign: 'center' }}>{registerSuccess}</div>}
-
-                <div style={{ marginTop: '1rem' }}>
-                  <h4 style={{ margin: '0 0 1rem 0', color: '#374151' }}>Set Password</h4>
-                  <input
-                    name="password"
-                    type="password"
-                    required
-                    placeholder="Set Password"
-                    style={inputStyle}
-                  />
-                  <input
-                    name="confirmPassword"
-                    type="password"
-                    required
-                    placeholder="Confirm Password"
-                    style={inputStyle}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={registerLoading || otpStatus !== 'verified'}
-                  style={{
-                    ...inputStyle,
-                    background: '#10B981',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    cursor: (registerLoading || otpStatus !== 'verified') ? 'not-allowed' : 'pointer',
-                    opacity: (registerLoading || otpStatus !== 'verified') ? 0.7 : 1
-                  }}
-                >
-                  {registerLoading ? 'Registering...' : `Register ${registerType === 'company' ? 'Company' : 'Employee'}`}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRegisterStep(1)}
-                  style={{
-                    background: '#10B981',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '0.75rem',
-                    padding: '0.75rem 2rem',
-                    fontSize: '1rem',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    marginTop: '1rem',
-                    transition: 'background 0.2s'
-                  }}
-                >
-                  Back
-                </button>
+                    autoComplete="one-time-code"
+                />
+              ))}
+              <div className="otp-status">
+                  {otpStatus === 'verifying' && <span>...</span>}
+                  {otpStatus === 'verified' && <span style={{color: 'green'}}>✅</span>}
+                  {otpStatus === 'error' && <span style={{color: 'red'}}>❌</span>}
               </div>
-            </form>
           </div>
-        )}
+          <div className="resend-otp-container">
+            <button type="button" onClick={handleResendOtp} disabled={resendDisabled} className="login-link">
+              {resendDisabled ? `Resend OTP (${resendTime}s)` : 'Resend OTP'}
+            </button>
+          </div>
+          
+          {registerError && <div className="login-error-message">{registerError}</div>}
+          {registerSuccess && <div className="login-error-message" style={{backgroundColor: '#dcfce7', borderColor: '#bbf7d0', color: '#166534'}}>{registerSuccess}</div>}
 
-        <div style={{
-          marginTop: '2rem',
-          textAlign: 'center',
-          fontSize: '1rem',
-          color: '#6B7280'
-        }}>
-          <p>Don't have an account? Contact your administrator</p>
+          <input className="form-input" type="password" name="password" required placeholder="New Password" />
+          <input className="form-input" type="password" name="confirmPassword" required placeholder="Confirm New Password" />
+          <button type="submit" className="login-submit-button" disabled={registerLoading || otpStatus !== 'verified'}>
+              {registerLoading ? 'Registering...' : 'Create Account'}
+          </button>
+          <button type="button" className="login-submit-button back-button" onClick={() => setRegisterStep(1)}>
+              Back
+                  </button>
+      </form>
+  );
+
+  return (
+    <div className="login-page-wrapper">
+      <div className="login-form-container">
+        <div className="login-header">
+          <div className="login-icon-container"><FaBuilding /></div>
+          <h1 className="login-title">
+            {showRegister ? 'Register Your Company' : 'Company Admin Portal'}
+          </h1>
+          <p className="login-subtitle">
+            {showRegister ? 'Join our network of top employers.' : 'Access your company dashboard.'}
+          </p>
+                </div>
+
+        {!showRegister ? renderLoginForm() : renderRegisterForm()}
+        
+        <div className="login-links-container">
+            {!showRegister && (
+                <button onClick={() => setShowRegister(true)} className="login-link">
+                    Don't have an account? Register Company
+                </button>
+            )}
+          </div>
+
+        <div className="login-footer-note">
+          <p>Need help? Contact our administrator.</p>
         </div>
       </div>
     </div>
   );
-};
-
-const inputStyle = {
-  width: '100%',
-  padding: '0.75rem',
-  borderRadius: '0.5rem',
-  border: '1px solid #D1D5DB',
-  fontSize: '1rem',
-  outline: 'none',
-  marginBottom: '0.5rem',
-  transition: 'border-color 0.2s'
 };
 
 export default CompanyLogin; 

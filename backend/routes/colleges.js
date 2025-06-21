@@ -61,18 +61,12 @@ router.post('/register/initiate', async (req, res) => {
   try {
     const {
       name,
-      code,
-      location,
-      website,
       contactEmail,
       contactPhone,
-      placementOfficer,
-      departments,
-      establishedYear,
-      campusSize
+      code
     } = req.body;
 
-    if (!name || !code || !location || !contactEmail || !contactPhone || !placementOfficer || !departments || !establishedYear || !campusSize) {
+    if (!name || !contactEmail || !contactPhone || !code) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -98,14 +92,8 @@ router.post('/register/initiate', async (req, res) => {
       data: { // Store the college info in the generic data field
         name,
         code,
-        location,
-        website,
         contactEmail,
-        contactPhone,
-        placementOfficer,
-        departments,
-        establishedYear,
-        campusSize
+        contactPhone
       }
     });
 
@@ -143,7 +131,7 @@ router.post('/register/verify', async (req, res) => {
     if (registrationOtp.otp !== otp || registrationOtp.expiresAt < new Date()) {
       // Delete the invalid/expired OTP to prevent further attempts
       await RegistrationOtp.deleteOne({ _id: registrationOtp._id });
-      return res.status(400).json({ error: 'Invalid or expired OTP.' });
+      return res.status(400).json({ error: 'OTP Invalid or expired .' });
     }
 
     // Validate password and confirm password

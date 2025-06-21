@@ -160,7 +160,7 @@ router.post('/company-admin', async (req, res) => {
     const payload = {
       id: company._id,
       type: 'company',
-      role: 'company_admin',
+      role: 'admin',
       email: company.contactEmail
     };
 
