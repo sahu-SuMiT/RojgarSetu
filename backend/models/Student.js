@@ -119,8 +119,8 @@ const studentSchema = new mongoose.Schema({
   isSalesVerified: { type: Boolean, default: false },
 
   // Password reset fields
-  resetPasswordToken: { type: String },
-  resetPasswordExpires: { type: Date },
+  passwordResetToken: { type: String },
+  passwordResetExpires: { type: Date },
 
   // Timestamps
   createdAt: { type: Date, default: Date.now }

@@ -226,6 +226,22 @@ export const AuthPage = ({ onAuthSuccess }) => {
             )}
           </div>
 
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              {/* Optional: "Remember me" checkbox */}
+            </div>
+            {currentView === "login" && (
+              <div className="text-sm">
+                <a
+                  href="/student/forgot-password"
+                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  Forgot your password?
+                </a>
+              </div>
+            )}
+          </div>
+
           {message.text && (
             <div
               className={`rounded-md p-4 text-center ${
