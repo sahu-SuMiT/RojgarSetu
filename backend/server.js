@@ -7,9 +7,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
-const bcrypt = require('bcrypt');
 
-const app = express();
 
 // Route modules
 const authRoutes = require('./routes/authRoutes');
@@ -31,6 +29,9 @@ const collegesRoutes = require('./routes/colleges');
 const internshipsRoutes = require('./routes/internships');
 const supportRoutes = require('./routes/support');
 const studentMatchingRoutes = require('./routes/studentMatchingRoutes');
+const bcrypt = require('bcrypt');
+
+const app = express();
 
 // Debug middleware
 app.use((req, res, next) => {

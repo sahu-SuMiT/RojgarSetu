@@ -11,6 +11,7 @@ const Application = require('../models/CollegeApplication');
 const {emailTransport} = require('../config/email');
 const cloudinary = require('../config/cloudinary');
 const {isCompanyAuthenticated,isCompanyHR,isCompanyAdmin,isCompanyOwner} = require('../middleware/auth');
+const {isEmailDisposable} = require('../utils/disposableEmail');
 //INDEX
 // app.get('/api/company/auth') ..... company authentication
 // app.get('/api/company/:companyid/roles') .....get roles by company Id  
@@ -187,7 +188,9 @@ router.post('/register/initiate', async (req, res) => {
     if (!name || !contactEmail || !contactPhone) {
       return res.status(400).json({ error: 'Missing required company fields.' });
     }
-
+    if (isEmailDisposable(contactEmail)) {
+      return res.status(400).json({ error: 'Disposable email addresses are not allowed.' });
+    }
     // Check for duplicate company name or email
     const existingCompany = await Company.findOne({ $or: [ { name }, { contactEmail } ] });
     if (existingCompany) {
