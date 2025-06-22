@@ -120,7 +120,7 @@ db.once('open', () => {
 });
 
 //additional routes that are not included here from routes folder
-app.use('/api/admin', require('./routes/admin'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/interviews', require('./routes/interviews'));

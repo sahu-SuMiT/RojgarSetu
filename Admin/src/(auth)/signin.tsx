@@ -124,17 +124,16 @@ const SignIn = () => {
                 <div>
                   <p className="font-medium text-blue-900">Admin Accounts:</p>
                   <div className="mt-1 space-y-1">
-                    
-                    <p>raj@email.com / raj123</p>
-                    <p>kishori@email.com / kishori123</p>
+                    <p><strong>Raj Shivre:</strong> raj@email.com / raj123</p>
+                    <p><strong>Kishori:</strong> kishori@email.com / kishori123</p>
                   </div>
                 </div>
                 <div>
                   <p className="font-medium text-blue-900">Employee Accounts:</p>
                   <div className="mt-1 space-y-1">
-                    <p> sumit@email.com / sumit123</p>
-                    <p> anmol@email.com / anmol123</p>
-                    <p> harshraj@email.com / harsh123</p>
+                    <p><strong>Harsh Raj:</strong> harshraj@email.com / harsh123 (Inactive)</p>
+                    <p><strong>Anmol Tiwari:</strong> anmol@email.com / anmol123</p>
+                    <p><strong>Sumit Sahu:</strong> sumit@email.com / sumit123</p>
                   </div>
                 </div>
               </div>
