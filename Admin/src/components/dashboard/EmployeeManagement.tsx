@@ -16,7 +16,7 @@ const initialEmployees = [
     email: "raj@email.com",
     role: "admin",
     status: "active",
-    permissions: ["User Management", "Employee Management", "Analytics", "Platform Settings"],
+    permissions: ["Dashboard", "Analytics", "User Management", "Content Moderation", "Support Panel", "Employee Management", "Platform Settings"]
   },
   {
     id: 2,
@@ -24,7 +24,7 @@ const initialEmployees = [
     email: "harshraj@email.com",
     role: "employee",
     status: "inactive",
-    permissions: ["User Management", "Support Panel"],
+    permissions: ["User Management", "Support Panel"]
   },
   {
     id: 3,
@@ -66,11 +66,12 @@ const getStatusBadge = (status: string) => {
 };
 
 const ALL_PERMISSIONS = [
+  "Dashboard",
+  "Analytics",  
   "User Management",
-  "Employee Management",
-  "Analytics",
   "Content Moderation",
   "Support Panel",
+  "Employee Management",
   "Platform Settings",
 ];
 
