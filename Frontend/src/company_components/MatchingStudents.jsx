@@ -239,53 +239,72 @@ const MatchingStudents = ({ roleId, roleName, skills }) => {
                 </div>
               ) : (
                 <div className="students-grid">
-                  {students.map((student) => (
-                    <div key={student._id} className="student-card">
-                      <div className="student-card-header">
-                        <img 
-                          src={student.profileImage || 'https://via.placeholder.com/50'} 
-                          alt={student.name} 
-                          className="student-avatar"
-                        />
-                        <div className="student-info">
-                          <h4>{student.name}</h4>
-                          <p className="student-email">{student.email}</p>
+                  {students.map(student => {
+                    // Calculate the number of matched skills
+                    const matchedSkills = student.skills.filter(skill => 
+                      skills.some(requiredSkill => 
+                        skill.toLowerCase().includes(requiredSkill.toLowerCase()) || 
+                        requiredSkill.toLowerCase().includes(skill.toLowerCase())
+                      )
+                    );
+                    const matchPercentage = skills.length > 0 ? (matchedSkills.length / skills.length) * 100 : 0;
+
+                    let matchClass = 'low-match';
+                    if (matchPercentage >= 75) {
+                      matchClass = 'high-match';
+                    } else if (matchPercentage >= 40) {
+                      matchClass = 'medium-match';
+                    }
+
+                    return (
+                      <div key={student._id} className="student-card">
+                        <div className="student-card-header">
+                          <img 
+                            src={student.profileImage || 'https://via.placeholder.com/50'} 
+                            alt={student.name} 
+                            className="student-avatar"
+                          />
+                          <div className="student-info">
+                            <h4 className="student-name">{student.name}</h4>
+                            <p className="student-email">{student.email}</p>
+                          </div>
+                          <div className="student-score-badge">
+                            <FaStar />
+                            <span>{student.campusScore.toFixed(1)}</span>
+                          </div>
                         </div>
-                        <div className="student-score-badge">
-                          <FaStar />
-                          <span>{student.campusScore.toFixed(1)}</span>
+
+                        <div className="match-percentage">
+                          <div className={`match-badge ${matchClass}`}>{matchPercentage.toFixed(0)}% Match</div>
                         </div>
+
+                        <div className="student-skills">
+                          {student.skills.slice(0, 5).map((skill, index) => {
+                            const isMatched = skills.some(requiredSkill => 
+                              skill.toLowerCase().includes(requiredSkill.toLowerCase()) || 
+                              requiredSkill.toLowerCase().includes(skill.toLowerCase())
+                            );
+                            return (
+                              <span key={index} className={`skill-tag ${isMatched ? 'matching-skill' : ''}`}>
+                                {skill}
+                                {isMatched && <FaCheck className="match-icon" />}
+                              </span>
+                            );
+                          })}
+                          {student.skills.length > 5 && (
+                            <span className="more-skills">+{student.skills.length - 5} more</span>
+                          )}
+                        </div>
+                        
+                        <button 
+                          className="view-details-btn" 
+                          onClick={() => handleViewStudentDetails(student)}
+                        >
+                          View Details
+                        </button>
                       </div>
-                      
-                      <div className="match-percentage">
-                        <span className={`match-badge ${student.matchPercentage >= 80 ? 'high-match' : student.matchPercentage >= 60 ? 'medium-match' : 'low-match'}`}>
-                          {student.matchPercentage}% Match
-                        </span>
-                      </div>
-                      
-                      <div className="student-skills">
-                        {student.skills.slice(0, 5).map((skill, index) => (
-                          <span 
-                            key={index} 
-                            className={`skill-tag ${student.matchingSkills.includes(skill) ? 'matching-skill' : ''}`}
-                          >
-                            {skill}
-                            {student.matchingSkills.includes(skill) && <FaCheck className="match-icon" />}
-                          </span>
-                        ))}
-                        {student.skills.length > 5 && (
-                          <span className="more-skills">+{student.skills.length - 5} more</span>
-                        )}
-                      </div>
-                      
-                      <button 
-                        className="view-details-btn"
-                        onClick={() => handleViewStudentDetails(student)}
-                      >
-                        View Details
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </>

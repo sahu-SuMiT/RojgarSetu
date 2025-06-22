@@ -77,15 +77,10 @@ const botResponses = {
 function generateBotResponse(userMessage, userType) {
   const message = userMessage.toLowerCase().replace(/[?.,!]/g, '').trim();
   
-  console.log('Bot Response Debug:', { userMessage, userType, cleanedMessage: message });
-  
   // Helper function to check if message contains any of the keywords
   function containsKeyword(message, keywords) {
     return keywords.some(keyword => {
       const hasKeyword = message.includes(keyword);
-      if (hasKeyword) {
-        console.log('Matched keyword:', keyword);
-      }
       return hasKeyword;
     });
   }
@@ -94,7 +89,6 @@ function generateBotResponse(userMessage, userType) {
   if (userType === 'college') {
     for (const [keyword, response] of Object.entries(botResponses.college)) {
       if (containsKeyword(message, [keyword, ...keyword.split(' ')])) {
-        console.log('Returning college response for:', keyword);
         return response;
       }
     }
@@ -104,7 +98,6 @@ function generateBotResponse(userMessage, userType) {
   if (userType === 'company') {
     for (const [keyword, response] of Object.entries(botResponses.company)) {
       if (containsKeyword(message, [keyword, ...keyword.split(' ')])) {
-        console.log('Returning company response for:', keyword);
         return response;
       }
     }
@@ -113,12 +106,10 @@ function generateBotResponse(userMessage, userType) {
   // Check general responses
   for (const [keyword, response] of Object.entries(botResponses.general)) {
     if (containsKeyword(message, [keyword, ...keyword.split(' ')])) {
-      console.log('Returning general response for:', keyword);
       return response;
     }
   }
   
-  console.log('No keyword match found, returning default response');
   // Default response if no keyword matches
   return {
     response: "I understand you're asking about: '" + userMessage + "'. Let me help you with that. Could you please provide more specific details about what you need help with? You can ask about posting jobs, managing applications, adding students/employees, viewing analytics, or any other platform features.",
@@ -131,10 +122,7 @@ router.post('/tickets', async (req, res) => {
   try {
     const { userId, userType, subject, message } = req.body;
     
-    console.log('Creating ticket with:', { userId, userType, subject, message });
-    
     if (!userId || !userType || !subject || !message) {
-      console.log('Missing required fields:', { userId, userType, subject, message });
       return res.status(400).json({ message: 'Missing required fields' });
     }
     
@@ -143,7 +131,6 @@ router.post('/tickets', async (req, res) => {
     
     // Generate bot response
     const botResponse = generateBotResponse(message, userType);
-    console.log('Bot response generated:', botResponse);
     
     const ticket = new SupportTicket({
       ticketId,
@@ -168,9 +155,7 @@ router.post('/tickets', async (req, res) => {
       ]
     });
     
-    console.log('Saving ticket:', ticket);
     await ticket.save();
-    console.log('Ticket saved successfully');
     
     res.status(201).json({
       success: true,
@@ -178,7 +163,6 @@ router.post('/tickets', async (req, res) => {
       message: 'Support ticket created successfully'
     });
   } catch (error) {
-    console.error('Error creating support ticket:', error);
     res.status(500).json({ message: 'Error creating support ticket', error: error.message });
   }
 });
@@ -195,7 +179,6 @@ router.get('/tickets/:userId', async (req, res) => {
       tickets: tickets
     });
   } catch (error) {
-    console.error('Error fetching tickets:', error);
     res.status(500).json({ message: 'Error fetching tickets' });
   }
 });
@@ -215,7 +198,6 @@ router.get('/tickets/:userId/:ticketId', async (req, res) => {
       ticket: ticket
     });
   } catch (error) {
-    console.error('Error fetching ticket:', error);
     res.status(500).json({ message: 'Error fetching ticket' });
   }
 });
@@ -263,7 +245,6 @@ router.post('/tickets/:userId/:ticketId/messages', async (req, res) => {
       message: 'Message added successfully'
     });
   } catch (error) {
-    console.error('Error adding message:', error);
     res.status(500).json({ message: 'Error adding message' });
   }
 });
@@ -293,7 +274,6 @@ router.patch('/tickets/:userId/:ticketId/status', async (req, res) => {
       message: 'Ticket status updated successfully'
     });
   } catch (error) {
-    console.error('Error updating ticket status:', error);
     res.status(500).json({ message: 'Error updating ticket status' });
   }
 });
@@ -302,8 +282,6 @@ router.patch('/tickets/:userId/:ticketId/status', async (req, res) => {
 router.get('/test-bot/:userType/:message', (req, res) => {
   const { userType, message } = req.params;
   const decodedMessage = decodeURIComponent(message);
-  
-  console.log('Testing bot response for:', { userType, message: decodedMessage });
   
   const response = generateBotResponse(decodedMessage, userType);
   
@@ -319,8 +297,6 @@ router.get('/test-bot/:userType/:message', (req, res) => {
 router.get('/quick-help/:userType', (req, res) => {
   const { userType } = req.params;
   
-  console.log('Quick help requested for userType:', userType);
-  
   const helpTopics = userType === 'college' ? [
     { title: 'How to post a job?', keywords: ['post job'] },
     { title: 'How to manage applications?', keywords: ['manage applications'] },
@@ -334,8 +310,6 @@ router.get('/quick-help/:userType', (req, res) => {
     { title: 'How to schedule interviews?', keywords: ['interviews'] },
     { title: 'How to view analytics?', keywords: ['analytics'] }
   ];
-  
-  console.log('Returning help topics:', helpTopics);
   
   res.json({
     success: true,

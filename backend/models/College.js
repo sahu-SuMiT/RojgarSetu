@@ -8,13 +8,11 @@ const collegeSchema = new mongoose.Schema({
   },
   code: {
     type: String,
-    required: true,
     unique: true,
     trim: true
   },
   location: {
     type: String,
-    required: true
   },
   website: {
     type: String,
@@ -30,7 +28,6 @@ const collegeSchema = new mongoose.Schema({
   },
   contactPhone: {
     type: String,
-    required: true
   },
   password: {
     type: String,
@@ -48,11 +45,9 @@ const collegeSchema = new mongoose.Schema({
  
   establishedYear: {
     type: Number,
-    required: true
   },
   campusSize: {
     type: Number, // in acres
-    required: true
   },
   profileImage: {
     type: String,
@@ -60,7 +55,6 @@ const collegeSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    trim: true
   },
   type: {
     type: String,
@@ -70,15 +64,20 @@ const collegeSchema = new mongoose.Schema({
   logo: {
     type: String,
     default: ''
-  },
+  },  
+  verificationStatus: {
+    type: String,
+    enum: ['verified', 'unverified', 'rejected'],
+    default: 'unverified'
+  }, 
   isVerified: {
     type: Boolean,
     default: false
   },
   verificationToken: String,
   verificationTokenExpires: Date,
-  resetPasswordToken: String,
-  resetPasswordExpires: Date
+  passwordResetToken: String,
+  passwordResetExpires: Date
 }, {
   timestamps: true
 });

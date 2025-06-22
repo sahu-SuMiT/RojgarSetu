@@ -1,49 +1,26 @@
-require('dotenv').config({path: '../.env'});
+require('dotenv').config();
 const mongoose = require('mongoose');
-const Job = require('../models/Job');
-const Internship = require('../models/Internship');
-const Interview = require('../models/Interview');
-const CollegeStudent = require('../models/collegeStudent.model');
+
+const Student = require('../models/Student');
+const College = require('../models/College');
 const Company = require('../models/Company');
+const Employee = require('../models/Employee');
 
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/campus_connect';
+const verifyData = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/campus_connect');
+    console.log('Connected to MongoDB');
 
-mongoose.connect(MONGO_URI)
-  .then(async () => {
-    console.log('\nVerifying Database Contents:');
-    console.log('------------------------');
-    console.log(`Students: ${await CollegeStudent.countDocuments()}`);
+    console.log(`Colleges: ${await College.countDocuments()}`);
     console.log(`Companies: ${await Company.countDocuments()}`);
-    console.log(`Interviews: ${await Interview.countDocuments()}`);
-    console.log(`Internships: ${await Internship.countDocuments()}`);
-    console.log(`Jobs: ${await Job.countDocuments()}`);
-    console.log('------------------------');
+    console.log(`Employees: ${await Employee.countDocuments()}`);
+    console.log(`Students: ${await Student.countDocuments()}`);
 
-    // Get some sample data
-    const sampleInternship = await Internship.findOne().populate('studentId').populate('companyId');
-    const sampleJob = await Job.findOne().populate('studentId').populate('companyId');
+    await mongoose.disconnect();
+    console.log('Disconnected from MongoDB');
+  } catch (error) {
+    console.error('Error:', error);
+  }
+};
 
-    if (sampleInternship) {
-      console.log('\nSample Internship:');
-      console.log('-----------------');
-      console.log(`Student: ${sampleInternship.studentId.name}`);
-      console.log(`Company: ${sampleInternship.companyId.name}`);
-      console.log(`Title: ${sampleInternship.title}`);
-      console.log(`Status: ${sampleInternship.status}`);
-    }
-
-    if (sampleJob) {
-      console.log('\nSample Job:');
-      console.log('-----------');
-      console.log(`Student: ${sampleJob.studentId.name}`);
-      console.log(`Company: ${sampleJob.companyId.name}`);
-      console.log(`Title: ${sampleJob.title}`);
-      console.log(`Status: ${sampleJob.status}`);
-    }
-
-    mongoose.disconnect();
-  })
-  .catch(err => {
-    console.error('Error:', err);
-    process.exit(1);
-  }); 
+verifyData(); 

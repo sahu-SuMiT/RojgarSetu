@@ -1,15 +1,14 @@
-
 // API service with improved error handling
-const API_URL = '';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-export const getAuthToken = () => localStorage.getItem('token');
+export const getAuthToken = () => localStorage.getItem('adminToken');
 
 export const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const token = getAuthToken();
   
   const headers = {
     'Content-Type': 'application/json',
-    ...(token ? { 'x-auth-token': token } : {}),
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     ...(options.headers || {})
   };
 
@@ -17,7 +16,8 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
     
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
-      headers
+      headers,
+      credentials: 'include' // Include cookies in the request
     });
 
     const contentType = response.headers.get('content-type');
@@ -38,4 +38,41 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
     console.error('API request error:', error);
     throw error;
   }
+};
+
+// Profile-related API functions
+export const updateProfile = async (profileData: {
+  username?: string;
+  email?: string;
+  phone?: string;
+  currentPassword?: string;
+  newPassword?: string;
+}) => {
+  return apiRequest('/api/admin/profile', {
+    method: 'PUT',
+    body: JSON.stringify(profileData)
+  });
+};
+
+export const uploadProfileImage = async (file: File) => {
+  const token = getAuthToken();
+  const formData = new FormData();
+  formData.append('profileImage', file);
+
+  const response = await fetch(`${API_URL}/api/admin/upload-profile-image`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token || ''}`
+    },
+    credentials: 'include', // Include cookies in the request
+    body: formData
+  });
+
+  const responseData = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(responseData.message || 'Failed to upload image');
+  }
+  
+  return responseData;
 };

@@ -9,8 +9,8 @@ const notificationSchema = new mongoose.Schema({
   },
   senderModel: {
     type: String,
-    required: true,
-    enum: ['College', 'Student', 'Company','CollegeStudent']
+    enum: ['College', 'Student', 'Company'],
+    required: true
   },
   
   // Recipient information
@@ -21,8 +21,8 @@ const notificationSchema = new mongoose.Schema({
   },
   recipientModel: {
     type: String,
-    required: true,
-    enum: ['College', 'Student', 'Company','CollegeStudent']
+    enum: ['College', 'Student', 'Company'],
+    required: true
   },
   
   // Notification content

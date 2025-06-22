@@ -4,78 +4,57 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pencil, Plus, RefreshCw, Download, Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import axios from 'axios';
+import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
-const initialEmployees = [
-  {
-    id: 1,
-    username: "Raj Shivre",
-    email: "raj@email.com",
-    role: "admin",
-    status: "active",
-    permissions: ["User Management", "Employee Management", "Analytics", "Platform Settings"],
-  },
-  {
-    id: 2,
-    username: "Harsh Raj",
-    email: "harshraj@email.com",
-    role: "employee",
-    status: "inactive",
-    permissions: ["User Management", "Support Panel"],
-  },
-  {
-    id: 3,
-    username: "Anmol Tiwari",
-    email: "anmol@email.com",
-    role: "employee",
-    status: "active",
-    permissions: ["Analytics", "Content Moderation"],
-  },
-  {
-    id: 4,
-    username: "Kishori",
-    email: "kishori@email.com",
-    role: "admin",
-    status: "active",
-    permissions: ["User Management", "Employee Management", "Content Moderation", "Platform Settings"],
-  },
-  {
-    id: 5,
-    username: "Sumit Sahu",
-    email: "sumit@email.com",
-    role: "employee",
-    status: "active",
-    permissions: ["Support Panel"],
-  },
-];
+// Define the employee type
+interface Employee {
+  id: number;
+  _id: string; // MongoDB ObjectId
+  username: string;
+  email: string;
+  role: string;
+  status: string;
+  permissions: string[];
+  phone?: string;
+  profileImage?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "active":
-      return <span className="text-green-700 font-medium text-[10px]">Active</span>;
+      return <Badge variant="secondary" className="cursor-pointer bg-green-100 text-green-700 hover:bg-green-200 border-transparent font-medium">Active</Badge>;
     case "inactive":
-      return <span className="text-gray-500 font-medium text-[10px]">Inactive</span>;
+      return <Badge variant="secondary" className="cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200 border-transparent font-medium">Inactive</Badge>;
     case "pending":
-      return <span className="text-yellow-700 font-medium text-[10px]">Pending</span>;
+      return <Badge variant="secondary" className="cursor-pointer bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-transparent font-medium">Pending</Badge>;
     default:
-      return <span className="text-gray-400 font-medium text-[10px]">Unknown</span>;
+      return <Badge variant="secondary" className="cursor-pointer font-medium">Unknown</Badge>;
   }
 };
 
-const ALL_PERMISSIONS = [
-  "User Management",
-  "Employee Management",
+const ALL_PERMISSIONS = Object.freeze([
+  "Dashboard",
   "Analytics",
+  "User Management",
   "Content Moderation",
   "Support Panel",
+  "Employee Management",
   "Platform Settings",
-];
+]);
 
 export function EmployeeManagement() {
-  const [employees, setEmployees] = useState(initialEmployees);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     username: "",
@@ -90,7 +69,7 @@ export function EmployeeManagement() {
 
   // Set Permissions modal state
   const [permModalOpen, setPermModalOpen] = useState(false);
-  const [permUserId, setPermUserId] = useState<number|null>(null);
+  const [permUserId, setPermUserId] = useState<string|null>(null);
   const [permChecked, setPermChecked] = useState<string[]>([]);
 
   // Refresh animation state
@@ -98,11 +77,76 @@ export function EmployeeManagement() {
 
   // Delete confirmation state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteUserId, setDeleteUserId] = useState<number|null>(null);
+  const [deleteUserId, setDeleteUserId] = useState<string|null>(null);
 
-  const openPermModal = (userId: number, currentPerms: string[]) => {
+  // Status change modal state
+  const [statusChangeModalOpen, setStatusChangeModalOpen] = useState(false);
+  const [statusChangeUser, setStatusChangeUser] = useState<{ _id: string; username: string; newStatus: 'active' | 'inactive' } | null>(null);
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+  const sortEmployees = (employeeList: Employee[]): Employee[] => {
+    return [...employeeList].sort((a, b) => {
+      // Primary sort: by role ('admin' on top)
+      if (a.role !== b.role) {
+        return a.role === 'admin' ? -1 : 1;
+      }
+      
+      // Secondary sort: by creation date (oldest first)
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      
+      return dateA - dateB;
+    });
+  };
+
+  // Fetch employees data from API
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        setError('No authentication token found');
+        return;
+      }
+
+      const response = await axios.get(`${API_URL}/api/admin/employees`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+      });
+
+      if (response.data.success) {
+        setEmployees(sortEmployees(response.data.employees));
+      } else {
+        setError(response.data.message || 'Failed to fetch employees');
+      }
+    } catch (err: any) {
+      console.error('Error fetching employees:', err);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 401) {
+        setError('Authentication failed. Please login again.');
+      } else if (err.response?.status === 403) {
+        setError('Permission denied. You need Employee Management access.');
+      } else {
+        setError('Network error. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load employees on component mount
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const openPermModal = (userId: string, currentPerms: string[]) => {
     setPermUserId(userId);
-    setPermChecked(currentPerms);
+    setPermChecked([...currentPerms].sort());
     setPermModalOpen(true);
   };
 
@@ -114,20 +158,63 @@ export function EmployeeManagement() {
     );
   };
 
-  const savePermissions = () => {
+  const savePermissions = async () => {
     if (permUserId == null) return;
-    setEmployees(prev => prev.map(emp =>
-      emp.id === permUserId ? { ...emp, permissions: permChecked } : emp
-    ));
-    setPermModalOpen(false);
-    setPermUserId(null);
-    setPermChecked([]);
+    
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        setError('No authentication token found');
+        return;
+      }
+
+      // Sort permissions to maintain consistent order
+      const sortedPermissions = [...permChecked].sort();
+
+      const response = await axios.patch(
+        `${API_URL}/api/admin/employees/${permUserId}/permissions`,
+        { permissions: sortedPermissions },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+        }
+      );
+
+      if (response.data.success) {
+        // Update local state with the sorted permissions
+        setEmployees(prev => prev.map(emp =>
+          emp._id === permUserId ? { ...emp, permissions: sortedPermissions } : emp
+        ));
+        
+        // Show success message
+        toast.success('Permissions updated successfully');
+      } else {
+        toast.error(response.data.message || 'Failed to update permissions');
+      }
+    } catch (err: any) {
+      console.error('Error updating permissions:', err);
+      if (err.response?.data?.message) {
+        toast.error(err.response.data.message);
+      } else if (err.response?.status === 401) {
+        toast.error('Authentication failed. Please login again.');
+      } else if (err.response?.status === 403) {
+        toast.error('Permission denied. You need Employee Management access.');
+      } else {
+        toast.error('Network error. Please try again.');
+      }
+    } finally {
+      setPermModalOpen(false);
+      setPermUserId(null);
+      setPermChecked([]);
+    }
   };
 
   function handleRefresh() {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 400); // quick 0.4s rotation
-    // Add actual refresh logic here if needed
+    fetchEmployees().finally(() => {
+      setTimeout(() => setRefreshing(false), 400);
+    });
   }
 
   // Export to CSV
@@ -155,6 +242,116 @@ export function EmployeeManagement() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  // Delete employee function
+  const deleteEmployee = async (employeeId: string) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        setError('No authentication token found');
+        return;
+      }
+
+      const response = await axios.delete(
+        `${API_URL}/api/admin/employees/${employeeId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+        }
+      );
+
+      if (response.data.success) {
+        // Remove employee from local state
+        setEmployees(prev => prev.filter(e => e._id !== employeeId));
+        
+        // Show success message
+        toast.success('Employee deleted successfully');
+      } else {
+        toast.error(response.data.message || 'Failed to delete employee');
+      }
+    } catch (err: any) {
+      console.error('Error deleting employee:', err);
+      if (err.response?.data?.message) {
+        toast.error(err.response.data.message);
+      } else if (err.response?.status === 401) {
+        toast.error('Authentication failed. Please login again.');
+      } else if (err.response?.status === 403) {
+        toast.error('Permission denied. You need Employee Management access.');
+      } else {
+        toast.error('Network error. Please try again.');
+      }
+    }
+  };
+
+  const handleStatusChange = async () => {
+    if (!statusChangeUser) return;
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        toast.error('No authentication token found');
+        return;
+      }
+
+      const response = await axios.patch(
+        `${API_URL}/api/admin/employees/${statusChangeUser._id}/status`,
+        { status: statusChangeUser.newStatus },
+        {
+          headers: { 'Authorization': `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.success) {
+        setEmployees(prev =>
+          prev.map(emp =>
+            emp._id === statusChangeUser._id
+              ? { ...emp, status: statusChangeUser.newStatus }
+              : emp
+          )
+        );
+        toast.success(`User status updated to ${statusChangeUser.newStatus}.`);
+      } else {
+        toast.error(response.data.message || 'Failed to update status.');
+      }
+    } catch (err: any) {
+      console.error('Error updating status:', err);
+      toast.error(err.response?.data?.message || 'An error occurred.');
+    } finally {
+      setStatusChangeModalOpen(false);
+      setStatusChangeUser(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold text-gray-900">Employee Management</h1>
+        <p className="text-gray-500 text-sm">Manage all employees and their permissions.</p>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <span className="ml-2 text-gray-600">Loading employees...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold text-gray-900">Employee Management</h1>
+        <p className="text-gray-500 text-sm">Manage all employees and their permissions.</p>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <Button onClick={fetchEmployees} variant="outline">
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -198,29 +395,62 @@ export function EmployeeManagement() {
             <DialogTitle className="text-base">Add User</DialogTitle>
           </DialogHeader>
           <form
-            onSubmit={e => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              // Add new user to employees
-              setEmployees(prev => [
-                ...prev,
-                {
-                  id: prev.length ? Math.max(...prev.map(emp => emp.id)) + 1 : 1,
-                  username: form.username,
-                  email: form.email,
-                  role: form.role,
-                  status: "active",
-                  permissions: [], // You can add a permissions selector if needed
-                },
-              ]);
-              setForm({
-                username: "",
-                email: "",
-                type: "Admin",
-                role: "employee",
-                password: "",
-                confirmPassword: "",
-              });
-              setOpen(false);
+
+              if (form.password !== form.confirmPassword) {
+                toast.error("Passwords do not match");
+                return;
+              }
+
+              try {
+                const token = localStorage.getItem('adminToken');
+                if (!token) {
+                  toast.error('No authentication token found');
+                  return;
+                }
+
+                const response = await axios.post(
+                  `${API_URL}/api/admin/employees`,
+                  {
+                    username: form.username,
+                    email: form.email,
+                    password: form.password,
+                    role: form.role,
+                  },
+                  {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                  }
+                );
+
+                if (response.data.success) {
+                  const newEmployee = response.data.employee;
+                  
+                  // Add a temporary 'id' for the key prop if your backend doesn't send it
+                  if (!newEmployee.id) {
+                    newEmployee.id = employees.length ? Math.max(...employees.map(emp => emp.id)) + 1 : 1;
+                  }
+
+                  setEmployees(prev => sortEmployees([...prev, newEmployee]));
+                  toast.success('Employee added successfully!');
+                  
+                  // Reset form and close modal
+                  setForm({
+                    username: "",
+                    email: "",
+                    type: "Admin",
+                    role: "employee",
+                    password: "",
+                    confirmPassword: "",
+                  });
+                  setOpen(false);
+                } else {
+                  toast.error(response.data.message || "Failed to add employee");
+                }
+              } catch (err: any) {
+                console.error("Error adding employee:", err);
+                toast.error(err.response?.data?.message || 'An error occurred. Please try again.');
+              }
             }}
             className="space-y-2"
           >
@@ -342,14 +572,52 @@ export function EmployeeManagement() {
                     </Badge>
                   </TableCell>
                   <TableCell className="p-1 align-middle">
-                    {getStatusBadge(emp.status)}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" className="p-0 h-auto hover:bg-transparent">
+                          {getStatusBadge(emp.status)}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-1" align="start">
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs justify-start px-2"
+                            disabled={emp.status === 'active'}
+                            onClick={() => {
+                              setStatusChangeUser({ _id: emp._id, username: emp.username, newStatus: 'active' });
+                              setStatusChangeModalOpen(true);
+                            }}
+                          >
+                            Set to Active
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs justify-start px-2"
+                            disabled={emp.status === 'inactive'}
+                            onClick={() => {
+                              setStatusChangeUser({ _id: emp._id, username: emp.username, newStatus: 'inactive' });
+                              setStatusChangeModalOpen(true);
+                            }}
+                          >
+                            Set to Inactive
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </TableCell>
                   <TableCell className="p-1 align-middle">
                     <div
                       className="max-w-[400px] truncate cursor-pointer"
-                      title={emp.permissions.join(", ")}
+                      title={emp.permissions && emp.permissions.length > 0 ? emp.permissions.sort().join(", ") : "No Permission"}
                     >
-                      {emp.permissions.join(", ")}
+                      {emp.permissions && emp.permissions.length > 0 ? (
+                        emp.permissions.sort().join(", ")
+                      ) : (
+                        <span className="text-gray-400 italic">No Permission</span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="p-1 align-middle">
@@ -357,7 +625,7 @@ export function EmployeeManagement() {
                       <Button
                         variant="outline"
                         className="h-6 px-2 py-0 text-[11px] flex items-center gap-1"
-                        onClick={() => openPermModal(emp.id, emp.permissions)}
+                        onClick={() => openPermModal(emp._id, emp.permissions)}
                       >
                         <Pencil className="w-3 h-3" />
                         Set Permissions
@@ -367,7 +635,7 @@ export function EmployeeManagement() {
                         variant="destructive"
                         className="h-6 w-6 p-0"
                         onClick={() => {
-                          setDeleteUserId(emp.id);
+                          setDeleteUserId(emp._id);
                           setDeleteModalOpen(true);
                         }}
                       >
@@ -411,6 +679,38 @@ export function EmployeeManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Status Change Confirmation Modal */}
+      <Dialog open={statusChangeModalOpen} onOpenChange={setStatusChangeModalOpen}>
+        <DialogContent className="max-w-xs p-4">
+          <DialogHeader>
+            <DialogTitle className="text-base">Confirm Status Change</DialogTitle>
+          </DialogHeader>
+          <div className="text-sm py-2">
+            {statusChangeUser && (
+              <p>
+                
+                {statusChangeUser.newStatus === 'active'
+                  ? <>This will <b className="text-green-500">Enable</b> login for</>
+                  : <>This will <b className="text-red-500">Disable</b> login for</>}
+                <b>&nbsp;{statusChangeUser.username}</b>
+              </p>
+            )}
+          </div>
+          <DialogFooter className="flex justify-end gap-2 pt-2">
+            <Button type="button" size="sm" variant="ghost" onClick={() => { setStatusChangeModalOpen(false); setStatusChangeUser(null); }}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={statusChangeUser?.newStatus === 'inactive' ? 'destructive' : 'default'}
+              onClick={handleStatusChange}
+            >
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Delete Confirmation Modal */}
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
         <DialogContent className="max-w-xs p-4">
@@ -419,7 +719,7 @@ export function EmployeeManagement() {
           </DialogHeader>
           <div className="text-xs py-2">
             {(() => {
-              const emp = employees.find(e => e.id === deleteUserId);
+              const emp = employees.find(e => e._id === deleteUserId);
               if (!emp) return null;
               return (
                 <span>
@@ -437,10 +737,12 @@ export function EmployeeManagement() {
               type="button"
               size="sm"
               variant="destructive"
-              onClick={() => {
-                setEmployees(prev => prev.filter(e => e.id !== deleteUserId));
-                setDeleteModalOpen(false);
-                setDeleteUserId(null);
+              onClick={async () => {
+                if (deleteUserId) {
+                  await deleteEmployee(deleteUserId);
+                  setDeleteModalOpen(false);
+                  setDeleteUserId(null);
+                }
               }}
             >
               Delete

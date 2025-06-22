@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaSearch, FaBell, FaCog, FaSignOutAlt } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
+import NotificationDropdown from './components/NotificationDropdown';
 
 const SearchBar = ({ onSettingsClick }) => {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -10,6 +11,7 @@ const SearchBar = ({ onSettingsClick }) => {
 
   // Check if we're in company context
   const isCompanyContext = location.pathname.includes('/company/');
+  const isCollegeContext = location.pathname.includes('/college/');
   
   // Get user data based on context
   const userName = isCompanyContext 
@@ -17,6 +19,20 @@ const SearchBar = ({ onSettingsClick }) => {
     : localStorage.getItem('collegeName') || 'Admin';
   
   const initials = userName ? userName.substring(0, 2).toUpperCase() : 'AD';
+
+  // Get user ID and type for notifications
+  const getUserIdAndType = () => {
+    if (isCompanyContext) {
+      const companyId = localStorage.getItem('companyId');
+      return { userId: companyId, userType: 'company' };
+    } else if (isCollegeContext) {
+      const collegeId = localStorage.getItem('collegeId');
+      return { userId: collegeId, userType: 'college' };
+    }
+    return { userId: null, userType: null };
+  };
+
+  const { userId, userType } = getUserIdAndType();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -93,23 +109,11 @@ const SearchBar = ({ onSettingsClick }) => {
       </div>
       {/* Icons on the right */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 32, marginLeft: 24 }}>
-        <div style={{ 
-          width: 22, 
-          height: 22, 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center' 
-        }}>
-          <FaBell style={{ 
-            color: '#64748b', 
-            fontSize: 22, 
-            cursor: 'pointer',
-            transition: 'color 0.2s ease'
-          }} 
-          onMouseOver={e => e.currentTarget.style.color = '#6366f1'}
-          onMouseOut={e => e.currentTarget.style.color = '#64748b'}
-          />
-        </div>
+        {/* Notification Dropdown */}
+        {userId && userType && (
+          <NotificationDropdown userId={userId} userType={userType} />
+        )}
+        
         <div style={{ position: 'relative' }} ref={dropdownRef}>
           <div style={{ 
             width: 40, 
@@ -200,10 +204,12 @@ const SearchBar = ({ onSettingsClick }) => {
                     transition: 'all 0.2s ease'
                   }}
                   onMouseOver={e => {
-                    e.currentTarget.style.background = '#fee2e2';
+                    e.currentTarget.style.background = '#fef2f2';
+                    e.currentTarget.style.color = '#dc2626';
                   }}
                   onMouseOut={e => {
                     e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = '#ef4444';
                   }}
                 >
                   <FaSignOutAlt style={{ fontSize: 16 }} />

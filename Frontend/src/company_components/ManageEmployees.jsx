@@ -24,12 +24,12 @@ const ManageEmployees = () => {
     email: '',
     phone: '',
     department: '',
-    position: '',
     type: 'employee',
     password: ''
   });
   const [validationErrors, setValidationErrors] = useState({});
   const [showSettings, setShowSettings] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -68,7 +68,6 @@ const ManageEmployees = () => {
     if (!newEmployee.email) errors.email = 'Email is required';
     if (!newEmployee.phone) errors.phone = 'Phone is required';
     if (!newEmployee.department) errors.department = 'Department is required';
-    if (!newEmployee.position) errors.position = 'Position is required';
     if (!newEmployee.password) errors.password = 'Password is required';
 
     if (Object.keys(errors).length > 0) {
@@ -76,6 +75,7 @@ const ManageEmployees = () => {
       return;
     }
 
+    setAdding(true);
     try {
       const companyId = localStorage.getItem('companyId');
       const response = await axios.post(`${apiUrl}/api/company/${companyId}/employees`, {
@@ -90,13 +90,14 @@ const ManageEmployees = () => {
         email: '',
         phone: '',
         department: '',
-        position: '',
         type: 'employee',
         password: ''
       });
     } catch (err) {
       console.error('Error adding employee:', err);
       setError(err.response?.data?.error || 'Failed to add employee');
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -110,7 +111,6 @@ const ManageEmployees = () => {
     if (!selectedEmployee.email) errors.email = 'Email is required';
     if (!selectedEmployee.phone) errors.phone = 'Phone is required';
     if (!selectedEmployee.department) errors.department = 'Department is required';
-    if (!selectedEmployee.position) errors.position = 'Position is required';
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -123,7 +123,6 @@ const ManageEmployees = () => {
         email: selectedEmployee.email,
         phone: selectedEmployee.phone,
         department: selectedEmployee.department,
-        position: selectedEmployee.position,
         type: selectedEmployee.type,
         rating: selectedEmployee.rating || 4,
         verified: selectedEmployee.verified || false,
@@ -233,7 +232,6 @@ const ManageEmployees = () => {
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Name</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Email</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Department</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Position</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Type</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Rating</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Status</th>
@@ -396,25 +394,6 @@ const ManageEmployees = () => {
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', marginBottom: '8px', color: '#374151' }}>Position</label>
-                      <input
-                        type="text"
-                        value={newEmployee.position}
-                        onChange={(e) => setNewEmployee({ ...newEmployee, position: e.target.value })}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '14px'
-                        }}
-                      />
-                      {validationErrors.position && (
-                        <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>{validationErrors.position}</div>
-                      )}
-                    </div>
-
-                    <div>
                       <label style={{ display: 'block', marginBottom: '8px', color: '#374151' }}>Type</label>
                       <select
                         value={newEmployee.type}
@@ -472,18 +451,32 @@ const ManageEmployees = () => {
                     </button>
                     <button
                       type="submit"
+                      disabled={adding}
                       style={{
                         padding: '8px 16px',
                         backgroundColor: '#2563eb',
                         color: 'white',
                         border: 'none',
                         borderRadius: '6px',
-                        cursor: 'pointer',
+                        cursor: adding ? 'not-allowed' : 'pointer',
                         fontSize: '14px',
-                        fontWeight: 500
+                        fontWeight: 500,
+                        height: 40,
+                        minWidth: 140,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8
                       }}
                     >
-                      Add Employee
+                      {adding ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                          Adding...
+                        </>
+                      ) : (
+                        'Add Employee'
+                      )}
                     </button>
                   </div>
                 </form>
@@ -575,25 +568,6 @@ const ManageEmployees = () => {
                       />
                       {validationErrors.department && (
                         <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>{validationErrors.department}</div>
-                      )}
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '8px', color: '#374151' }}>Position</label>
-                      <input
-                        type="text"
-                        value={selectedEmployee.position}
-                        onChange={(e) => setSelectedEmployee({ ...selectedEmployee, position: e.target.value })}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '14px'
-                        }}
-                      />
-                      {validationErrors.position && (
-                        <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px' }}>{validationErrors.position}</div>
                       )}
                     </div>
 
@@ -720,7 +694,6 @@ const ManageEmployees = () => {
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Name</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Email</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Department</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Position</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Type</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Rating</th>
                     <th style={{ padding: '12px 16px', textAlign: 'left', color: '#6b7280', fontWeight: 500 }}>Status</th>
@@ -733,7 +706,6 @@ const ManageEmployees = () => {
                       <td style={{ padding: '12px 16px' }}>{employee.name}</td>
                       <td style={{ padding: '12px 16px' }}>{employee.email}</td>
                       <td style={{ padding: '12px 16px' }}>{employee.department}</td>
-                      <td style={{ padding: '12px 16px' }}>{employee.position}</td>
                       <td style={{ padding: '12px 16px' }}>{employee.type}</td>
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ 
