@@ -1,73 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaUniversity } from 'react-icons/fa';
+import { FaUniversity, FaArrowLeft } from 'react-icons/fa';
 import axios from 'axios';
 axios.defaults.withCredentials = true;
-import './CollegeLogin.css';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const initialRegisterData = {
-  name: '',
-  code: '',
-  location: '',
-  website: '',
-  contactEmail: '',
-  contactPhone: '',
-  password: '',
-  placementOfficer: { name: '', email: '', phone: '' },
-  departments: [{ name: '', code: '' }],
-  establishedYear: '',
-  campusSize: ''
-};
-
-const demoCollegeData = {
-  name: "Techori Institute of Technology",
-  code: "TIT2024",
-  location: "Bangalore, Karnataka",
-  website: "https://techoritech.edu",
-  contactEmail: "contact@techoritech.edu",
-  contactPhone: "+91 9876543210",
-  placementOfficer: {
-    name: "Dr. Sarah Johnson",
-    email: "placement@techoritech.edu",
-    phone: "+91 9876543211"
-  },
-  departments: [
-    { name: "Computer Science", code: "CSE" },
-    { name: "Information Technology", code: "IT" },
-    { name: "Electronics", code: "ECE" }
-  ],
-  establishedYear: "2020",
-  campusSize: "50"
+  name: '', code: '', contactEmail: '', contactPhone: '', password: ''
 };
 
 const CollegeLogin = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
+  const [currentView, setCurrentView] = useState("login"); // "login" or "register"
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState(initialRegisterData);
+  const [loading, setLoading] = useState(false);
   const [registerLoading, setRegisterLoading] = useState(false);
-  const [registerError, setRegisterError] = useState('');
-  const [registerSuccess, setRegisterSuccess] = useState('');
-  const [registerStep, setRegisterStep] = useState(1); // 1: info, 2: password
   const [emailCheckLoading, setEmailCheckLoading] = useState(false);
+  const [message, setMessage] = useState({ type: "", text: "" });
+  const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [registerStep, setRegisterStep] = useState(1);
   const [resendDisabled, setResendDisabled] = useState(true);
-  const [resendTime, setResendTime] = useState(60); // 60 seconds cooldown
+  const [resendTime, setResendTime] = useState(60);
   const [otpInputs, setOtpInputs] = useState(Array(6).fill(''));
+  const [otpStatus, setOtpStatus] = useState('idle');
   const otpInputRefs = useRef([]);
-  const [otpStatus, setOtpStatus] = useState('idle'); // 'idle', 'verifying', 'verified', 'error'
 
   useEffect(() => {
     let timer;
-    if (showRegister && registerStep === 2) {
+    if (currentView === "register" && registerStep === 2) {
       setResendDisabled(true);
-      setResendTime(60); // Start cooldown when entering step 2
+      setResendTime(60);
+      setOtpStatus('idle');
       timer = setInterval(() => {
         setResendTime((prevTime) => {
           if (prevTime <= 1) {
@@ -78,673 +44,521 @@ const CollegeLogin = () => {
           return prevTime - 1;
         });
       }, 1000);
-    } else {
-      clearInterval(timer);
     }
-
     return () => clearInterval(timer);
-  }, [showRegister, registerStep]); // Depend on showRegister and registerStep
+  }, [currentView, registerStep]);
+
+  const switchView = (view) => {
+    setCurrentView(view);
+    setFormData({ email: '', password: '' });
+    setRegisterData(initialRegisterData);
+    setErrors({});
+    setMessage({ type: "", text: "" });
+    setShowPassword(false);
+    setRegisterStep(1);
+    setOtpInputs(Array(6).fill(''));
+    setOtpStatus('idle');
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (currentView === "register") {
+      if (!registerData.name.trim()) {
+        newErrors.name = "College name is required";
+      }
+      if (!registerData.code.trim()) {
+        newErrors.code = "College code is required";
+      }
+      if (!registerData.contactEmail.trim()) {
+        newErrors.contactEmail = "Contact email is required";
+      } else if (!/\S+@\S+\.\S+/.test(registerData.contactEmail)) {
+        newErrors.contactEmail = "Email is invalid";
+      }
+      if (!registerData.contactPhone.trim()) {
+        newErrors.contactPhone = "Contact phone is required";
+      }
+    } else {
+      if (!formData.email.trim()) {
+        newErrors.email = "Email is required";
+      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+        newErrors.email = "Email is invalid";
+      }
+      if (!formData.password) {
+        newErrors.password = "Password is required";
+      }
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const response = await axios.post(`${apiUrl}/api/auth/college-admin`, formData);
-      const { _id, name, role } = response.data;
-
-      // Store admin data in localStorage
-      localStorage.setItem('collegeId', _id);
-      localStorage.setItem('collegeName', name);
-      localStorage.setItem('userRole', role);
-
-      // Navigate to specific college dashboard
-      navigate(`/college/${_id}/dashboard`);
-    } catch (err) {
-      console.error('Login error:', err);
-      setError(err.response?.data?.error || 'Error during login. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRegisterChange = (e) => {
     const { name, value } = e.target;
-    if (name.startsWith('placementOfficer.')) {
-      const key = name.split('.')[1];
-      setRegisterData({
-        ...registerData,
-        placementOfficer: { ...registerData.placementOfficer, [key]: value }
-      });
-    } else if (name.startsWith('departments.')) {
-      const [_, idx, field] = name.split('.');
-      const departments = [...registerData.departments];
-      departments[parseInt(idx)][field] = value;
-      setRegisterData({ ...registerData, departments });
+    if (currentView === "register") {
+      setRegisterData(prev => ({ ...prev, [name]: value }));
     } else {
-      setRegisterData({ ...registerData, [name]: value });
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
-  };
-
-  const handleAddDepartment = () => {
-    setRegisterData({
-      ...registerData,
-      departments: [...registerData.departments, { name: '', code: '' }]
-    });
-  };
-
-  const handleRemoveDepartment = (idx) => {
-    const departments = registerData.departments.filter((_, i) => i !== idx);
-    setRegisterData({ ...registerData, departments });
-  };
-
-  const handleRegisterInfoSubmit = async (e) => {
-    e.preventDefault();
-    setRegisterError('');
-    setRegisterSuccess('');
-    setEmailCheckLoading(true);
-    try {
-      // Send all registration data (except password) to initiate endpoint
-      const res = await axios.post(`${apiUrl}/api/colleges/register/initiate`, {
-        name: registerData.name,
-        code: registerData.code,
-        location: registerData.location,
-        website: registerData.website,
-        contactEmail: registerData.contactEmail,
-        contactPhone: registerData.contactPhone,
-        placementOfficer: registerData.placementOfficer,
-        departments: registerData.departments,
-        establishedYear: Number(registerData.establishedYear), // Ensure number type
-        campusSize: Number(registerData.campusSize) // Ensure number type
-      });
-
-      setRegisterSuccess(res.data.message || 'OTP sent to your email.');
-      setRegisterStep(2); // Move to password/OTP step
-    } catch (err) {
-      console.error('Error initiating college registration:', err);
-      setRegisterError(err.response?.data?.error || 'Error initiating registration. Please try again.');
-    } finally {
-      setEmailCheckLoading(false);
-    }
-  };
-
-  const handleLoadDemoData = () => {
-    setRegisterData(demoCollegeData);
-  };
-
-  const handleRegisterSubmit = async (e) => {
-    e.preventDefault();
-    setRegisterError('');
-    setRegisterSuccess('');
-
-    const { contactEmail, password, confirmPassword } = registerData;
-    const otp = otpInputs.join('');
-
-    if (password !== confirmPassword) {
-      setRegisterError('Password and Confirm Password do not match.');
-      return;
-    }
-
-    if (password.length < 8) {
-      setRegisterError('Password must be at least 8 characters long.');
-      return;
-    }
-
-    if (otp.length !== 6) {
-      setRegisterError('Please enter the complete 6-digit OTP.');
-      return;
-    }
-
-    setRegisterLoading(true);
-    try {
-      const res = await axios.post(`${apiUrl}/api/colleges/register/verify`, {
-        email: contactEmail,
-        otp: otp,
-        password,
-        confirmPassword
-      });
-
-      setRegisterSuccess('Registration successful! Redirecting to login...');
-      
-      // Wait for 2 seconds to show the success message
-      setTimeout(() => {
-        setShowRegister(false);
-        setRegisterStep(1);
-        setRegisterData(initialRegisterData);
-        setOtpInputs(Array(6).fill(''));
-        setOtpStatus('idle');
-      }, 2000);
-
-    } catch (err) {
-      console.error('Registration verification error:', err);
-      setRegisterError(err.response?.data?.error || 'Error completing registration. Please try again.');
-      setOtpInputs(Array(6).fill(''));
-      if (otpInputRefs.current[0]) {
-        otpInputRefs.current[0].focus();
-      }
-      setOtpStatus('error');
-    } finally {
-      setRegisterLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    setResendDisabled(true); // Disable button immediately
-    setResendTime(60); // Reset timer
-    setRegisterError(''); // Clear previous error
-    setRegisterSuccess(''); // Clear previous success message
-
-    try {
-      // Send minimal data required by initiate endpoint to resend OTP
-      const res = await axios.post(`${apiUrl}/api/colleges/register/initiate`, {
-        contactEmail: registerData.contactEmail,
-        // Include other necessary identification if your backend initiate endpoint requires it, like type
-        type: 'college', // Ensure type is sent
-        // Send minimal data needed for re-initiation if backend allows
-        // If backend initiate requires full data, send like in handleRegisterInfoSubmit
-        name: registerData.name, // Include necessary fields for initiate if needed
-        code: registerData.code,
-        location: registerData.location,
-        contactPhone: registerData.contactPhone,
-        establishedYear: Number(registerData.establishedYear), // Ensure number type
-        campusSize: Number(registerData.campusSize), // Ensure number type
-        placementOfficer: registerData.placementOfficer,
-        departments: registerData.departments
-      });
-      setRegisterSuccess('New OTP sent to your email.');
-    } catch (err) {
-      console.error('Error resending OTP:', err);
-      setRegisterError(err.response?.data?.error || 'Error resending OTP. Please try again.');
-      // If resend failed, maybe re-enable button after a shorter delay or based on error type
-      // For now, let the timer handle re-enabling.
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: "" }));
     }
   };
 
   const handleOtpInputChange = (e, index) => {
-    const { value } = e.target;
-    const newOtpInputs = [...otpInputs];
+    const value = e.target.value;
+    if (value.length <= 1 && /^\d*$/.test(value)) {
+      const newOtpInputs = [...otpInputs];
+      newOtpInputs[index] = value;
+      setOtpInputs(newOtpInputs);
+      if (value && index < 5 && otpInputRefs.current[index + 1]) {
+        otpInputRefs.current[index + 1].focus();
+      }
 
-    // Ensure only a single digit is entered
-    const digit = value.replace(/[^0-9]/g, ''); // Remove non-digits
-    if (digit.length > 0) {
-      newOtpInputs[index] = digit.slice(-1); // Take only the last digit entered
-    } else {
-      newOtpInputs[index] = '';
-    }
-
-    setOtpInputs(newOtpInputs);
-    setOtpStatus('idle'); // Reset status whenever input changes
-
-    // Move focus to the next input if a digit was entered and it's not the last input
-    if (digit && index < 5 && otpInputRefs.current[index + 1]) {
-      otpInputRefs.current[index + 1].focus();
-    } else if (!digit && index > 0 && otpInputRefs.current[index - 1]) { // Move focus back on backspace if empty
-       // This part is handled by onKeyDown now, keeping this just in case, but primary logic is below
-    }
-
-    // Check if all digits are entered and trigger OTP verification check
-    const fullOtp = newOtpInputs.join('');
-    if (fullOtp.length === 6) {
-      checkOtpVerificationStatus(fullOtp);
+      if (newOtpInputs.every(input => input !== '')) {
+        checkOtpVerificationStatus(newOtpInputs.join(''));
+      }
     }
   };
 
   const checkOtpVerificationStatus = async (otp) => {
     setOtpStatus('verifying');
-    setRegisterError(''); // Clear previous errors related to registration submit
-    setRegisterSuccess(''); // Clear previous success messages
-
+    setMessage({ type: "", text: "" });
     try {
-      // Call the new backend endpoint to check OTP validity without completing registration
       const res = await axios.post(`${apiUrl}/api/auth/register/check-otp`, {
         email: registerData.contactEmail,
         otp: otp,
-        type: 'college' // Specify the type
+        type: 'college'
       });
-
       if (res.data.valid) {
         setOtpStatus('verified');
-        // Optional: Show a success message specifically for OTP verification
-        // setRegisterSuccess('OTP verified successfully!');
       } else {
-        // If backend says invalid, show error
         setOtpStatus('error');
-        setRegisterError(res.data.error || 'Invalid OTP.');
-         // Clear OTP inputs on error for security/usability
-         setOtpInputs(Array(6).fill(''));
-         if (otpInputRefs.current[0]) {
-           otpInputRefs.current[0].focus(); // Focus first input
-         }
+        setMessage({ type: "error", text: res.data.error || 'Invalid OTP.' });
+        setOtpInputs(Array(6).fill(''));
+        if (otpInputRefs.current[0]) otpInputRefs.current[0].focus();
       }
     } catch (err) {
-      console.error('OTP verification check error:', err);
-      // Handle network errors or other unexpected errors
       setOtpStatus('error');
-      setRegisterError(err.response?.data?.error || 'Error verifying OTP.');
-       // Clear OTP inputs on error
-       setOtpInputs(Array(6).fill(''));
-        if (otpInputRefs.current[0]) {
-           otpInputRefs.current[0].focus(); // Focus first input
-        }
+      setMessage({ type: "error", text: err.response?.data?.error || 'Error verifying OTP.' });
+      setOtpInputs(Array(6).fill(''));
+      if (otpInputRefs.current[0]) otpInputRefs.current[0].focus();
     }
   };
 
-  return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: '#F3F4F6',
-      padding: '2rem'
-    }}>
-      <div style={{
-        background: 'white',
-        borderRadius: '1.5rem',
-        padding: '3rem',
-        width: '100%',
-        maxWidth: '600px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-      }}>
-        <div style={{
-          textAlign: 'center',
-          marginBottom: '3rem'
-        }}>
-          <div style={{
-            color: '#F59E0B',
-            fontSize: '4rem',
-            marginBottom: '1.5rem',
-            display: 'flex',
-            justifyContent: 'center'
-          }}>
-            <FaUniversity />
+  const handleResendOtp = async () => {
+    setResendDisabled(true);
+    setResendTime(60);
+    setMessage({ type: "", text: "" });
+    try {
+      const res = await axios.post(`${apiUrl}/api/colleges/register/initiate`, {
+        name: registerData.name,
+        code: registerData.code,
+        contactEmail: registerData.contactEmail,
+        contactPhone: registerData.contactPhone
+      });
+      setMessage({ type: "success", text: 'New OTP sent to your email.' });
+    } catch (err) {
+      setMessage({ type: "error", text: err.response?.data?.error || 'Error resending OTP.' });
+    }
+  };
+
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setLoading(true);
+    setMessage({ type: "", text: "" });
+
+    try {
+      const response = await axios.post(`${apiUrl}/api/auth/college-admin`, formData);
+      const { _id, name, role } = response.data;
+      localStorage.setItem('collegeId', _id);
+      localStorage.setItem('collegeName', name);
+      localStorage.setItem('userRole', role);
+      
+      setMessage({ type: "success", text: "Login successful! Redirecting..." });
+      setTimeout(() => {
+        navigate(`/college/${_id}/dashboard`);
+      }, 1000);
+    } catch (err) {
+      setMessage({ type: "error", text: err.response?.data?.error || 'Error during login.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegisterStep1 = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setEmailCheckLoading(true);
+    setMessage({ type: "", text: "" });
+
+    try {
+      const res = await axios.post(`${apiUrl}/api/colleges/register/initiate`, {
+        name: registerData.name,
+        code: registerData.code,
+        contactEmail: registerData.contactEmail,
+        contactPhone: registerData.contactPhone
+      });
+      setMessage({ type: "success", text: res.data.message || 'OTP sent to your email.' });
+      setRegisterStep(2);
+    } catch (err) {
+      setMessage({ type: "error", text: err.response?.data?.error || 'Error initiating registration.' });
+    } finally {
+      setEmailCheckLoading(false);
+    }
+  };
+
+  const handleRegisterStep2 = async (e) => {
+    e.preventDefault();
+    setRegisterLoading(true);
+    setMessage({ type: "", text: "" });
+
+    try {
+      const password = e.target.password.value;
+      const confirmPassword = e.target.confirmPassword.value;
+      if (password !== confirmPassword) {
+        setMessage({ type: "error", text: 'Passwords do not match.' });
+        return;
+      }
+      const res = await axios.post(`${apiUrl}/api/colleges/register/verify`, {
+        email: registerData.contactEmail,
+        otp: otpInputs.join(''),
+        password,
+        confirmPassword
+      });
+      setMessage({ type: "success", text: 'Registration successful! Redirecting to login...' });
+      setTimeout(() => {
+        switchView('login');
+      }, 2000);
+    } catch (err) {
+      setMessage({ type: "error", text: err.response?.data?.error || 'Error completing registration.' });
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
+
+  const renderLoginForm = () => (
+    <form className="space-y-4" onSubmit={handleLoginSubmit} autoComplete="off">
+      <div>
+        <label htmlFor="login-email" className="block text-sm font-medium text-gray-700">
+          Email Address
+        </label>
+        <input
+          id="login-email"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          className={`mt-1 block w-full px-3 py-2 border ${
+            errors.email ? "border-red-300" : "border-gray-300"
+          } rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm`}
+          placeholder="admin@college.edu"
+          autoComplete="off"
+        />
+        {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+      </div>
+
+      <div>
+        <label htmlFor="login-password" className="block text-sm font-medium text-gray-700">
+          Password
+        </label>
+        <div className="relative">
+          <input
+            id="login-password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            value={formData.password}
+            onChange={handleChange}
+            className={`mt-1 block w-full px-3 py-2 border ${
+              errors.password ? "border-red-300" : "border-gray-300"
+            } rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm`}
+            placeholder="Enter your password"
+            autoComplete="off"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(s => !s)}
+            tabIndex={-1}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-orange-600"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? (
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-5.523 0-10-4.477-10-10 0-1.38.283-2.694.793-3.88m2.387-3.274A9.978 9.978 0 0112 3c5.523 0 10 4.477 10 10 0 1.446-.31 2.824-.863 4.042M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            ) : (
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 01-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c1.657 0 3.22.424 4.563 1.17M19.542 12C18.268 16.057 14.477 19 10 19c-1.657 0-3.22-.424-4.563-1.17" />
+              </svg>
+            )}
+          </button>
+        </div>
+        {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+      </div>
+
+      <div className="flex items-center justify-end">
+        <div className="text-sm">
+          <a href="/college/forgot-password" className="font-medium text-orange-600 hover:text-orange-500">
+            Forgot your password?
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-semibold rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
+        >
+          {loading ? "Signing In..." : "Sign In"}
+        </button>
+      </div>
+    </form>
+  );
+
+  const renderRegisterStep1 = () => (
+    <form className="space-y-4" onSubmit={handleRegisterStep1} autoComplete="off">
+      <div>
+        <label htmlFor="register-name" className="block text-sm font-medium text-gray-700">
+          College Name
+        </label>
+        <input
+          id="register-name"
+          name="name"
+          type="text"
+          value={registerData.name}
+          onChange={handleChange}
+          className={`mt-1 block w-full px-3 py-2 border ${
+            errors.name ? "border-red-300" : "border-gray-300"
+          } rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm`}
+          placeholder="Enter college name"
+          autoComplete="off"
+        />
+        {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+      </div>
+
+      <div>
+        <label htmlFor="register-code" className="block text-sm font-medium text-gray-700">
+          College Code
+        </label>
+        <input
+          id="register-code"
+          name="code"
+          type="text"
+          value={registerData.code}
+          onChange={handleChange}
+          className={`mt-1 block w-full px-3 py-2 border ${
+            errors.code ? "border-red-300" : "border-gray-300"
+          } rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm`}
+          placeholder="Enter college code"
+          autoComplete="off"
+        />
+        {errors.code && <p className="mt-1 text-sm text-red-600">{errors.code}</p>}
+      </div>
+
+      <div>
+        <label htmlFor="register-email" className="block text-sm font-medium text-gray-700">
+          Contact Email
+        </label>
+        <input
+          id="register-email"
+          name="contactEmail"
+          type="email"
+          value={registerData.contactEmail}
+          onChange={handleChange}
+          className={`mt-1 block w-full px-3 py-2 border ${
+            errors.contactEmail ? "border-red-300" : "border-gray-300"
+          } rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm`}
+          placeholder="Enter contact email"
+          autoComplete="off"
+        />
+        {errors.contactEmail && <p className="mt-1 text-sm text-red-600">{errors.contactEmail}</p>}
+      </div>
+
+      <div>
+        <label htmlFor="register-phone" className="block text-sm font-medium text-gray-700">
+          Contact Phone
+        </label>
+        <input
+          id="register-phone"
+          name="contactPhone"
+          type="tel"
+          value={registerData.contactPhone}
+          onChange={handleChange}
+          className={`mt-1 block w-full px-3 py-2 border ${
+            errors.contactPhone ? "border-red-300" : "border-gray-300"
+          } rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm`}
+          placeholder="Enter contact phone"
+          autoComplete="off"
+        />
+        {errors.contactPhone && <p className="mt-1 text-sm text-red-600">{errors.contactPhone}</p>}
+      </div>
+
+      <div>
+        <button
+          type="submit"
+          disabled={emailCheckLoading}
+          className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-semibold rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
+        >
+          {emailCheckLoading ? "Verifying..." : "Next"}
+        </button>
+      </div>
+    </form>
+  );
+
+  const renderRegisterStep2 = () => (
+    <form className="space-y-4" onSubmit={handleRegisterStep2} autoComplete="off">
+      <div>
+        <p className="text-sm text-gray-600 mb-4">Enter the OTP sent to {registerData.contactEmail}</p>
+        <div className="flex items-center gap-2 mb-4">
+          {otpInputs.map((otp, index) => (
+            <input
+              key={index}
+              ref={el => otpInputRefs.current[index] = el}
+              className="w-12 h-12 text-center border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              type="text"
+              maxLength="1"
+              value={otp}
+              onChange={(e) => handleOtpInputChange(e, index)}
+              onKeyDown={(e) => {
+                if (e.key === 'Backspace' && !otpInputs[index] && index > 0) {
+                  otpInputRefs.current[index - 1].focus();
+                }
+              }}
+              autoComplete="one-time-code"
+            />
+          ))}
+          <div className="flex items-center justify-center w-8 h-8">
+            {otpStatus === 'verifying' && <span className="text-orange-600">...</span>}
+            {otpStatus === 'verified' && <span className="text-green-600">✅</span>}
+            {otpStatus === 'error' && <span className="text-red-600">❌</span>}
           </div>
-          <h1 style={{
-            fontSize: '2rem',
-            fontWeight: 'bold',
-            color: '#1F2937',
-            marginBottom: '1rem'
-          }}>
-            {showRegister ? (registerStep === 1 ? 'Register College' : (registerStep === 2 ? 'Verify Email & Set Password' : '')) : 'College Admin Login'}
-          </h1>
-          <p style={{
-            color: '#6B7280',
-            fontSize: '1.1rem'
-          }}>
-            {showRegister ? (registerStep === 1 ? 'Fill the form to register your college' : 'Enter the OTP sent to your email and set a secure password') : 'Sign in to access your college dashboard'}
+        </div>
+        <div className="text-right">
+          <button
+            type="button"
+            onClick={handleResendOtp}
+            disabled={resendDisabled}
+            className="text-sm text-orange-600 hover:text-orange-500 disabled:text-gray-400 disabled:cursor-not-allowed"
+          >
+            {resendDisabled ? `Resend OTP (${resendTime}s)` : 'Resend OTP'}
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label htmlFor="register-password" className="block text-sm font-medium text-gray-700">
+          New Password
+        </label>
+        <input
+          id="register-password"
+          name="password"
+          type="password"
+          required
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+          placeholder="Enter new password"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="register-confirm-password" className="block text-sm font-medium text-gray-700">
+          Confirm Password
+        </label>
+        <input
+          id="register-confirm-password"
+          name="confirmPassword"
+          type="password"
+          required
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+          placeholder="Confirm new password"
+        />
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setRegisterStep(1)}
+          className="flex-1 py-2 px-4 border border-gray-300 text-sm font-semibold rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition"
+        >
+          Back
+        </button>
+        <button
+          type="submit"
+          disabled={registerLoading || otpStatus !== 'verified'}
+          className="flex-1 py-2 px-4 border border-transparent text-sm font-semibold rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
+        >
+          {registerLoading ? "Creating Account..." : "Create Account"}
+        </button>
+      </div>
+    </form>
+  );
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-100 py-12 px-4 sm:px-6 lg:px-8">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/login_panel')}
+        className="absolute top-6 left-6 inline-flex items-center px-3 py-2 text-sm font-medium text-orange-600 hover:text-orange-500 bg-white/80 hover:bg-white/90 rounded-lg shadow-sm transition-all duration-300 backdrop-blur-sm"
+      >
+        <FaArrowLeft className="mr-2 h-4 w-4" />
+        Login Panel
+      </button>
+
+      <div className="max-w-md w-full space-y-8 bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg px-8 py-10">
+        <div className="text-center">
+          <div className="mx-auto w-16 h-16 mb-4 flex items-center justify-center text-orange-600">
+            <FaUniversity size={48} />
+          </div>
+          <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
+            {currentView === "login" ? "College Admin Portal" : "Register Your College"}
+          </h2>
+          <p className="text-gray-500 mt-2 text-base">
+            {currentView === "login" 
+              ? "Access your college dashboard" 
+              : registerStep === 1 
+                ? "Join our network of institutions" 
+                : "Verify your email and set password"
+            }
           </p>
         </div>
 
-        {/* Conditionally render only one form at a time */}
-        {!showRegister && (
-          <>
-            <form onSubmit={handleSubmit}>
-              <div style={{ marginBottom: '2rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.75rem',
-                  color: '#374151',
-                  fontSize: '1rem',
-                  fontWeight: '500'
-                }}>
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    borderRadius: '0.75rem',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '1rem',
-                    outline: 'none',
-                    transition: 'border-color 0.2s'
-                  }}
-                  placeholder="Enter your college admin email"
-                />
-              </div>
-
-              <div style={{ marginBottom: '2rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.75rem',
-                  color: '#374151',
-                  fontSize: '1rem',
-                  fontWeight: '500'
-                }}>
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    borderRadius: '0.75rem',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '1rem',
-                    outline: 'none',
-                    transition: 'border-color 0.2s'
-                  }}
-                  placeholder="Enter your password"
-                />
-              </div>
-
-              {error && (
-                <div style={{
-                  color: '#DC2626',
-                  fontSize: '1rem',
-                  marginBottom: '1.5rem',
-                  textAlign: 'center',
-                  padding: '1rem',
-                  background: '#FEE2E2',
-                  borderRadius: '0.5rem'
-                }}>
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  width: '100%',
-                  padding: '1rem',
-                  background: '#F59E0B',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.75rem',
-                  fontSize: '1rem',
-                  fontWeight: '500',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  opacity: loading ? 0.7 : 1,
-                  transition: 'all 0.2s'
-                }}
-              >
-                {loading ? 'Signing in...' : 'Sign In'}
-              </button>
-            </form>
-            <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-              <button
-                type="button"
-                onClick={() => setShowRegister(true)}
-                style={{
-                  background: '#510bf5',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.75rem',
-                  padding: '0.75rem 2rem',
-                  fontSize: '1rem',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  marginBottom: '1rem',
-                  transition: 'background 0.2s'
-                }}
-              >
-                Register College
-              </button>
-            </div>
-          </>
-        )}
-
-        {showRegister && (
-          <div className={`register-form-anim ${showRegister ? 'show' : ''}`}>
-            <form
-              onSubmit={handleRegisterInfoSubmit}
-              style={{
-                display: registerStep === 1 ? 'block' : 'none',
-                opacity: registerStep === 1 ? 1 : 0,
-                transition: 'opacity 0.5s',
-                marginTop: '1rem'
-              }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {registerStep === 1 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3 style={{ margin: 0, color: '#374151' }}>College Details</h3>
-                    <button
-                      type="button"
-                      onClick={handleLoadDemoData}
-                      style={{
-                        background: '#F3F4F6',
-                        color: '#374151',
-                        border: '1px solid #D1D5DB',
-                        borderRadius: '0.5rem',
-                        padding: '0.5rem 1rem',
-                        fontSize: '0.875rem',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      Load Demo Data
-                    </button>
-                  </div>
-                )}
-                <input name="name" value={registerData.name} onChange={handleRegisterChange} required placeholder="College Name" style={inputStyle} />
-                <input name="code" value={registerData.code} onChange={handleRegisterChange} required placeholder="College Code" style={inputStyle} />
-                <input name="location" value={registerData.location} onChange={handleRegisterChange} required placeholder="Location" style={inputStyle} />
-                <input name="website" value={registerData.website} onChange={handleRegisterChange} placeholder="Website" style={inputStyle} />
-                <input name="contactEmail" value={registerData.contactEmail} onChange={handleRegisterChange} required placeholder="Contact Email" style={inputStyle} />
-                <input name="contactPhone" value={registerData.contactPhone} onChange={handleRegisterChange} required placeholder="Contact Phone" style={inputStyle} />
-                <input name="establishedYear" value={registerData.establishedYear} onChange={handleRegisterChange} required placeholder="Established Year" style={inputStyle} />
-                <input name="campusSize" value={registerData.campusSize} onChange={handleRegisterChange} required placeholder="Campus Size (acres)" style={inputStyle} />
-                <div style={{ border: '1px solid #e5e7eb', borderRadius: '0.5rem', padding: '1rem', background: '#f9fafb' }}>
-                  <h4 style={{ margin: 0, color: '#F59E0B' }}>Placement Officer</h4>
-                  <input name="placementOfficer.name" value={registerData.placementOfficer.name} onChange={handleRegisterChange} required placeholder="Officer Name" style={inputStyle} />
-                  <input name="placementOfficer.email" value={registerData.placementOfficer.email} onChange={handleRegisterChange} required placeholder="Officer Email" style={inputStyle} />
-                  <input name="placementOfficer.phone" value={registerData.placementOfficer.phone} onChange={handleRegisterChange} required placeholder="Officer Phone" style={inputStyle} />
-                </div>
-                <div style={{ border: '1px solid #e5e7eb', borderRadius: '0.5rem', padding: '1rem', background: '#f9fafb' }}>
-                  <h4 style={{ margin: 0, color: '#F59E0B' }}>Departments</h4>
-                  {registerData.departments.map((dept, idx) => (
-                    <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <input name={`departments.${idx}.name`} value={dept.name} onChange={handleRegisterChange} required placeholder="Department Name" style={{ ...inputStyle, flex: 1 }} />
-                      <input name={`departments.${idx}.code`} value={dept.code} onChange={handleRegisterChange} required placeholder="Code" style={{ ...inputStyle, width: 80 }} />
-                      {registerData.departments.length > 1 && (
-                        <button type="button" onClick={() => handleRemoveDepartment(idx)} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', cursor: 'pointer' }}>-</button>
-                      )}
-                    </div>
-                  ))}
-                  <button type="button" onClick={handleAddDepartment} style={{ background: 'blue', color: 'white', border: 'none', borderRadius: '0.5rem', padding: '0.5rem 1rem', cursor: 'pointer', marginTop: '0.5rem' }}>+ Add Department</button>
-                </div>
-                {registerError && <div style={{ color: '#DC2626', background: '#FEE2E2', borderRadius: '0.5rem', padding: '0.75rem', textAlign: 'center' }}>{registerError}</div>}
-                <button type="submit" disabled={emailCheckLoading} style={{ ...inputStyle, background: '#F59E0B', color: 'white', fontWeight: 'bold', cursor: emailCheckLoading ? 'not-allowed' : 'pointer', opacity: emailCheckLoading ? 0.7 : 1 }}>
-                  {emailCheckLoading ? 'Verifying...' : 'Next: Set Password'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setShowRegister(false); setRegisterStep(1); }}
-                  style={{
-                    background: '#510bf5',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '0.75rem',
-                    padding: '0.75rem 2rem',
-                    fontSize: '1rem',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    marginTop: '1rem',
-                    transition: 'background 0.2s'
-                  }}
-                >
-                  Back to Login
-                </button>
-              </div>
-            </form>
-            {/* Step 2: Password and OTP */}
-            <form
-              onSubmit={handleRegisterSubmit}
-              style={{
-                display: registerStep === 2 ? 'block' : 'none',
-                opacity: registerStep === 2 ? 1 : 0,
-                transition: 'opacity 0.5s',
-                marginTop: '1rem'
-              }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {/* OTP Input Boxes, Resend Button, and Symbol */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}> {/* Adjusted margin-bottom for consistency */}
-                  {Array(6).fill('').map((_, index) => (
-                    <input
-                      key={index}
-                      ref={el => otpInputRefs.current[index] = el} // Assign ref
-                      type="text"
-                      maxLength="1"
-                      value={otpInputs[index]} // Use state value
-                      onChange={(e) => handleOtpInputChange(e, index)} // Use handler
-                       onKeyDown={(e) => { // Handle backspace and other keys
-                         if (e.key === 'Backspace' && !otpInputs[index] && index > 0 && otpInputRefs.current[index - 1]) {
-                            otpInputRefs.current[index - 1].focus();
-                         } else if (e.key === 'ArrowLeft' && index > 0 && otpInputRefs.current[index - 1]) {
-                             otpInputRefs.current[index - 1].focus();
-                         } else if (e.key === 'ArrowRight' && index < 5 && otpInputRefs.current[index + 1]) {
-                              otpInputRefs.current[index + 1].focus();
-                         }
-                       }}
-                      style={{
-                        ...inputStyle,
-                        width: '40px', // Adjusted size slightly for better appearance
-                        height: '40px', // Added height for square boxes
-                        textAlign: 'center',
-                        padding: '0.5rem 0', // Adjusted padding
-                        marginBottom: '0', // Remove bottom margin
-                        borderColor: otpStatus === 'error' ? '#EF4444' : (otpStatus === 'verified' ? '#10B981' : inputStyle.borderColor), // Dynamic border color
-                         boxShadow: otpStatus === 'error' ? '0 0 0 2px #FEE2E2' : (otpStatus === 'verified' ? '0 0 0 2px #D1FAE5' : 'none'), // Optional: Add shadow for status
-                      }}
-                    />
-                  ))}
-                  {/* OTP Verification Symbol */}
-                  <div style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}> {/* Adjusted size */}
-                     {otpStatus === 'verifying' && <span style={{ fontSize: '1.2rem' }}>...</span>} {/* Loading indicator */}
-                     {otpStatus === 'verified' && <span style={{ color: '#10B981', fontSize: '1.5rem' }}>✅</span>} {/* Verified symbol */}
-                     {otpStatus === 'error' && <span style={{ color: '#EF4444', fontSize: '1.5rem' }}>❌</span>} {/* Error symbol */}
-                  </div>
-                    {/* Resend OTP Button */}
-                    <button
-                      type="button"
-                      onClick={handleResendOtp}
-                      disabled={resendDisabled}
-                      style={{
-                        background: resendDisabled ? '#D1D5DB' : '#F59E0B',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '0.5rem',
-                        padding: '0.5rem 1rem',
-                        fontSize: '0.9rem',
-                        fontWeight: '500',
-                        cursor: resendDisabled ? 'not-allowed' : 'pointer',
-                        marginTop: '0', // Align with OTP inputs
-                        width: 'fit-content', // Adjust width
-                        transition: 'background 0.2s',
-                      }}
-                    >
-                      {resendDisabled ? `Resend OTP (${resendTime}s)` : 'Resend OTP'}
-                    </button>
-                </div>
-
-                {/* Error/Success messages - Reserve space and animate opacity */}
-                <div style={{
-                  minHeight: '1.5rem', // Reserve space for one line of error
-                  opacity: (registerError || registerSuccess) ? 1 : 0,
-                  transition: 'opacity 0.3s ease-in-out',
-                  marginBottom: '1rem' // Space below messages
-                }}>
-                  {/* Display registration errors/success messages */}
-                  {/* Only show error if not an OTP verification error, or show it below OTP inputs */} 
-                  {registerError && otpStatus !== 'error' && ( 
-                    <div style={{ color: '#DC2626', background: '#FEE2E2', borderRadius: '0.5rem', padding: '0.75rem', textAlign: 'center' }}>{registerError}</div>
-                  )} 
-                   {/* Show OTP specific error below OTP inputs */} 
-                  {otpStatus === 'error' && registerError && ( 
-                     <div style={{ color: '#DC2626', fontSize: '0.9rem', textAlign: 'center' }}>{registerError}</div>
-                  )}
-                  {registerSuccess && <div style={{ color: '#059669', background: '#dcfce7', borderRadius: '0.5rem', padding: '0.75rem', textAlign: 'center' }}>{registerSuccess}</div>}
-                 </div>
-
-                {/* Password Fields */}
-                <input
-                  name="password"
-                  type="password"
-                  value={registerData.password}
-                  onChange={handleRegisterChange}
-                  required
-                  placeholder="Set Password"
-                  style={inputStyle}
-                />
-                <input
-                  name="confirmPassword"
-                  type="password"
-                  value={registerData.confirmPassword}
-                  onChange={handleRegisterChange}
-                  required
-                  placeholder="Confirm Password"
-                  style={inputStyle}
-                />
-                {/* Register and Back buttons */}
-                <button type="submit" disabled={registerLoading || otpStatus !== 'verified'} style={{ ...inputStyle, background: '#4B5563', color: 'white', fontWeight: 'bold', cursor: (registerLoading || otpStatus !== 'verified') ? 'not-allowed' : 'pointer', opacity: (registerLoading || otpStatus !== 'verified') ? 0.7 : 1 }}>
-                  {registerLoading ? 'Registering...' : 'Register College'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRegisterStep(1)}
-                  style={{
-                    background: '#4B5563',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '0.75rem',
-                    padding: '0.75rem 2rem',
-                    fontSize: '1rem',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                    marginTop: '1rem',
-                    transition: 'background 0.2s'
-                  }}
-                >
-                  Back
-                </button>
-              </div>
-            </form>
+        {message.text && (
+          <div className={`rounded-md p-4 text-center ${
+            message.type === "success"
+              ? "bg-green-50 border border-green-200"
+              : "bg-red-50 border border-red-200"
+          }`}>
+            <p className={`text-sm ${
+              message.type === "success" ? "text-green-800" : "text-red-800"
+            }`}>
+              {message.text}
+            </p>
           </div>
         )}
 
-        <div style={{
-          marginTop: '2rem',
-          textAlign: 'center',
-          fontSize: '1rem',
-          color: '#6B7280'
-        }}>
-          <p>Don't have an account? Contact your administrator</p>
+        {currentView === "login" && renderLoginForm()}
+        {currentView === "register" && registerStep === 1 && renderRegisterStep1()}
+        {currentView === "register" && registerStep === 2 && renderRegisterStep2()}
+
+        <div className="text-center mt-2">
+          <p className="text-sm text-gray-600">
+            {currentView === "login" ? "Don't have an account? " : "Already have an account? "}
+            <button
+              type="button"
+              onClick={() => switchView(currentView === "login" ? "register" : "login")}
+              className="font-bold text-orange-600 hover:text-orange-500 focus:outline-none"
+            >
+              {currentView === "login" ? "Register College" : "Sign in"}
+            </button>
+          </p>
+        </div>
+
+        <div className="text-center text-xs text-gray-400 mt-6">
+          &copy; {new Date().getFullYear()} Campus Recruitment Portal
         </div>
       </div>
     </div>
   );
 };
 
-const inputStyle = {
-  width: '100%',
-  padding: '0.75rem',
-  borderRadius: '0.5rem',
-  border: '1px solid #D1D5DB',
-  fontSize: '1rem',
-  outline: 'none',
-  marginBottom: '0.5rem',
-  transition: 'border-color 0.2s'
-};
-
-export default CollegeLogin; 
+export default CollegeLogin;

@@ -184,7 +184,7 @@ router.post('/register/initiate', async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!name || !type || !industry || !location || !contactEmail || !contactPhone || !companySize || !foundedYear || !description || !adminContact || !adminContact.name || !adminContact.email || !adminContact.phone || !adminContact.designation) {
+    if (!name || !contactEmail || !contactPhone) {
       return res.status(400).json({ error: 'Missing required company fields.' });
     }
 
@@ -202,25 +202,26 @@ router.post('/register/initiate', async (req, res) => {
     await RegistrationOtp.deleteMany({ email: contactEmail, type: 'company' });
 
     // Store OTP and company info
-    await RegistrationOtp.create({
+    const otpData = await RegistrationOtp.create({
       email: contactEmail,
       otp,
       expiresAt,
       type: 'company', // Specify the type of registration
       data: { // Store the company info
-        name,
-        type,
-        industry,
-        website,
-        location,
-        contactEmail,
-        contactPhone,
-        adminContact,
-        companySize,
-        foundedYear,
-        description
+        name:name,
+        type:type,
+        industry:industry,
+        website:website,
+        location:location,
+        contactEmail:contactEmail,
+        contactPhone:contactPhone,
+        adminContact:adminContact,
+        companySize:companySize,
+        foundedYear:foundedYear,
+        description:description
       }
     });
+    console.log('OTP for company registration:', otpData);
 
     // Send OTP email
     await emailTransport.sendMail({
@@ -272,9 +273,11 @@ router.post('/register/verify', async (req, res) => {
     const companyInfo = registrationOtp.data; // Get company info from the generic data field
     const newCompany = new Company({
       ...companyInfo,
+      type:'',
       password: hashedPassword, // Use the hashed password
-      verificationStatus: 'pending' // Set initial verification status
+      verificationStatus: 'unverified' // Set initial verification status
     });
+    console.log('Creating new company with info:', newCompany);
 
     await newCompany.save();
 
@@ -299,14 +302,13 @@ router.post('/:companyId/employees',isCompanyAuthenticated,isCompanyAdmin, async
       email,
       phone,
       department,
-      position,
       type = 'employee', // Default type is employee
       password,
       addedBy // ID of the employee/company adding this employee
     } = req.body;
 
     // Validate required fields
-    if (!name || !email || !phone || !department || !position || !password) {
+    if (!name || !email || !phone || !department || !password) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -359,7 +361,6 @@ router.post('/:companyId/employees',isCompanyAuthenticated,isCompanyAdmin, async
       email,
       phone,
       department,
-      position,
       type,
       companyId,
       password: hashedPassword,
@@ -426,7 +427,7 @@ router.get('/:companyId/applications/complete',isCompanyAuthenticated, async (re
       },
       {
         $lookup: {
-          from: 'collegestudents',
+          from: 'students',
           localField: 'students.studentId',
           foreignField: '_id',
           as: 'studentDetails'
@@ -554,7 +555,7 @@ router.get('/:companyId/interviews/complete',isCompanyAuthenticated, async (req,
       { $sort: { date: -1 } },
       {
         $lookup: {
-          from: 'collegestudents',
+          from: 'students',
           localField: 'interviewee',
           foreignField: '_id',
           as: 'studentDetails'

@@ -23,7 +23,7 @@ const applicationSchema = new mongoose.Schema({
   students: [{
     studentId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'CollegeStudent',
+      ref: 'Student',
       required: true
     },
     status: {

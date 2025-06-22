@@ -1,9 +1,8 @@
-require('dotenv').config({path: '../.env'});
+require('dotenv').config();
 const mongoose = require('mongoose');
 const Job = require('../models/Job');
 const Internship = require('../models/Internship');
-const CollegeStudent = require('../models/collegeStudent.model');
-const College = require('../models/College');
+const Student = require('../models/Student');
 const Company = require('../models/Company');
 const Interview = require('../models/Interview');
 
@@ -50,7 +49,7 @@ const seedData = async () => {
     console.log('Cleared existing jobs, internships, and interviews');
 
     // Fetch students, companies, and interviews
-    const students = await CollegeStudent.find({});
+    const students = await Student.find({});
     const companies = await Company.find({});
     const interviews = await Interview.find({}).populate('interviewee');
 
