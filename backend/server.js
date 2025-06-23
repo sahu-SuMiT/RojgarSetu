@@ -51,14 +51,15 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
-  cookie: { secure: process.env.NODE_ENV === 'production', 
-            httpOnly: true, 
-            maxAge: 1000 * 60 * 60 * 24,
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        }, // 1 day
-    }));
+  cookie: {
+    secure: true, // Always true for HTTPS (Render)
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24,
+    sameSite: 'none', // Required for cross-site cookies over HTTPS
+  },
+}));
 
-// CORS setup
+// CORS setup for Render/production: allow credentials and set allowed origins
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
@@ -69,9 +70,9 @@ const allowedOrigins = [
   'https://company.rojgarsetu.org',
   'https://campusconnect-sumit-sahus-projects-83ef9bf1.vercel.app',
   'https://campusconnect-git-main-sumit-sahus-projects-83ef9bf1.vercel.app',
-  'https://campusconnect-dk9xkuzk0-sumit-sahus-projects-83ef9bf1.vercel.app'
+  'https://campusconnect-dk9xkuzk0-sumit-sahus-projects-83ef9bf1.vercel.app',
+  'https://campusadmin.onrender.com', // Add Render backend itself if needed
 ];
-
 
 if (process.env.REACT_URL) allowedOrigins.push(process.env.REACT_URL);
 app.use(cors({
@@ -141,6 +142,11 @@ app.use('/api/support', supportRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
+// Make sure portfolioRoutes is properly loaded
+const portfolioRoutes = require('./routes/portfolioRoutes');
+app.use('/api/portfolio', portfolioRoutes);
+// Log available routes for debugging
+console.log('Portfolio routes registered:', portfolioRoutes.stack.map(r => r.route?.path).filter(Boolean));
 
 // Raj Sir part
 app.use('/api/student', studentRegisterRoutes);
