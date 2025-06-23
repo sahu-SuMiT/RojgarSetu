@@ -7,9 +7,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
-const bcrypt = require('bcrypt');
 
-const app = express();
 
 // Route modules
 const authRoutes = require('./routes/authRoutes');
@@ -31,6 +29,9 @@ const collegesRoutes = require('./routes/colleges');
 const internshipsRoutes = require('./routes/internships');
 const supportRoutes = require('./routes/support');
 const studentMatchingRoutes = require('./routes/studentMatchingRoutes');
+const bcrypt = require('bcrypt');
+
+const app = express();
 
 // Debug middleware
 app.use((req, res, next) => {
@@ -61,6 +62,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:5174',
+  'http://localhost:8080',
   'https://campusadmin-y4hh.vercel.app',
   'https://campusadmin.vercel.app',
   'https://www.rojgarsetu.org',
@@ -113,9 +115,8 @@ db.once('open', () => {
   console.log('MongoDB connection established successfully');
 });
 
-// --- API ROUTES ---
-
-// Old plural REST endpoints (leave as is for backwards compatibility)
+//additional routes that are not included here from routes folder
+app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/interviews', require('./routes/interviews'));
