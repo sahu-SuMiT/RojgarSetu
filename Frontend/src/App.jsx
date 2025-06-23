@@ -11,6 +11,7 @@ import Applications from './components/Student/Applications';
 import Interviews from './components/Student/Interviews';
 import FeedbackCenter from './components/Student/Feedback';
 import AIPortfolioSection from './components/Student/AIProfilePortfolio';
+import ErrorBoundary from './components/Student/ErrorBoundary';
 import Chatbot from './components/Student/chatbot';
 import { AuthPage } from './components/Student/AuthPage';
 import Support from "./pages/Support";
@@ -48,6 +49,7 @@ import CollegeSupport from './college_components/Support';
 import CollegePlacementAnalysis from './college_components/PlacementAnalysis';
 import CompanySupport from './company_components/Support';
 import CompanyPlacementAnalysis from './company_components/PlacementAnalysis';
+import PortfolioView from './pages/PortfolioView';
 
 
 // Landing page component
@@ -230,7 +232,7 @@ const App = () => {
         <Route path="applications" element={<Applications />} />
         <Route path="interviews" element={<Interviews />} />
         <Route path="feedback" element={<FeedbackCenter />} />
-        <Route path="portfolio" element={<AIPortfolioSection />} />
+        <Route path="portfolio" element={<ErrorBoundary><AIPortfolioSection /></ErrorBoundary>} />
         <Route path="chat" element={<Chatbot />} />
 
         {/* Sales and Support pages */}
@@ -278,6 +280,7 @@ const App = () => {
 
         {/* Landing website */}
         <Route path="/contact" element={<Contact />} />
+        <Route path="/portfolio-view" element={<PortfolioView />} />
       </Route>
 
       {/* Catch all: redirect to dashboard or auth */}
