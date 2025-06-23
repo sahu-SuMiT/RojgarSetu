@@ -141,6 +141,11 @@ app.use('/api/support', supportRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
+// Make sure portfolioRoutes is properly loaded
+const portfolioRoutes = require('./routes/portfolioRoutes');
+app.use('/api/portfolio', portfolioRoutes);
+// Log available routes for debugging
+console.log('Portfolio routes registered:', portfolioRoutes.stack.map(r => r.route?.path).filter(Boolean));
 
 // Raj Sir part
 app.use('/api/student', studentRegisterRoutes);
