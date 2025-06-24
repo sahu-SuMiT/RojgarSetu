@@ -187,7 +187,8 @@ const ManageEmployees = () => {
   const sidebarUser = {
     name: company?.name || 'Company Admin',
     role: 'Company Admin',
-    initials: company?.name ? company.name.substring(0, 2).toUpperCase() : 'CA'
+    initials: company?.name ? company.name.substring(0, 2).toUpperCase() : 'CA',
+    profileImage: localStorage.getItem('profileImage') || company?.profileImage || ''
   };
 
   if (loading) {
@@ -816,7 +817,8 @@ const ManageEmployees = () => {
             setSidebarUser({
               initials: updatedCompany.name.substring(0, 2).toUpperCase(),
               name: updatedCompany.name,
-              role: 'Company Admin'
+              role: 'Company Admin',
+              profileImage: localStorage.getItem('profileImage') || updatedCompany?.profileImage || ''
             });
           }}
         />

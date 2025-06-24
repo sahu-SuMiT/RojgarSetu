@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 
 /**
@@ -10,6 +10,18 @@ import { useLocation, Link } from 'react-router-dom';
  */
 const Sidebar = ({ navItems = [], user = { initials: '', name: '', role: '' }, sectionLabel = 'CAMPUS SERVICES' }) => {
   const location = useLocation();
+  const [profileImage, setProfileImage] = useState(() => localStorage.getItem('profileImage'));
+
+  useEffect(() => {
+    const handleStorage = () => {
+      setProfileImage(localStorage.getItem('profileImage'));
+    };
+    window.addEventListener('storage', handleStorage);
+    // Also update on mount in case localStorage changed before mount
+    setProfileImage(localStorage.getItem('profileImage'));
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
   return (
     <aside style={{
       width: 260,
@@ -34,8 +46,6 @@ const Sidebar = ({ navItems = [], user = { initials: '', name: '', role: '' }, s
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           lineHeight: 1.2,
-          
-          
         }}>
           ROJGAR SETU
         </div>
@@ -92,18 +102,33 @@ const Sidebar = ({ navItems = [], user = { initials: '', name: '', role: '' }, s
         gap: 12,
         background: '#2046c8',
       }}>
-        <div style={{
-          height: 40,
-          width: 40,
-          borderRadius: '50%',
-          background: '#fff',
-          color: '#2046c8',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontWeight: 700,
-          fontSize: 18
-        }}>{user.initials}</div>
+        {profileImage ? (
+          <img
+            src={profileImage}
+            alt="Profile"
+            style={{
+              height: 40,
+              width: 40,
+              borderRadius: '50%',
+              objectFit: 'cover',
+              border: '2px solid #fff',
+              background: '#fff',
+            }}
+          />
+        ) : (
+          <div style={{
+            height: 40,
+            width: 40,
+            borderRadius: '50%',
+            background: '#fff',
+            color: '#2046c8',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 700,
+            fontSize: 18
+          }}>{user.initials}</div>
+        )}
         <div>
           <div style={{ fontWeight: 700, fontSize: 15 }}>{user.name}</div>
           <div style={{ fontSize: 13, color: '#c7d2fe' }}>{user.role}</div>
