@@ -68,6 +68,11 @@ const placementData = {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const PlacementAnalysis = () => {
+  const token = localStorage.getItem("token");
+  if(!token){
+    window.location.href = "https://company.rojgarsetu.org/";
+  }
+  console.log("Token:", token);
   const [selectedBatch, setSelectedBatch] = React.useState("2025");
   const batches = ["2025", "2024", "2023"];
 

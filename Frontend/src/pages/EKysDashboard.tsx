@@ -46,6 +46,11 @@ interface DigiKycRequest {
 }
 
 const EKysDashboard = () => {
+  consst token = localStorage.getItem("token");
+  if(!token){
+    window.location.href = "https://company.rojgarsetu.org/";
+  }
+  console.log("Token:", token);
   const [documents, setDocuments] = useState<Document[]>([
     {
       id: "1",
