@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
-import { Card, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
+// import { Card, CardContent } from "../components/ui/card";
+// import { Badge } from "../components/ui/badge";
+import { Menu, X, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import AuthButtons from '../components/landingWebsite/AuthButtons';
+import HowItWorks from '../components/landingWebsite/HowItWorks';
+import Features from '../components/landingWebsite/Features';
+import FAQ from '../components/landingWebsite/FAQ';
+import CTASection from '../components/landingWebsite/CTASection';
 import { 
   Users, 
   GraduationCap, 
@@ -29,11 +36,24 @@ import {
   Play
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import SearchDropdown from "../components/SearchDropdown";
+import { Carousel, CarouselContent, CarouselItem } from "../components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 
-const Index_Website = () => {
+const Index_Website: React.FC = () => {
   const navigate = useNavigate();
   const [activeJob, setActiveJob] = useState(0);
   const [stats, setStats] = useState({ students: 0, jobs: 0, companies: 0, placements: 0 });
+  const [isOpen, setIsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [searchSkills, setSearchSkills] = useState('');
+  const [searchLocation, setSearchLocation] = useState('');
+
+  const handleSearchJobs = () => {
+    console.log('Searching jobs with:', { skills: searchSkills, location: searchLocation });
+    // You can add search logic here
+    navigate('/login_panel', { state: { searchSkills, searchLocation } });
+  };
 
   // Animated counter effect
   useEffect(() => {
@@ -60,6 +80,22 @@ const Index_Website = () => {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const navItems = [
+    { name: 'Home', href: '#home' },
+    { name: 'How It Works', href: '#how-it-works' },
+    { name: 'Features', href: '#features' },
+    { name: 'FAQ', href: '#faq' }
+  ];
+
   // Auto-rotate featured jobs
   useEffect(() => {
     const timer = setInterval(() => {
@@ -72,17 +108,80 @@ const Index_Website = () => {
     navigate('/login_panel');
   };
 
-  // const handleJoinAsStudent = () => {
-  //   navigate('/student-registration');
-  // };
+
+  // Enhanced Search suggestions data
+  const skillsSuggestions = [
+    // Programming Languages
+    'JavaScript', 'Python', 'Java', 'C++', 'C#', 'PHP', 'Ruby', 'Go', 'Rust', 'TypeScript',
+    'Kotlin', 'Swift', 'Dart', 'Scala', 'R', 'MATLAB', 'SQL', 'HTML/CSS',
+    
+    // Web Development
+    'React', 'Angular', 'Vue.js', 'Node.js', 'Express.js', 'Django', 'Flask', 'Laravel',
+    'Spring Boot', 'ASP.NET', 'Next.js', 'Nuxt.js', 'Svelte', 'jQuery',
+    
+    // Mobile Development
+    'React Native', 'Flutter', 'Android Development', 'iOS Development', 'Xamarin', 'Ionic',
+    
+    // Data Science & AI/ML
+    'Machine Learning', 'Deep Learning', 'Data Science', 'Data Analysis', 'Artificial Intelligence',
+    'TensorFlow', 'PyTorch', 'Pandas', 'NumPy', 'Scikit-learn', 'Keras', 'OpenCV',
+    'Natural Language Processing', 'Computer Vision', 'Big Data', 'Apache Spark',
+    
+    // Cloud & DevOps
+    'AWS', 'Azure', 'Google Cloud', 'Docker', 'Kubernetes', 'Jenkins', 'Git', 'CI/CD',
+    'Terraform', 'Ansible', 'Linux', 'DevOps', 'Microservices',
+    
+    // Database
+    'MySQL', 'PostgreSQL', 'MongoDB', 'Redis', 'Oracle', 'SQL Server', 'Cassandra', 'DynamoDB',
+    
+    // Design & UI/UX
+    'UI/UX Design', 'Graphic Design', 'Figma', 'Adobe Photoshop', 'Adobe Illustrator',
+    'Sketch', 'InVision', 'User Research', 'Wireframing', 'Prototyping',
+    
+    // Digital Marketing
+    'Digital Marketing', 'SEO', 'SEM', 'Social Media Marketing', 'Content Marketing',
+    'Email Marketing', 'Google Analytics', 'Facebook Ads', 'Google Ads', 'PPC',
+    
+    // Business & Management
+    'Project Management', 'Product Management', 'Business Analysis', 'Agile', 'Scrum',
+    'Leadership', 'Strategy', 'Operations', 'Sales', 'Customer Service',
+    
+    // Job Roles
+    'Software Engineer', 'Frontend Developer', 'Backend Developer', 'Full Stack Developer',
+    'Data Scientist', 'Data Analyst', 'DevOps Engineer', 'Product Manager', 'UI/UX Designer',
+    'Digital Marketing Specialist', 'Business Analyst', 'Quality Assurance', 'System Administrator',
+    'Cybersecurity Specialist', 'Mobile App Developer', 'Game Developer', 'AI Engineer',
+    
+    // Companies
+    'Google', 'Microsoft', 'Amazon', 'Apple', 'Meta', 'Netflix', 'Tesla', 'Uber', 'Airbnb',
+    'TCS', 'Infosys', 'Wipro', 'HCL', 'Cognizant', 'Accenture', 'IBM', 'Oracle', 'SAP',
+    'Flipkart', 'Paytm', 'Zomato', 'Swiggy', 'Byju\'s', 'Ola', 'Myntra', 'BigBasket'
+  ];
+
+  const locationSuggestions = [
+    // Major Indian Cities
+    'Bangalore', 'Mumbai', 'Delhi', 'Gurgaon', 'Noida', 'Hyderabad', 'Chennai', 'Pune', 'Kolkata',
+    'Ahmedabad', 'Jaipur', 'Kochi', 'Indore', 'Coimbatore', 'Chandigarh', 'Bhubaneswar',
+    'Mysore', 'Nagpur', 'Lucknow', 'Vadodara', 'Surat', 'Rajkot', 'Bhopal', 'Visakhapatnam',
+    'Thiruvananthapuram', 'Mangalore', 'Nashik', 'Aurangabad', 'Madurai', 'Tiruchirappalli',
+    'Salem', 'Jodhpur', 'Gwalior', 'Vijayawada', 'Guntur', 'Warangal', 'Hubli', 'Belgaum',
+    'Jalandhar', 'Ludhiana', 'Amritsar', 'Dehradun', 'Haridwar', 'Rishikesh', 'Shimla',
+    'Jammu', 'Srinagar', 'Guwahati', 'Silchar', 'Agartala', 'Imphal', 'Aizawl', 'Kohima',
+    'Itanagar', 'Gangtok', 'Ranchi', 'Jamshedpur', 'Dhanbad', 'Patna', 'Muzaffarpur',
+    'Rourkela', 'Cuttack', 'Sambalpur', 'Berhampur', 'Durgapur', 'Asansol', 'Siliguri'
+  ];
+
+  const handleJoinAsStudent = () => {
+    navigate('/student-login');
+  };
 
   // const handleRegisterCollege = () => {
   //   navigate('/college-registration');
   // };
 
-  // const handleHireTalent = () => {
-  //   navigate('/company-registration');
-  // };
+  const handleHireTalent = () => {
+    navigate('/company-login');
+  };
 
   // const handleGetStarted = () => {
   //   navigate('/get-started');
@@ -115,64 +214,64 @@ const Index_Website = () => {
     navigate('/contact');
   };
 
-  const handleCareersClick = () => {
-    window.open('/careers', '_blank');
-  };
+  // const handleCareersClick = () => {
+  //   window.open('/careers', '_blank');
+  // };
 
-  const handlePressClick = () => {
-    window.open('/press', '_blank');
-  };
+  // const handlePressClick = () => {
+  //   window.open('/press', '_blank');
+  // };
 
-  const handleBlogClick = () => {
-    window.open('/blog', '_blank');
-  };
+  // const handleBlogClick = () => {
+  //   window.open('/blog', '_blank');
+  // };
 
-  const handleHelpCenterClick = () => {
-    window.open('/help', '_blank');
-  };
+  // const handleHelpCenterClick = () => {
+  //   window.open('/help', '_blank');
+  // };
 
-  const handlePrivacyClick = () => {
-    window.open('/privacy', '_blank');
-  };
+  // const handlePrivacyClick = () => {
+  //   window.open('/privacy', '_blank');
+  // };
 
-  const handleTermsClick = () => {
-    window.open('/terms', '_blank');
-  };
+  // const handleTermsClick = () => {
+  //   window.open('/terms', '_blank');
+  // };
 
-  const jobs = [
-    {
-      title: "Senior Software Engineer",
-      company: "Microsoft",
-      location: "Bangalore",
-      salary: "₹15-25 LPA",
-      type: "Full-time",
-      posted: "2 days ago",
-      skills: ["React", "Node.js", "Python"]
-    },
-    {
-      title: "Data Scientist",
-      company: "Google",
-      location: "Mumbai",
-      salary: "₹18-30 LPA",
-      type: "Full-time",
-      posted: "1 day ago",
-      skills: ["Python", "ML", "AI"]
-    },
-    {
-      title: "Product Manager",
-      company: "Amazon",
-      location: "Delhi",
-      salary: "₹20-35 LPA",
-      type: "Full-time",
-      posted: "3 days ago",
-      skills: ["Strategy", "Analytics", "Leadership"]
-    }
-  ];
+  // const jobs = [
+  //   {
+  //     title: "Senior Software Engineer",
+  //     company: "Microsoft",
+  //     location: "Bangalore",
+  //     salary: "₹15-25 LPA",
+  //     type: "Full-time",
+  //     posted: "2 days ago",
+  //     skills: ["React", "Node.js", "Python"]
+  //   },
+  //   {
+  //     title: "Data Scientist",
+  //     company: "Google",
+  //     location: "Mumbai",
+  //     salary: "₹18-30 LPA",
+  //     type: "Full-time",
+  //     posted: "1 day ago",
+  //     skills: ["Python", "ML", "AI"]
+  //   },
+  //   {
+  //     title: "Product Manager",
+  //     company: "Amazon",
+  //     location: "Delhi",
+  //     salary: "₹20-35 LPA",
+  //     type: "Full-time",
+  //     posted: "3 days ago",
+  //     skills: ["Strategy", "Analytics", "Leadership"]
+  //   }
+  // ];
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Enhanced Navigation with backdrop blur */}
-      <nav className="border-b border-gray-200/50 bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+      {/* <nav className="border-b border-gray-200/50 bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center group">
@@ -204,94 +303,267 @@ const Index_Website = () => {
             </div>
           </div>
         </div>
-      </nav>
-
-      {/* Hero Section with Enhanced Animations */}
-      <section className="relative bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-20 overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        </div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="animate-fade-in">
-              <div className="inline-flex items-center space-x-2 bg-blue-100 rounded-full px-4 py-2 mb-6">
-                <Zap className="w-4 h-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-700">India's #1 Career Platform</span>
-              </div>
-              
-              <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                Find Your Dream
-                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent block">
-                  Career Today
+      </nav> */}
+      <motion.nav
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled 
+          ? 'bg-white/90 backdrop-blur-md shadow-lg' 
+          : 'bg-transparent'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16 md:h-20">
+          {/* Logo */}
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            className="flex items-center space-x-2"
+          >
+            <div className="flex items-center group">
+              <div className="flex items-center space-x-3">
+                <img src="../../assets/images/favicon.png" alt="Rojgar Setu Logo" className="w-12 h-12 rounded-full border-2 border-blue-200 shadow-md bg-white p-1 mr-2" />
+                <span className="flex flex-col items-start">
+                  <span
+                    style={{
+                      background: 'linear-gradient(to right, #0d47a1, #42a5f5)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      fontWeight: 700,
+                      fontSize: '1.35rem',
+                      fontFamily: 'Noto Sans, Arial, sans-serif',
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    Rojgar Setu
+                  </span>
+                  <span
+                    style={{
+                      background: 'linear-gradient(to right, #0d47a1, #42a5f5)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      fontWeight: 600,
+                      fontSize: '1.05rem',
+                      fontFamily: 'Noto Sans Devanagari, Mangal, Arial, sans-serif',
+                      lineHeight: 1.1,
+                      marginTop: '-0.1rem',
+                    }}
+                  >
+                    रोज़गार सेतु
+                  </span>
                 </span>
-              </h1>
-              
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Join over 10M+ students who found their perfect career match. Connect with top employers and unlock unlimited opportunities.
-              </p>
-              
-              {/* Enhanced Search Bar */}
-              <div className="bg-white rounded-2xl shadow-2xl p-6 mb-8 border border-gray-100">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="relative group">
-                    <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                    <input 
-                      type="text" 
-                      placeholder="Skills, Designations, Companies"
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-300"
-                    />
-                  </div>
-                  <div className="relative group">
-                    <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                    <input 
-                      type="text" 
-                      placeholder="Enter location"
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-300"
-                    />
-                  </div>
-                  <Button onClick={handleSignIn} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 text-lg font-semibold hover:shadow-lg transition-all duration-200">
-                    Search Jobs
-                    <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </div>
               </div>
+            </div>
+          </motion.div>
 
-              <div className="flex flex-wrap gap-4">
-                <Button onClick={handleSignIn} size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:shadow-lg transition-all duration-200 group">
-                  <User className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                  Register as Student
-                </Button>
-                <Button onClick={handleSignIn} variant="outline" size="lg" className="hover:shadow-lg transition-all duration-200 group">
-                  <Building2 className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                  Hire Talent
-                </Button>
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8">
+            {navItems.map((item) => (
+              <motion.a
+                key={item.name}
+                href={item.href}
+                whileHover={{ scale: 1.05 }}
+                className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200"
+              >
+                {item.name}
+              </motion.a>
+            ))}
+          </div>
+
+          {/* Desktop CTA */}
+          <div className="hidden md:flex items-center space-x-4">
+            {/* <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-2 bg-gradient-electric text-white rounded-lg font-medium hover:shadow-lg transition-all duration-300"
+              onClick={handleSignIn}
+            >
+              Login
+            </motion.button> */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-300 text-white"
+              style={{
+                background: 'linear-gradient(to right,rgb(156, 34, 197),rgb(40, 80, 167))', // gray-900 to blue-600
+              }}
+              onClick={handleSignIn}
+            >
+              Login
+            </motion.button>
+
+          </div>
+
+          {/* Mobile menu button */}
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsOpen(!isOpen)}
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+          >
+            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Mobile Navigation */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden bg-white border-t border-gray-200"
+          >
+            <div className="px-4 py-6 space-y-4">
+              {navItems.map((item) => (
+                <motion.a
+                  key={item.name}
+                  href={item.href}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  onClick={() => setIsOpen(false)}
+                  className="block text-gray-700 hover:text-blue-600 font-medium py-2"
+                >
+                  {item.name}
+                </motion.a>
+              ))}
+              <div className="pt-4 space-y-3">
+                {/* <button onClick={handleSignIn} className="w-full px-6 py-2 bg-gradient-electric text-white rounded-lg font-medium hover:shadow-lg transition-all duration-300">
+                  Login
+                </button> */}
+                <button
+                  onClick={handleSignIn}
+                  className="w-full px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-300 text-white"
+                  style={{
+                    background: 'linear-gradient(to right,rgb(156, 34, 197),rgb(40, 80, 167))', // gray-900 to blue-600
+                  }}
+                >
+                  Login
+                </button>
+
               </div>
             </div>
-            
-            <div className="hidden lg:block animate-scale-in">
-              <div className="relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=600&h=400&fit=crop" 
-                  alt="Professional working" 
-                  className="rounded-2xl shadow-2xl transform hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute -bottom-6 -left-6 bg-white rounded-xl p-4 shadow-lg animate-bounce">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                    <span className="text-sm font-medium">1M+ Success Stories</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.nav>
+
+      {/* Hero Section */}
+            <section className="relative bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-20 overflow-hidden">
+              {/* Animated background elements */}
+              <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+              </div>
+              <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                  <div className="animate-fade-in">
+                    <div className="flex flex-col items-center mb-4">
+                      <img src="../../assets/images/favicon.png" alt="Rojgar Setu Logo" className="w-20 h-20 rounded-full border-2 border-blue-200 shadow-md bg-white mb-2" />
+                    </div>
+                    <div className="inline-flex items-center space-x-2 bg-blue-100 rounded-full px-4 py-2 mb-6">
+                      <Zap className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-700">India's #1 Career Platform</span>
+                    </div>
+                    <h1 className="mb-6 leading-tight text-center">
+                      <span
+                        className="block"
+                        style={{
+                          color: '#FF6F00',
+                          fontSize: '3.3rem', // slightly smaller, fits one line
+                          fontFamily: 'Noto Sans Devanagari, Mangal, Arial, sans-serif',
+                          fontWeight: 700,
+                          lineHeight: 1.1,
+                        }}
+                      >
+                        आत्मनिर्भर भारत का सेतु -
+                      </span>
+                      <span
+                        className="block"
+                        style={{
+                          color: '#388E3C',
+                          fontSize: '3.5rem', // larger than above
+                          fontFamily: 'Noto Sans Devanagari, Mangal, Arial, sans-serif',
+                          fontWeight: 800,
+                          lineHeight: 1.1,
+                        }}
+                      >
+                        रोज़गार सेतु
+                      </span>
+                    </h1>
+                    <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+                      Join over 10M+ students who found their perfect career match. Connect with top employers and unlock unlimited opportunities.
+                    </p>
+                    {/* Enhanced Search Bar */}
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 mb-8 border border-gray-100">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="relative group">
+                          <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                          <SearchDropdown
+                            placeholder="Skills, Designations, Companies"
+                            suggestions={skillsSuggestions}
+                            value={searchSkills}
+                            onChange={setSearchSkills}
+                            onSelect={setSearchSkills}
+                          />
+                        </div>
+                        <div className="relative group">
+                          <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                          <SearchDropdown
+                            placeholder="Enter location"
+                            suggestions={locationSuggestions}
+                            value={searchLocation}
+                            onChange={setSearchLocation}
+                            onSelect={setSearchLocation}
+                          />
+                        </div>
+                        <Button onClick={handleSearchJobs} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 text-lg font-semibold hover:shadow-lg transition-all duration-200">
+                          Search Jobs
+                          <ArrowRight className="w-5 h-5 ml-2" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-4">
+                      <Button onClick={handleJoinAsStudent} size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:shadow-lg transition-all duration-200 group">
+                        <User className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                        Register as Student
+                      </Button>
+                      <Button onClick={handleHireTalent} variant="outline" size="lg" className="hover:shadow-lg transition-all duration-200 group">
+                        <Building2 className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                        Hire Talent
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="hidden lg:block animate-scale-in w-full max-w-xl mx-auto">
+                    <Carousel opts={{ loop: true }} plugins={[Autoplay({ delay: 3000 })]} className="relative">
+                      <CarouselContent>
+                        <CarouselItem>
+                          <img src="../../assets/images/Rojgar-setu-1.jpg" alt="Rojgar Setu 1" className="rounded-2xl shadow-2xl w-full object-cover" />
+                        </CarouselItem>
+                        <CarouselItem>
+                          <img src="../../assets/images/Rojgar-setu-2.jpg" alt="Rojgar Setu 2" className="rounded-2xl shadow-2xl w-full object-cover" />
+                        </CarouselItem>
+                        <CarouselItem>
+                          <img src="../../assets/images/Rojgar-setu-3.jpg" alt="Rojgar Setu 3" className="rounded-2xl shadow-2xl w-full object-cover" />
+                        </CarouselItem>
+                        <CarouselItem>
+                          <img src="../../assets/images/Rojgar-setu-4.jpg" alt="Rojgar Setu 4" className="rounded-2xl shadow-2xl w-full object-cover" />
+                        </CarouselItem>
+                      </CarouselContent>
+                    </Carousel>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
+            </section>
+
+      <AuthButtons />
+      <HowItWorks />
+      <Features />
+      <FAQ />
+      <CTASection />
 
       {/* Animated Stats Section */}
-      <section className="py-16 bg-white border-b border-gray-100">
+      {/* <section className="py-16 bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
@@ -312,10 +584,10 @@ const Index_Website = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Enhanced Services Section */}
-      <section id="services" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      {/* <section id="services" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 animate-fade-in">
             <div className="inline-flex items-center space-x-2 bg-blue-100 rounded-full px-4 py-2 mb-4">
@@ -383,10 +655,10 @@ const Index_Website = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Enhanced Featured Jobs with Auto-rotation */}
-      <section id="jobs" className="py-20 bg-white">
+      {/* <section id="jobs" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center mb-12">
             <div>
@@ -443,10 +715,10 @@ const Index_Website = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Enhanced Companies Section */}
-      <section id="companies" className="py-20 bg-gradient-to-br from-gray-50 to-purple-50">
+      {/* <section id="companies" className="py-20 bg-gradient-to-br from-gray-50 to-purple-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="inline-flex items-center space-x-2 bg-purple-100 rounded-full px-4 py-2 mb-4">
@@ -479,10 +751,10 @@ const Index_Website = () => {
             </Button>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Enhanced Success Stories */}
-      <section className="py-20 bg-white">
+      {/* <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <div className="inline-flex items-center space-x-2 bg-yellow-100 rounded-full px-4 py-2 mb-4">
@@ -541,10 +813,10 @@ const Index_Website = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Enhanced CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 relative overflow-hidden">
+      {/* <section className="py-20 bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-0 left-0 w-full h-full bg-black/20"></div>
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
@@ -599,7 +871,7 @@ const Index_Website = () => {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-16">
@@ -647,9 +919,9 @@ const Index_Website = () => {
               <h4 className="text-lg font-semibold mb-6">Support</h4>
               <ul className="space-y-3 text-sm text-gray-400">
                 <li><button onClick={handleContactClick} className="hover:text-white transition-colors">Contact Us</button></li>
-                <li><button onClick={handleHelpCenterClick} className="hover:text-white transition-colors">Help Center</button></li>
+                {/* <li><button onClick={handleHelpCenterClick} className="hover:text-white transition-colors">Help Center</button></li>
                 <li><button onClick={handlePrivacyClick} className="hover:text-white transition-colors">Privacy Policy</button></li>
-                <li><button onClick={handleTermsClick} className="hover:text-white transition-colors">Terms of Service</button></li>
+                <li><button onClick={handleTermsClick} className="hover:text-white transition-colors">Terms of Service</button></li> */}
               </ul>
             </div>
           </div>
