@@ -15,12 +15,35 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-
+import { jwtDecode} from "jwt-decode";
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
+interface DecodeToken{
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string; 
+  iat: number;
+  exp: number;
+}
+
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+    let firstName = "User";
+  let lastName = "Name";
+  const token = localStorage.getItem("token");
+
+  if(token){
+    try{
+      const decode = jwtDecode<DecodeToken>(token);
+      firstName = decode.firstName || "User";
+      lastName = decode.lastName || "Name";
+    }catch(error){
+     console.error("Error decoding token:", error); 
+    }
+  }
+
   const location = useLocation();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([
@@ -43,7 +66,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     
     // In a real app, this would redirect to login page
     // For now, redirect to support page as requested
-    navigate("/support");
+    window.location.href = "https://company.rojgarsetu.org/";
   };
 
   const handleProfile = () => {
@@ -131,10 +154,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <div className="absolute bottom-0 w-64 p-4 bg-blue-900 border-t border-blue-800">
           <div className="flex items-center">
             <div className="h-8 w-8 rounded-full bg-white text-blue-900 flex items-center justify-center mr-3">
-              <span className="font-semibold">AJ</span>
+              <span className="font-semibold">{firstName[0]}{lastName[0]}</span>
             </div>
             <div>
-              <div className="text-sm font-semibold">Alex Johnson</div>
+              <div className="text-sm font-semibold">{firstName} {lastName}</div>
             </div>
           </div>
         </div>
@@ -220,8 +243,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   <User className="h-5 w-5 text-gray-600" />
                 </button>
               </DropdownMenuTrigger>
+              
               <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg z-[1500] profile-dropdown">
-                <DropdownMenuLabel className="text-gray-900">Alex Johnson</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-gray-900">{firstName} {lastName}</DropdownMenuLabel>
+                
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={handleProfile}

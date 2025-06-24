@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import AppLayout from "@/components/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Briefcase, Building, MapPin, Calendar, Edit, Trash2, Eye, Download, History, Save } from "lucide-react";
 import { toast } from "sonner";
-
+import axios from "axios"
 interface JobListing {
   id: string;
   title: string;
@@ -28,50 +28,48 @@ interface JobListing {
 }
 
 const Sales = () => {
-  const [jobListings, setJobListings] = useState<JobListing[]>([
-    {
-      id: "J001",
-      title: "Software Engineer",
-      company: "Tech Solutions Inc.",
-      type: "job",
-      location: "Bangalore, India",
-      salary: "₹8-12 LPA",
-      description: "We are looking for a skilled software engineer to join our development team.",
-      requirements: ["React.js", "Node.js", "MongoDB", "2+ years experience"],
-      postedDate: "2024-01-15",
-      deadline: "2024-02-15",
-      status: "active",
-      applicants: 45
-    },
-    {
-      id: "I001",
-      title: "Data Science Intern",
-      company: "Analytics Corp",
-      type: "internship",
-      location: "Mumbai, India",
-      salary: "₹15,000/month",
-      description: "6-month internship opportunity in data science and machine learning.",
-      requirements: ["Python", "Data Analysis", "Machine Learning", "Final year student"],
-      postedDate: "2024-01-20",
-      deadline: "2024-02-20",
-      status: "active",
-      applicants: 78
-    },
-    {
-      id: "J002",
-      title: "UI/UX Designer",
-      company: "Design Studio",
-      type: "job",
-      location: "Delhi, India",
-      salary: "₹6-10 LPA",
-      description: "Creative UI/UX designer needed for innovative projects.",
-      requirements: ["Figma", "Adobe Creative Suite", "Design Thinking", "3+ years experience"],
-      postedDate: "2024-01-10",
-      deadline: "2024-01-30",
-      status: "closed",
-      applicants: 32
-    }
-  ]);
+
+    const token = localStorage.getItem("token");
+  if(!token){
+    window.location.href = "https://company.rojgarsetu.org/";
+  }
+  console.log("Token:", token);
+
+ const [jobListings, setJobListings] = useState<JobListing[]>([]);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const res = await axios.get("https://campusadmin.onrender.com/api/jobs/"); // Replace with your actual endpoint
+        const dataFromAPI = res.data; // assuming it returns an array of jobs
+
+        const formattedJobs: JobListing[] = dataFromAPI.map((job: any) => ({
+          id: job._id,
+          title: job.title,
+          company: job.companyId?.name || "Unknown Company", // assuming companyId has a name field
+          type: 'job', // or 'internship' if you have a field for this
+          location: job.mode === 'onsite' ? "Onsite - India" : "Remote", // or derive from another field
+          salary: `₹${job.salary?.toLocaleString()}`,
+          description: job.description,
+          requirements: [
+            `Technical Score: ${job.feedback?.technicalScore}/5`,
+            `Communication: ${job.feedback?.communicationScore}/5`,
+            `Problem Solving: ${job.feedback?.problemSolvingScore}/5`,
+            `Comment: ${job.feedback?.comments || 'No comment'}`
+          ],
+          postedDate: new Date(job.startDate).toISOString().split('T')[0],
+          deadline: new Date(job.createdAt).toISOString().split('T')[0], // adjust as needed
+          status: job.status === 'offered' ? 'active' : 'draft',
+          applicants: Math.floor(Math.random() * 100) // dummy value unless API returns this
+        }));
+            setJobListings(formattedJobs);
+      } catch (error) {
+        console.error("Error fetching jobs:", error);
+      }
+    };
+
+    fetchJobs();
+  }, []);
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
