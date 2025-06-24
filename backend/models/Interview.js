@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const interviewSchema = new mongoose.Schema({
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
   interviewer: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', required: true },
-  interviewee: { type: mongoose.Schema.Types.ObjectId, ref: 'CollegeStudent', required: true },
+  interviewee: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
   candidateName: { type: String },
   campusScore: { type: Number },
   link: { type: String },

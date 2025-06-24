@@ -1,4 +1,3 @@
-const CollegeStudent = require('../models/collegeStudent.model');
 const Role = require('../models/Role');
 const Student = require('../models/Student');
 
@@ -30,9 +29,9 @@ exports.getMatchingStudents = async (req, res) => {
     // Extract query parameters for optional filters
     const { minScore } = req.query;
     // First, let's check if we can find any students at all
-    const totalStudents = await CollegeStudent.countDocuments();
+    const totalStudents = await Student.countDocuments();
     // Find all students first
-    const allStudents = await CollegeStudent.find()
+    const allStudents = await Student.find()
       .select('name email profileImage skills projects achievements campusScore')
       .limit(100);
 

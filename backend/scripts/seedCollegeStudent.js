@@ -1,7 +1,7 @@
-require('dotenv').config({path:'../.env'});
+require('dotenv').config();
 console.log('MONGODB_URI:', process.env.MONGODB_URI);
 const mongoose = require('mongoose');
-const CollegeStudent = require('../models/collegeStudent.model');
+const Student = require('../models/Student');
 const College = require('../models/College');
 
 // Connect to MongoDB
@@ -79,10 +79,15 @@ const generateStudentsForDepartment = async (collegeId, department) => {
     const joiningYear = parseInt(batch);
     const graduationYear = getGraduationYear(batch);
 
+    // Generate a consistent ObjectId based on email to preserve references
+    const objectId = new mongoose.Types.ObjectId();
+
     students.push({
+      _id: objectId, // Preserve ObjectId for consistent references
       college: college._id,
       name,
       email,
+      password: 'password123', // Add default password
       rollNumber,
       department: department.name,
       batch,
@@ -94,7 +99,10 @@ const generateStudentsForDepartment = async (collegeId, department) => {
       extracurricular: getRandomExtracurricular(),
       research: getRandomResearch(),
       hackathons: getRandomHackathons(),
-      profileImage: `https://profile-images.${collegeId === 'UM001' ? 'unom.ac.in' : 'mit.edu'}/${rollNumber}.jpg`
+      profileImage: `https://profile-images.${collegeId === 'UM001' ? 'unom.ac.in' : 'mit.edu'}/${rollNumber}.jpg`,
+      isCollegeVerified: true,
+      isSalesVerified: false,
+      campusScore: 0
     });
   }
 
@@ -104,7 +112,7 @@ const generateStudentsForDepartment = async (collegeId, department) => {
 // Main function to insert students
 async function insertStudents() {
   try {
-    await CollegeStudent.deleteMany({});
+    await Student.deleteMany({});
     console.log('Cleared existing students');
 
     const colleges = await College.find({});
@@ -117,7 +125,7 @@ async function insertStudents() {
       }
     }
 
-    const insertedStudents = await CollegeStudent.insertMany(allStudents);
+    const insertedStudents = await Student.insertMany(allStudents);
     console.log(`Successfully inserted ${insertedStudents.length} students`);
 
     const departmentCounts = {};

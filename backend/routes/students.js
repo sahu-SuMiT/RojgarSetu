@@ -5,7 +5,7 @@ const multer = require('multer');
 const XLSX = require('xlsx');
 
 // Import your models
-const CollegeStudent = require('../models/collegeStudent.model');
+const Student = require('../models/Student');
 const Job = require('../models/Job');
 const Internship = require('../models/Internship');
 const Interview = require('../models/Interview');
@@ -35,7 +35,7 @@ function cleanRow(row) {
 
 router.get('/college/:collegeId', async (req, res) => {
   try {
-    const students = await CollegeStudent.find({ college: req.params.collegeId });
+    const students = await Student.find({ college: req.params.collegeId });
     res.json(students);
   } catch (err) {
     console.error('Error fetching students:', err);
@@ -82,7 +82,7 @@ router.post('/bulk', async (req, res) => {
     const emails = students.map(s => s.email);
     const rollNumbers = students.map(s => s.rollNumber);
     
-    const existingStudents = await CollegeStudent.find({
+    const existingStudents = await Student.find({
       $or: [
         { email: { $in: emails } },
         { rollNumber: { $in: rollNumbers } }
@@ -100,7 +100,7 @@ router.post('/bulk', async (req, res) => {
     }
 
     // Create all students
-    const createdStudents = await CollegeStudent.insertMany(students);
+    const createdStudents = await Student.insertMany(students);
     res.status(201).json(createdStudents);
   } catch (err) {
     console.error('Error creating students:', err);
@@ -115,7 +115,7 @@ router.get('/:id', async (req, res) => {
       return res.status(400).json({ message: 'Invalid student ID format' });
     }
 
-    const student = await CollegeStudent.findById(req.params.id)
+    const student = await Student.findById(req.params.id)
       .select('-password')
       .populate('department', 'name')
       .populate('batch', 'name')
@@ -175,7 +175,7 @@ router.patch('/verify', async (req, res) => {
       return res.status(400).json({ message: 'Invalid student ID format' });
     }
     // Find and update the student
-    const updatedStudent = await CollegeStudent.findByIdAndUpdate(
+    const updatedStudent = await Student.findByIdAndUpdate(
       studentId,
       { isCollegeVerified: true },
       { new: true, runValidators: true }
@@ -195,7 +195,7 @@ router.patch('/verify', async (req, res) => {
       sender: collegeId,
       senderModel: 'College',
       recipient: updatedStudent._id,
-      recipientModel: 'CollegeStudent',
+      recipientModel: 'Student',
       title: 'Student Verified',
       message: `Your profile has been verified by ${collegeName}. You can now apply for jobs and internships.`,
       type: 'success',
@@ -265,7 +265,7 @@ router.post('/excel-sheet', upload.single('file'), async (req, res) => {
     // Check for duplicate emails or roll numbers
     const emails = students.map(s => s.email);
     const rollNumbers = students.map(s => s.rollNumber);
-    const existingStudents = await CollegeStudent.find({
+    const existingStudents = await Student.find({
       $or: [
         { email: { $in: emails } },
         { rollNumber: { $in: rollNumbers } }
@@ -298,7 +298,7 @@ router.post('/excel-sheet', upload.single('file'), async (req, res) => {
     }
 
     // Insert only non-duplicates
-    const createdStudents = await CollegeStudent.insertMany(studentsToInsert);
+    const createdStudents = await Student.insertMany(studentsToInsert);
     res.status(201).json({
       message: `Inserted ${createdStudents.length} students. Skipped ${students.length - studentsToInsert.length} duplicates.`,
       students: createdStudents

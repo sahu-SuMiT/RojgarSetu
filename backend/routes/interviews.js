@@ -3,8 +3,8 @@ const router = express.Router();
 const Interview = require('../models/Interview');
 const Employee = require('../models/Employee')
 const Application = require('../models/CollegeApplication')
-const CollegeStudent = require('../models/collegeStudent.model')
-const nodemailer = require('nodemailer');
+const Student = require('../models/Student')
+const {emailTransport} = require('../config/email');
 const getZoomAccessToken = require('../utils/zoomOAuth')
 const axios = require('axios');
 // Get interviews by student
@@ -14,15 +14,6 @@ const zoomConfig = {
   clientSecret: process.env.ZOOM_CLIENT_SECRET,
   userId: process.env.ZOOM_USER_ID
 };
-const emailTransport = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_SENDER,
-    pass: process.env.EMAIL_PASS
-  }
-});
 
 //...........
 // app.get('/api/interviews') ..... Get all interviews
@@ -130,7 +121,7 @@ router.post('/', async (req, res) => {
     }
 
     // Get student details
-    const student = await CollegeStudent.findById(interviewee);
+    const student = await Student.findById(interviewee);
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
     }
