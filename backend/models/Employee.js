@@ -61,6 +61,12 @@ const employeeSchema = new mongoose.Schema({
     type: [mongoose.Schema.Types.ObjectId],
     ref: 'Review',
     default: []
+  },
+  passwordResetToken: {
+    type: String,
+  },
+  passwordResetExpires: {
+    type: Date,
   }
 }, {
   timestamps: true // Adds createdAt and updatedAt fields

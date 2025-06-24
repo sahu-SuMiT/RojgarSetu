@@ -9,7 +9,8 @@ const MongoStore = require('connect-mongo');
 
 
 // Route modules
-const authRoutes = require('./routes/authRoutes')
+const authRoutes = require('./routes/authRoutes');
+const studentProfileRoutes = require('./routes/studentRoutes'); // NEW: This should handle /api/student/me
 const jobRoutes = require('./routes/jobRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const interviewRoutes = require('./routes/interviewRoutes');
@@ -17,9 +18,6 @@ const feedbackRoutes = require('./routes/feedbackRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const notificationRoutes = require('./routes/notifications');
-
-
-// Additional "Raj Sir part" and others
 const studentRegisterRoutes = require('./routes/studentRegister');
 const userRoutes = require('./routes/user');
 const placementRoutes = require('./routes/placement');
@@ -30,7 +28,6 @@ const collegesRoutes = require('./routes/colleges');
 const internshipsRoutes = require('./routes/internships');
 const supportRoutes = require('./routes/support');
 const studentMatchingRoutes = require('./routes/studentMatchingRoutes');
-
 const bcrypt = require('bcrypt');
 
 const app = express();
@@ -51,27 +48,29 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
-  cookie: { secure: process.env.NODE_ENV === 'production', 
-            httpOnly: true, 
-            maxAge: 1000 * 60 * 60 * 24,
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        }, // 1 day
-    }));
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',  // Always true for HTTPS (Render)
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Required for cross-site cookies over HTTPS
+  },
+}));
 
-// CORS setup
+// CORS setup for Render/production: allow credentials and set allowed origins
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:5174',
+  'http://localhost:8080',
   'https://campusadmin-y4hh.vercel.app',
   'https://campusadmin.vercel.app',
   'https://www.rojgarsetu.org',
   'https://company.rojgarsetu.org',
   'https://campusconnect-sumit-sahus-projects-83ef9bf1.vercel.app',
   'https://campusconnect-git-main-sumit-sahus-projects-83ef9bf1.vercel.app',
-  'https://campusconnect-dk9xkuzk0-sumit-sahus-projects-83ef9bf1.vercel.app'
+  'https://campusconnect-dk9xkuzk0-sumit-sahus-projects-83ef9bf1.vercel.app',
+  'https://campusadmin.onrender.com', // Add Render backend itself if needed
 ];
-
 
 if (process.env.REACT_URL) allowedOrigins.push(process.env.REACT_URL);
 app.use(cors({
@@ -109,7 +108,6 @@ mongoose.connect(process.env.MONGODB_URI, {
   console.error('MongoDB connection error:', err);
   process.exit(1);
 });
-
 const db = mongoose.connection;
 db.on('error', (error) => {
   console.error('MongoDB connection error:', error);
@@ -125,9 +123,8 @@ app.use('/api/interviews', require('./routes/interviews'));
 app.use('/api/applications', require('./routes/applications'));
 app.use('/api/students', require('./routes/students'));
 
-
-// API Routes
-app.use('/api/student', authRoutes);
+// New REST endpoints
+app.use('/api/student', authRoutes); // for authentication-related endpoints (login/register)
 app.use('/api/studentJobs', jobRoutes);
 app.use('/api/internships', internshipsRoutes);
 app.use('/api/studentInterviews', interviewRoutes);
@@ -141,9 +138,18 @@ app.use('/api/support', supportRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
+// Make sure portfolioRoutes is properly loaded
+const portfolioRoutes = require('./routes/portfolioRoutes');
+app.use('/api/portfolio', portfolioRoutes);
+// Log available routes for debugging
+console.log('Portfolio routes registered:', portfolioRoutes.stack.map(r => r.route?.path).filter(Boolean));
 
 // Raj Sir part
 app.use('/api/student', studentRegisterRoutes);
+
+// NEW: /api/student/me and /api/student/me/profile-pic endpoints
+//     This route should implement: GET /api/student/me, PUT /api/student/me, POST /api/student/me/profile-pic, etc.
+app.use('/api/student', studentProfileRoutes); // <-- This must be after any /api/student/:something routes
 
 // Special endpoint for college-students email verification (Raj Sir part)
 const StudentRegister = require('./models/StudentRegister');

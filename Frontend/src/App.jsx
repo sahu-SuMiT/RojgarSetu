@@ -11,6 +11,7 @@ import Applications from './components/Student/Applications';
 import Interviews from './components/Student/Interviews';
 import FeedbackCenter from './components/Student/Feedback';
 import AIPortfolioSection from './components/Student/AIProfilePortfolio';
+import ErrorBoundary from './components/Student/ErrorBoundary';
 import Chatbot from './components/Student/chatbot';
 import { AuthPage } from './components/Student/AuthPage';
 import Support from "./pages/Support";
@@ -34,16 +35,22 @@ import ViewJobs from './college_components/ViewJobs';
 import ScheduledApplications from './college_components/ScheduledApplications';
 import Login from './Login';
 import CollegeLogin from './college_components/CollegeLogin';
-import StudentLogin from './student_components/StudentLogin';
 import CompanyLogin from './company_components/CompanyLogin';
 import SalesLogin from './sales_components/SalesLogin';
 import AddStudents from './college_components/AddStudents';
 import ManageEmployees from './company_components/ManageEmployees';
+import CompanyForgotPassword from './company_components/CompanyForgotPassword';
+import CompanyResetPassword from './company_components/CompanyResetPassword';
+import CollegeForgotPassword from './college_components/CollegeForgotPassword';
+import CollegeResetPassword from './college_components/CollegeResetPassword';
+import StudentForgotPassword from './student_components/StudentForgotPassword';
+import StudentResetPassword from './student_components/StudentResetPassword';
 
 import CollegeSupport from './college_components/Support';
 import CollegePlacementAnalysis from './college_components/PlacementAnalysis';
 import CompanySupport from './company_components/Support';
 import CompanyPlacementAnalysis from './company_components/PlacementAnalysis';
+import PortfolioView from './pages/PortfolioView';
 
 
 // Landing page component
@@ -226,7 +233,7 @@ const App = () => {
         <Route path="applications" element={<Applications />} />
         <Route path="interviews" element={<Interviews />} />
         <Route path="feedback" element={<FeedbackCenter />} />
-        <Route path="portfolio" element={<AIPortfolioSection />} />
+        <Route path="portfolio" element={<ErrorBoundary><AIPortfolioSection /></ErrorBoundary>} />
         <Route path="chat" element={<Chatbot />} />
 
         {/* Sales and Support pages */}
@@ -239,9 +246,15 @@ const App = () => {
         <Route path="/profile" element={<NotFound />} />
 
         {/* College and Compay */}
-        <Route path="/student-login" element={<AuthPage />} /> {/* Updated to use AuthPage */}
+        <Route path="/student-login" element={<AuthPage />} />
+        <Route path="/student/forgot-password" element={<StudentForgotPassword />} />
+        <Route path="/student/reset-password/:token" element={<StudentResetPassword />} />
         <Route path="/college-login" element={<CollegeLogin />} />
+        <Route path="/college/forgot-password" element={<CollegeForgotPassword />} />
+        <Route path="/college/reset-password/:token" element={<CollegeResetPassword />} />
         <Route path="/company-login" element={<CompanyLogin />} />
+        <Route path="/company/forgot-password" element={<CompanyForgotPassword />} />
+        <Route path="/company/reset-password/:token" element={<CompanyResetPassword />} />
         <Route path="/sales-login" element={<SalesLogin />} />
 
         {/* Company Dashboard Routes */}
@@ -269,6 +282,7 @@ const App = () => {
 
         {/* Landing website */}
         <Route path="/contact" element={<Contact />} />
+        <Route path="/portfolio-view" element={<PortfolioView />} />
       </Route>
 
       {/* Catch all: redirect to dashboard or auth */}
