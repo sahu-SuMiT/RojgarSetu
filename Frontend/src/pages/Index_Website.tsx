@@ -322,7 +322,7 @@ const Index_Website: React.FC = () => {
           >
             <div className="flex items-center group">
               <div className="flex items-center space-x-3">
-                <img src="../../assets/images/favicon.png" alt="Rojgar Setu Logo" className="w-12 h-12 rounded-full border-2 border-blue-200 shadow-md bg-white p-1 mr-2" />
+                <img src="/images/favicon.png" alt="Rojgar Setu Logo" className="w-12 h-12 rounded-full border-2 border-blue-200 shadow-md bg-white p-1 mr-2" />
                 <span className="flex flex-col items-start">
                   <span
                     style={{
@@ -459,7 +459,7 @@ const Index_Website: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                   <div className="animate-fade-in">
                     <div className="flex flex-col items-center mb-4">
-                      <img src="../../assets/images/favicon.png" alt="Rojgar Setu Logo" className="w-20 h-20 rounded-full border-2 border-blue-200 shadow-md bg-white mb-2" />
+                      <img src="/images/favicon.png" alt="Rojgar Setu Logo" className="w-20 h-20 rounded-full border-2 border-blue-200 shadow-md bg-white mb-2" />
                     </div>
                     <div className="inline-flex items-center space-x-2 bg-blue-100 rounded-full px-4 py-2 mb-6">
                       <Zap className="w-4 h-4 text-blue-600" />
@@ -538,16 +538,16 @@ const Index_Website: React.FC = () => {
                     <Carousel opts={{ loop: true }} plugins={[Autoplay({ delay: 3000 })]} className="relative">
                       <CarouselContent>
                         <CarouselItem>
-                          <img src="../../assets/images/Rojgar-setu-1.jpg" alt="Rojgar Setu 1" className="rounded-2xl shadow-2xl w-full object-cover" />
+                          <img src="/images/Rojgar-setu-1.jpg" alt="Rojgar Setu 1" className="rounded-2xl shadow-2xl w-full object-cover" />
                         </CarouselItem>
                         <CarouselItem>
-                          <img src="../../assets/images/Rojgar-setu-2.jpg" alt="Rojgar Setu 2" className="rounded-2xl shadow-2xl w-full object-cover" />
+                          <img src="/images/Rojgar-setu-2.jpg" alt="Rojgar Setu 2" className="rounded-2xl shadow-2xl w-full object-cover" />
                         </CarouselItem>
                         <CarouselItem>
-                          <img src="../../assets/images/Rojgar-setu-3.jpg" alt="Rojgar Setu 3" className="rounded-2xl shadow-2xl w-full object-cover" />
+                          <img src="/images/Rojgar-setu-3.jpg" alt="Rojgar Setu 3" className="rounded-2xl shadow-2xl w-full object-cover" />
                         </CarouselItem>
                         <CarouselItem>
-                          <img src="../../assets/images/Rojgar-setu-4.jpg" alt="Rojgar Setu 4" className="rounded-2xl shadow-2xl w-full object-cover" />
+                          <img src="/images/Rojgar-setu-4.jpg" alt="Rojgar Setu 4" className="rounded-2xl shadow-2xl w-full object-cover" />
                         </CarouselItem>
                       </CarouselContent>
                     </Carousel>
