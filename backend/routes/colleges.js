@@ -7,6 +7,7 @@ const RegistrationOtp = require('../models/RegistrationOtp');
 const {emailTransport} = require('../config/email');
 const cloudinary = require('../config/cloudinary');
 const {isCollegeAuthenticated,isCollegeAdmin} = require('../middleware/auth');
+const {isEmailDisposable}= require('../utils/disposableEmail');
 // app.get('/api/college/:collegeId/student/:studentId') ..... Get a single student by ID and college
 // app.put('/api/college/:collegeId/student/:studentId') .....Put endpoint for updating college student profiles
 // app.post('/api/college/register/initiate') .....Post Initiate college registration: send OTP
@@ -68,7 +69,9 @@ router.post('/register/initiate', async (req, res) => {
     if (!name || !contactEmail || !contactPhone || !code) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-
+    if (isEmailDisposable(contactEmail)) {
+      return res.status(400).json({ error: 'Disposable email addresses are not allowed.' });
+    }
     // Check for duplicate code or email in College
     const existing = await College.findOne({ $or: [ { code }, { contactEmail } ] });
     if (existing) {
@@ -106,7 +109,6 @@ router.post('/register/initiate', async (req, res) => {
 
     res.json({ message: 'OTP sent to email.' });
   } catch (err) {
-    console.error('Error initiating college registration:', err);
     res.status(500).json({ error: 'Failed to initiate registration', details: err.message });
   }
 });

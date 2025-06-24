@@ -50,11 +50,10 @@ module.exports = async (req, res) => {
 
     // Create JWT payload
     const payload = {
-      user: {
-        id: user.id,
-        role: user.role,
-        email: user.email // Adding email for better logging
-      }
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role
     };
 
     // Sign and return JWT token

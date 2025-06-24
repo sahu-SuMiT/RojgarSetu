@@ -1,8 +1,6 @@
 
 import React from "react";
-// Update the import path below to the correct relative path where Badge is located.
-// For example, if Badge is in src/components/ui/badge.tsx, use:
-import { Badge } from "../../ui/badge";
+import { Badge } from "@/components/ui/badge";
 
 const leads = [
   {

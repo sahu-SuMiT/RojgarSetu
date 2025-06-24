@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -7,9 +6,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
-const bcrypt = require('bcrypt');
 
-const app = express();
 
 // Route modules
 const authRoutes = require('./routes/authRoutes');
@@ -31,6 +28,9 @@ const collegesRoutes = require('./routes/colleges');
 const internshipsRoutes = require('./routes/internships');
 const supportRoutes = require('./routes/support');
 const studentMatchingRoutes = require('./routes/studentMatchingRoutes');
+const bcrypt = require('bcrypt');
+
+const app = express();
 
 // Debug middleware
 app.use((req, res, next) => {
@@ -48,27 +48,30 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
-  cookie: { 
-    secure: process.env.NODE_ENV === 'production', 
-    httpOnly: true, 
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',  // Always true for HTTPS (Render)
+    httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  }, // 1 day
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Required for cross-site cookies over HTTPS
+  },
 }));
 
-// CORS setup
+// CORS setup for Render/production: allow credentials and set allowed origins
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:5174',
+  'http://localhost:8080',
   'https://campusadmin-y4hh.vercel.app',
   'https://campusadmin.vercel.app',
   'https://www.rojgarsetu.org',
   'https://company.rojgarsetu.org',
   'https://campusconnect-sumit-sahus-projects-83ef9bf1.vercel.app',
   'https://campusconnect-git-main-sumit-sahus-projects-83ef9bf1.vercel.app',
-  'https://campusconnect-dk9xkuzk0-sumit-sahus-projects-83ef9bf1.vercel.app'
+  'https://campusconnect-dk9xkuzk0-sumit-sahus-projects-83ef9bf1.vercel.app',
+  'https://campusadmin.onrender.com', // Add Render backend itself if needed
 ];
+
 if (process.env.REACT_URL) allowedOrigins.push(process.env.REACT_URL);
 app.use(cors({
   origin: function (origin, callback) {
@@ -113,9 +116,7 @@ db.once('open', () => {
   console.log('MongoDB connection established successfully');
 });
 
-// --- API ROUTES ---
-
-// Old plural REST endpoints (leave as is for backwards compatibility)
+//additional routes that are not included here from routes folder
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/interviews', require('./routes/interviews'));

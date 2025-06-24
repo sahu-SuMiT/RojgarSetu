@@ -279,7 +279,7 @@ const EKysDashboard = () => {
             </Button>
             <Button 
               onClick={() => setIsCreateTicketOpen(true)}
-              className="bg-campus-blue hover:bg-campus-hover flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
               Create Verification Ticket
@@ -521,7 +521,7 @@ const EKysDashboard = () => {
             <Button 
               onClick={handleCreateTicket}
               disabled={!newTicket.documentType || !newTicket.description}
-              className="bg-campus-blue hover:bg-campus-hover"
+              className="bg-blue-600 hover:bg-blue-700"
             >
               Create Ticket
             </Button>

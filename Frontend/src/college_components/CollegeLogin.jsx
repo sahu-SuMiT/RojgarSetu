@@ -173,10 +173,10 @@ const CollegeLogin = () => {
       localStorage.setItem('collegeId', _id);
       localStorage.setItem('collegeName', name);
       localStorage.setItem('userRole', role);
-      
+
       setMessage({ type: "success", text: "Login successful! Redirecting..." });
       setTimeout(() => {
-        navigate(`/college/${_id}/dashboard`);
+      navigate(`/college/${_id}/dashboard`);
       }, 1000);
     } catch (err) {
       setMessage({ type: "error", text: err.response?.data?.error || 'Error during login.' });
@@ -241,13 +241,13 @@ const CollegeLogin = () => {
       <div>
         <label htmlFor="login-email" className="block text-sm font-medium text-gray-700">
           Email Address
-        </label>
-        <input
+                </label>
+                <input
           id="login-email"
           name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
           className={`mt-1 block w-full px-3 py-2 border ${
             errors.email ? "border-red-300" : "border-gray-300"
           } rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm`}
@@ -255,23 +255,23 @@ const CollegeLogin = () => {
           autoComplete="off"
         />
         {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
-      </div>
+              </div>
 
       <div>
         <label htmlFor="login-password" className="block text-sm font-medium text-gray-700">
-          Password
-        </label>
+                  Password
+                </label>
         <div className="relative">
-          <input
+                <input
             id="login-password"
-            name="password"
+                  name="password"
             type={showPassword ? "text" : "password"}
-            value={formData.password}
-            onChange={handleChange}
+                  value={formData.password}
+                  onChange={handleChange}
             className={`mt-1 block w-full px-3 py-2 border ${
               errors.password ? "border-red-300" : "border-gray-300"
             } rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm`}
-            placeholder="Enter your password"
+                  placeholder="Enter your password"
             autoComplete="off"
           />
           <button
@@ -294,7 +294,7 @@ const CollegeLogin = () => {
           </button>
         </div>
         {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
-      </div>
+              </div>
 
       <div className="flex items-center justify-end">
         <div className="text-sm">
@@ -302,17 +302,17 @@ const CollegeLogin = () => {
             Forgot your password?
           </a>
         </div>
-      </div>
+                </div>
 
       <div>
-        <button
-          type="submit"
-          disabled={loading}
+              <button
+                type="submit"
+                disabled={loading}
           className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-semibold rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
         >
           {loading ? "Signing In..." : "Sign In"}
-        </button>
-      </div>
+              </button>
+            </div>
     </form>
   );
 
@@ -335,7 +335,7 @@ const CollegeLogin = () => {
           autoComplete="off"
         />
         {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
-      </div>
+                  </div>
 
       <div>
         <label htmlFor="register-code" className="block text-sm font-medium text-gray-700">
@@ -354,7 +354,7 @@ const CollegeLogin = () => {
           autoComplete="off"
         />
         {errors.code && <p className="mt-1 text-sm text-red-600">{errors.code}</p>}
-      </div>
+                </div>
 
       <div>
         <label htmlFor="register-email" className="block text-sm font-medium text-gray-700">
@@ -373,7 +373,7 @@ const CollegeLogin = () => {
           autoComplete="off"
         />
         {errors.contactEmail && <p className="mt-1 text-sm text-red-600">{errors.contactEmail}</p>}
-      </div>
+                    </div>
 
       <div>
         <label htmlFor="register-phone" className="block text-sm font-medium text-gray-700">
@@ -392,18 +392,18 @@ const CollegeLogin = () => {
           autoComplete="off"
         />
         {errors.contactPhone && <p className="mt-1 text-sm text-red-600">{errors.contactPhone}</p>}
-      </div>
+                </div>
 
       <div>
-        <button
+                <button
           type="submit"
           disabled={emailCheckLoading}
           className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-semibold rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
         >
           {emailCheckLoading ? "Verifying..." : "Next"}
-        </button>
-      </div>
-    </form>
+                </button>
+              </div>
+            </form>
   );
 
   const renderRegisterStep2 = () => (
@@ -412,49 +412,49 @@ const CollegeLogin = () => {
         <p className="text-sm text-gray-600 mb-4">Enter the OTP sent to {registerData.contactEmail}</p>
         <div className="flex items-center gap-2 mb-4">
           {otpInputs.map((otp, index) => (
-            <input
-              key={index}
+                    <input
+                      key={index}
               ref={el => otpInputRefs.current[index] = el}
               className="w-12 h-12 text-center border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-              type="text"
-              maxLength="1"
+                      type="text"
+                      maxLength="1"
               value={otp}
               onChange={(e) => handleOtpInputChange(e, index)}
               onKeyDown={(e) => {
                 if (e.key === 'Backspace' && !otpInputs[index] && index > 0) {
-                  otpInputRefs.current[index - 1].focus();
+                             otpInputRefs.current[index - 1].focus();
                 }
               }}
               autoComplete="one-time-code"
-            />
-          ))}
+                    />
+                  ))}
           <div className="flex items-center justify-center w-8 h-8">
             {otpStatus === 'verifying' && <span className="text-orange-600">...</span>}
             {otpStatus === 'verified' && <span className="text-green-600">✅</span>}
             {otpStatus === 'error' && <span className="text-red-600">❌</span>}
           </div>
-        </div>
+                  </div>
         <div className="text-right">
-          <button
-            type="button"
-            onClick={handleResendOtp}
-            disabled={resendDisabled}
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={resendDisabled}
             className="text-sm text-orange-600 hover:text-orange-500 disabled:text-gray-400 disabled:cursor-not-allowed"
-          >
-            {resendDisabled ? `Resend OTP (${resendTime}s)` : 'Resend OTP'}
-          </button>
-        </div>
-      </div>
+                    >
+                      {resendDisabled ? `Resend OTP (${resendTime}s)` : 'Resend OTP'}
+                    </button>
+                </div>
+                 </div>
 
       <div>
         <label htmlFor="register-password" className="block text-sm font-medium text-gray-700">
           New Password
         </label>
-        <input
+                <input
           id="register-password"
-          name="password"
-          type="password"
-          required
+                  name="password"
+                  type="password"
+                  required
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
           placeholder="Enter new password"
         />
@@ -464,33 +464,33 @@ const CollegeLogin = () => {
         <label htmlFor="register-confirm-password" className="block text-sm font-medium text-gray-700">
           Confirm Password
         </label>
-        <input
+                <input
           id="register-confirm-password"
-          name="confirmPassword"
-          type="password"
-          required
+                  name="confirmPassword"
+                  type="password"
+                  required
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
           placeholder="Confirm new password"
         />
       </div>
 
       <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setRegisterStep(1)}
+                <button
+                  type="button"
+                  onClick={() => setRegisterStep(1)}
           className="flex-1 py-2 px-4 border border-gray-300 text-sm font-semibold rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition"
-        >
-          Back
-        </button>
+                >
+                  Back
+                </button>
         <button
           type="submit"
           disabled={registerLoading || otpStatus !== 'verified'}
           className="flex-1 py-2 px-4 border border-transparent text-sm font-semibold rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
         >
           {registerLoading ? "Creating Account..." : "Create Account"}
-        </button>
-      </div>
-    </form>
+                </button>
+              </div>
+            </form>
   );
 
   return (
@@ -561,4 +561,4 @@ const CollegeLogin = () => {
   );
 };
 
-export default CollegeLogin;
+export default CollegeLogin; 

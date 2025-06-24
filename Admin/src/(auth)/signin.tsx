@@ -4,12 +4,15 @@ import { Mail, Lock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import axios from 'axios';
 
 const SignIn = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -34,32 +37,38 @@ const SignIn = () => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
+    setError(null);
+
     try {
-      // Replace this with your own API call
-      const response = await fakeSignIn(formData.email, formData.password);
-      if (response.success) {
-        navigate('/dashboard'); // Change as per your routing
+      console.log('Attempting admin login with:', { email: formData.email, password: '***' });
+      const response = await axios.post(`${API_URL}/api/admin/login`, formData);
+      
+      console.log('Login response:', response.data);
+      
+      if (response.data.success) {
+        // Store admin token and data
+        localStorage.setItem('adminToken', response.data.token);
+        localStorage.setItem('adminData', JSON.stringify(response.data.admin));
+        
+        // Navigate to admin dashboard
+        navigate('/admin_dashboard');
       } else {
-        setError(response.message);
+        setError(response.data.message || 'Login failed');
       }
-    } catch (err) {
-      setError('An unexpected error occurred');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 401) {
+        setError('Invalid email or password');
+      } else if (err.response?.status === 404) {
+        setError('Admin account not found');
+      } else {
+        setError('Network error. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // Fake sign-in function for demo
-  const fakeSignIn = async (email: string, password: string) => {
-    return new Promise<{ success: boolean; message?: string }>((resolve) => {
-      setTimeout(() => {
-        if (email === 'user@demo.com' && password === 'demo123') {
-          resolve({ success: true });
-        } else {
-          resolve({ success: false, message: 'Invalid email or password' });
-        }
-      }, 1000);
-    });
   };
 
   return (
@@ -67,8 +76,8 @@ const SignIn = () => {
       <div className="w-full max-w-md">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Sign in</CardTitle>
-            <CardDescription>Access your dashboard</CardDescription>
+            <CardTitle className="text-2xl font-bold">Admin Sign In</CardTitle>
+            <CardDescription>Access your admin dashboard</CardDescription>
           </CardHeader>
           <CardContent>
             {error && (
@@ -107,6 +116,28 @@ const SignIn = () => {
                 {isSubmitting ? 'Signing in...' : 'Sign in'}
               </Button>
             </form>
+            
+            {/* Demo Credentials */}
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h3 className="text-sm font-medium text-blue-900 mb-2">Demo Credentials</h3>
+              <div className="text-xs text-blue-800 space-y-3">
+                <div>
+                  <p className="font-medium text-blue-900">Admin Accounts:</p>
+                  <div className="mt-1 space-y-1">
+                    <p><strong>Raj Shivre:</strong> raj@email.com / raj123</p>
+                    <p><strong>Kishori:</strong> kishori@email.com / kishori123</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="font-medium text-blue-900">Employee Accounts:</p>
+                  <div className="mt-1 space-y-1">
+                    <p><strong>Harsh Raj:</strong> harshraj@email.com / harsh123 (Inactive)</p>
+                    <p><strong>Anmol Tiwari:</strong> anmol@email.com / anmol123</p>
+                    <p><strong>Sumit Sahu:</strong> sumit@email.com / sumit123</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

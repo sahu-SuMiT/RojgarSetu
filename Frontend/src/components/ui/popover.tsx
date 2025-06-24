@@ -1,11 +1,8 @@
 import * as React from "react"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
 
-// import { cn } from "@/lib/utils"
-// Utility function to concatenate class names conditionally
-export function cn(...classes: (string | undefined | false | null)[]): string {
-  return classes.filter(Boolean).join(' ');
-}
+import { cn } from "@/lib/utils"
+
 const Popover = PopoverPrimitive.Root
 
 const PopoverTrigger = PopoverPrimitive.Trigger

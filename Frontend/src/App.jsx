@@ -5,7 +5,7 @@ import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 // Import all page components
 import Sidebar from './components/Student/Sidebar';
 import Dashboard from './components/Student/Dashboard';
-import Profile from './components/Student/Profile';
+// import Profile from './components/Student/Profile';
 import Jobs from './components/Student/Jobs';
 import Applications from './components/Student/Applications';
 import Interviews from './components/Student/Interviews';
@@ -21,6 +21,7 @@ import Sales from "./pages/Sales";
 import NotFound from "./pages/NotFound";
 import Signup from "../src/(auth)/signup"; 
 import SignIn from "../src/(auth)/signin"; 
+import Profile from "./pages/Profile";
 
 import DashboardCompany from './company_components/CompanyDashboard';
 import CollegeDashboard from './college_components/CollegeDashboard';
@@ -242,6 +243,7 @@ const App = () => {
         <Route path="/placement-analysis" element={<PlacementAnalysis />} />
         <Route path="/kyc-dashboard" element={<EKysDashboard />} />
         <Route path="/sales" element={<Sales />} />
+        <Route path="/profile" element={<NotFound />} />
 
         {/* College and Compay */}
         <Route path="/student-login" element={<AuthPage />} />

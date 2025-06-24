@@ -5,7 +5,7 @@ const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 // Create a notification
 export const createNotification = async (notificationData) => {
   try {
-    const response = await axios.post(`${apiUrl}/api/notifications`, notificationData);
+    const response = await axios.post(`${apiUrl}/api/notifications`, notificationData, { withCredentials: true });
     return response.data;
   } catch (error) {
     console.error('Error creating notification:', error);
@@ -16,7 +16,7 @@ export const createNotification = async (notificationData) => {
 // Find user by email
 export const findUserByEmail = async (email) => {
   try {
-    const response = await axios.get(`${apiUrl}/api/notifications/find-user/${email}`);
+    const response = await axios.get(`${apiUrl}/api/notifications/find-user/${email}`, { withCredentials: true });
     return response.data;
   } catch (error) {
     console.error('Error finding user:', error);
@@ -31,7 +31,7 @@ export const searchUsersByName = async (query, type = null) => {
     const url = `${apiUrl}/api/notifications/search-users/${query}${params}`;
     console.log('Searching users with URL:', url); // Debug log
     
-    const response = await axios.get(url);
+    const response = await axios.get(url, { withCredentials: true });
     console.log('Search response:', response.data); // Debug log
     return response.data;
   } catch (error) {
@@ -97,7 +97,7 @@ export const createNotificationByEmail = async (senderId, senderType, recipientE
 // Get unread count for a user
 export const getUnreadCount = async (userType, userId) => {
   try {
-    const response = await axios.get(`${apiUrl}/api/notifications/${userType}/${userId}/unread-count`);
+    const response = await axios.get(`${apiUrl}/api/notifications/${userType}/${userId}/unread-count`, { withCredentials: true });
     return response.data.unreadCount;
   } catch (error) {
     console.error('Error getting unread count:', error);
@@ -108,7 +108,7 @@ export const getUnreadCount = async (userType, userId) => {
 // Mark notification as read
 export const markAsRead = async (notificationId) => {
   try {
-    const response = await axios.patch(`${apiUrl}/api/notifications/${notificationId}/read`);
+    const response = await axios.patch(`${apiUrl}/api/notifications/${notificationId}/read`, {}, { withCredentials: true });
     return response.data;
   } catch (error) {
     console.error('Error marking notification as read:', error);
@@ -119,7 +119,7 @@ export const markAsRead = async (notificationId) => {
 // Mark all notifications as read for a user
 export const markAllAsRead = async (userType, userId) => {
   try {
-    const response = await axios.patch(`${apiUrl}/api/notifications/${userType}/${userId}/read-all`);
+    const response = await axios.patch(`${apiUrl}/api/notifications/${userType}/${userId}/read-all`, {}, { withCredentials: true });
     return response.data;
   } catch (error) {
     console.error('Error marking all notifications as read:', error);
