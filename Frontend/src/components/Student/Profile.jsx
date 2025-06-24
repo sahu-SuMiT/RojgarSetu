@@ -5,9 +5,7 @@ import Sidebar from './Sidebar';
 const API_URL = 'http://localhost:5000';
 
 const Profile = () => {
-  // Sidebar open state for mobile
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,10 +14,8 @@ const Profile = () => {
   const [previewUrl, setPreviewUrl] = useState('');
   const [kycStatus, setKycStatus] = useState('pending'); // New state for KYC status
 
-  // JWT-based: Get token from localStorage
   const token = localStorage.getItem('token');
 
-  // On mount, redirect if no token
   useEffect(() => {
     if (!token) {
       window.location.href = '/student-login';
@@ -51,8 +47,7 @@ const Profile = () => {
       try {
         setLoading(true);
         setError(null);
-        // Fetch profile using JWT in Authorization header
-        const response = await fetch(`${API_URL}/api/student/profile`, {
+        const response = await fetch(`${API_URL}/api/student/me`, {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -126,7 +121,7 @@ const Profile = () => {
       if (profilePicFile) {
         const formData = new FormData();
         formData.append('profilePic', profilePicFile);
-        const picRes = await fetch(`${API_URL}/api/student/profile/profile-pic`, {
+        const picRes = await fetch(`${API_URL}/api/student/me/profile-pic`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
@@ -142,7 +137,7 @@ const Profile = () => {
       setIsEditing(false);
       setPreviewUrl('');
       setProfilePicFile(null);
-    } catch  {
+    } catch {
       alert('Failed to update profile');
     }
   };
@@ -251,7 +246,6 @@ const Profile = () => {
     { key: "description", label: "Description" }
   ];
 
-  // Dynamic array input section
   function ArraySection({ label, field, fields, emptyObj }) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200 mb-8">

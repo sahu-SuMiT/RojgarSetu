@@ -1,13 +1,8 @@
 import * as React from "react"
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog"
 
-// import { cn } from "@/lib/utils"
-import { buttonVariants } from "./button"
-
-// Utility function to concatenate class names conditionally
-export function cn(...classes: (string | undefined | false | null)[]): string {
-  return classes.filter(Boolean).join(' ');
-}
+import { cn } from "@/lib/utils"
+import { buttonVariants } from "@/components/ui/button"
 
 const AlertDialog = AlertDialogPrimitive.Root
 

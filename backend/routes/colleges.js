@@ -2,11 +2,12 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const College = require('../models/College');
-const CollegeStudent = require('../models/collegeStudent.model');
+const Student = require('../models/Student');
 const RegistrationOtp = require('../models/RegistrationOtp');
 const {emailTransport} = require('../config/email');
 const cloudinary = require('../config/cloudinary');
 const {isCollegeAuthenticated,isCollegeAdmin} = require('../middleware/auth');
+const {isEmailDisposable}= require('../utils/disposableEmail');
 // app.get('/api/college/:collegeId/student/:studentId') ..... Get a single student by ID and college
 // app.put('/api/college/:collegeId/student/:studentId') .....Put endpoint for updating college student profiles
 // app.post('/api/college/register/initiate') .....Post Initiate college registration: send OTP
@@ -18,7 +19,7 @@ const {isCollegeAuthenticated,isCollegeAdmin} = require('../middleware/auth');
 router.get('/:collegeId/student/:studentId', async (req, res) => {
   try {
     
-    const student = await CollegeStudent.findOne({
+    const student = await Student.findOne({
       _id: req.params.studentId,
       college: req.params.collegeId
     });
@@ -34,10 +35,9 @@ router.get('/:collegeId/student/:studentId', async (req, res) => {
   }
 });
 
-router.put('/:collegeId/student/:studentId',isCollegeAuthenticated,isCollegeAdmin, async (req, res) => {
+router.put('/:collegeId/student/:studentId', async (req, res) => {
   try {
-    
-    const student = await CollegeStudent.findOneAndUpdate(
+    const student = await Student.findOneAndUpdate(
       {
         _id: req.params.studentId,
         college: req.params.collegeId
@@ -61,21 +61,17 @@ router.post('/register/initiate', async (req, res) => {
   try {
     const {
       name,
-      code,
-      location,
-      website,
       contactEmail,
       contactPhone,
-      placementOfficer,
-      departments,
-      establishedYear,
-      campusSize
+      code
     } = req.body;
 
-    if (!name || !code || !location || !contactEmail || !contactPhone || !placementOfficer || !departments || !establishedYear || !campusSize) {
+    if (!name || !contactEmail || !contactPhone || !code) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-
+    if (isEmailDisposable(contactEmail)) {
+      return res.status(400).json({ error: 'Disposable email addresses are not allowed.' });
+    }
     // Check for duplicate code or email in College
     const existing = await College.findOne({ $or: [ { code }, { contactEmail } ] });
     if (existing) {
@@ -98,14 +94,8 @@ router.post('/register/initiate', async (req, res) => {
       data: { // Store the college info in the generic data field
         name,
         code,
-        location,
-        website,
         contactEmail,
-        contactPhone,
-        placementOfficer,
-        departments,
-        establishedYear,
-        campusSize
+        contactPhone
       }
     });
 
@@ -119,7 +109,6 @@ router.post('/register/initiate', async (req, res) => {
 
     res.json({ message: 'OTP sent to email.' });
   } catch (err) {
-    console.error('Error initiating college registration:', err);
     res.status(500).json({ error: 'Failed to initiate registration', details: err.message });
   }
 });
@@ -143,7 +132,7 @@ router.post('/register/verify', async (req, res) => {
     if (registrationOtp.otp !== otp || registrationOtp.expiresAt < new Date()) {
       // Delete the invalid/expired OTP to prevent further attempts
       await RegistrationOtp.deleteOne({ _id: registrationOtp._id });
-      return res.status(400).json({ error: 'Invalid or expired OTP.' });
+      return res.status(400).json({ error: 'OTP Invalid or expired .' });
     }
 
     // Validate password and confirm password

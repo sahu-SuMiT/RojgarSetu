@@ -3,7 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Application = require('../models/CollegeApplication');
 const College = require('../models/College');
-const CollegeStudent = require('../models/collegeStudent.model');
+const Student = require('../models/Student');
 const Company = require('../models/Company');
 const Role = require('../models/Role');
 const Interview = require('../models/Interview');
@@ -273,7 +273,7 @@ router.get('/company/:companyId/complete', async (req, res) => {
       },
       {
         $lookup: {
-          from: 'collegestudents',
+          from: 'students',
           localField: 'students.studentId',
           foreignField: '_id',
           as: 'studentDetails'

@@ -1,9 +1,9 @@
-require('dotenv').config({path:'../.env'});
-const Application = require('../models/CollegeApplication');
+require('dotenv').config();
+const Student = require('../models/Student');
+const CollegeApplication = require('../models/CollegeApplication');
 const College = require('../models/College');
 const Company = require('../models/Company');
 const Role = require('../models/Role');
-const CollegeStudent = require('../models/collegeStudent.model');
 const mongoose = require('mongoose');
 const { application } = require('express');
 
@@ -14,14 +14,14 @@ const main = async () => {
 
 main();
 let insertApplicationDeleteOld = async () =>{
-  await Application.deleteMany()
+  await CollegeApplication.deleteMany()
   console.log('old applications deleted')
   const colleges = await College.find()
   const companies = await Company.find()
   const roles = await Role.find()
   let applications = []
   for(college of colleges){
-    let students = await CollegeStudent.find()
+    let students = await Student.find()
     let studentsList = students.map(s=>({
       studentId: s._id,
       status: 'applied',
@@ -44,7 +44,7 @@ let insertApplicationDeleteOld = async () =>{
   }
   console.log("here is your application array:",)
       try{
-        await Application.insertMany(applications)
+        await CollegeApplication.insertMany(applications)
         for(a of applications){
           console.log("Application From College:",a.applicationFromCollege)
           console.log("Application To Company:",a.applicationToCompany)
@@ -64,7 +64,7 @@ let insertApplicationDeleteOld = async () =>{
 }
 insertApplicationDeleteOld();
 let run = async () => {
-  let applications = await Application.find()
+  let applications = await CollegeApplication.find()
     .populate('applicationFromCollege', 'name')
     .populate('applicationToCompany', 'name')
     .populate('roleId', 'jobTitle')

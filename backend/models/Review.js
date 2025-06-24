@@ -8,18 +8,13 @@ const reviewSchema = new mongoose.Schema({
   },
   belongsToModel: {
     type: String,
-    required: true,
-    enum: ['Employee', 'Company', 'College', 'CollegeStudent']
+    enum: ['Employee', 'Company', 'College', 'Student'],
+    required: true
   },
-  reviewer: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    refPath: 'reviewerModel'
-  },
-  reviewerModel: {
+  reviewedByModel: {
     type: String,
-    required: true,
-    enum: ['Employee', 'Company', 'College', 'CollegeStudent']
+    enum: ['Employee', 'Company', 'College', 'Student'],
+    required: true
   },
    feedback: {
     technicalScore: Number,

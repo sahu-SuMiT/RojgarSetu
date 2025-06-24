@@ -8,20 +8,20 @@ const companySchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['MNC', 'Startup', 'SME', 'Government', 'NGO', 'Other'],
-    required: true
+    enum: ['','MNC', 'Startup', 'SME', 'Government', 'NGO', 'Other'],
+
   },
   industry: {
     type: String,
-    required: true
+
   },
   website: {
     type: String,
-    trim: true
+
   },
   location: {
     type: String,
-    required: true
+
   },
   contactEmail: {
     type: String,
@@ -43,21 +43,19 @@ const companySchema = new mongoose.Schema({
   },
   companySize: {
     type: String,
-    enum: ['1-50', '51-200', '201-500', '501-1000', '1000+'],
-    required: true
+    enum: ['', '1-50', '51-200', '201-500', '501-1000', '1000+'],
+
   },
   foundedYear: {
     type: Number,
-    required: true
   },
   description: {
     type: String,
-    required: true
   },
   verificationStatus: {
     type: String,
-    enum: ['verified', 'pending', 'rejected'],
-    default: 'pending'
+    enum: ['verified', 'unverified', 'rejected'],
+    default: 'unverified'
   },
   password: {
     type: String,
@@ -77,13 +75,11 @@ const companySchema = new mongoose.Schema({
   },
   verificationToken: String,
   verificationTokenExpires: Date,
-  resetPasswordToken: String,
-  resetPasswordExpires: Date
+  passwordResetToken: String,
+  passwordResetExpires: Date
 }, {
   timestamps: true
 });
 
-// Remove password validation that checks for googleId
-companySchema.path('password').required(true);
 
 module.exports = mongoose.model('Company', companySchema); 

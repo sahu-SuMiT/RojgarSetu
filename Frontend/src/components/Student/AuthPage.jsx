@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaArrowLeft } from "react-icons/fa";
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const AuthPage = ({ onAuthSuccess }) => {
   const navigate = useNavigate();
-  const [currentView, setCurrentView] = useState("login"); // "login" or "signup"
+  const [currentView, setCurrentView] = useState("login");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -15,7 +16,6 @@ export const AuthPage = ({ onAuthSuccess }) => {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
 
-  // Reset form on view toggle
   const switchView = (view) => {
     setCurrentView(view);
     setFormData({ name: "", email: "", password: "" });
@@ -70,21 +70,18 @@ export const AuthPage = ({ onAuthSuccess }) => {
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // credentials: "include", // REMOVE for JWT, not needed
         body: JSON.stringify(payload),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        // JWT: Store token and student info in localStorage
         if (data.token) {
           localStorage.setItem("token", data.token);
         }
         if (data.student && data.student.id) {
           localStorage.setItem("studentId", data.student.id);
         }
-
         setMessage({
           type: "success",
           text:
@@ -92,9 +89,8 @@ export const AuthPage = ({ onAuthSuccess }) => {
               ? "Login successful! Redirecting..."
               : "Account created! Redirecting...",
         });
-
         setTimeout(() => {
-          navigate("/dashboard"); // or wherever you want to redirect
+          navigate("/dashboard");
         }, 1000);
 
         if (onAuthSuccess) onAuthSuccess(data);
@@ -104,7 +100,7 @@ export const AuthPage = ({ onAuthSuccess }) => {
           text: data.message || "Something went wrong",
         });
       }
-    } catch  {
+    } catch {
       setMessage({ type: "error", text: "Network error. Please try again." });
     } finally {
       setLoading(false);
@@ -113,6 +109,15 @@ export const AuthPage = ({ onAuthSuccess }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-blue-100 to-yellow-100 py-12 px-4 sm:px-6 lg:px-8">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/login_panel')}
+        className="absolute top-6 left-6 inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-500 bg-white/80 hover:bg-white/90 rounded-lg shadow-sm transition-all duration-300 backdrop-blur-sm"
+      >
+        <FaArrowLeft className="mr-2 h-4 w-4" />
+        Login Panel
+      </button>
+
       <div className="max-w-md w-full space-y-8 bg-white/90 rounded-2xl shadow-lg px-8 py-10">
         <div className="text-center">
           <img
@@ -223,6 +228,22 @@ export const AuthPage = ({ onAuthSuccess }) => {
             </div>
             {errors.password && (
               <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              {/* Optional: "Remember me" checkbox */}
+            </div>
+            {currentView === "login" && (
+              <div className="text-sm">
+                <a
+                  href="/student/forgot-password"
+                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  Forgot your password?
+                </a>
+              </div>
             )}
           </div>
 
