@@ -1,8 +1,6 @@
 
 import React from "react";
-// Update the import path below to the correct relative path where your Card components are located.
-// For example, if they are in src/components/ui/card.tsx, use:
-import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Calendar, TrendingUp, FileText } from "lucide-react";
 import TicketVolumeChart from "./TicketVolumeChart";
 import AttendanceChart from "./AttendanceChart";
