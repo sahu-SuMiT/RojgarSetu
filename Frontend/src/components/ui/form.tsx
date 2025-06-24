@@ -10,12 +10,9 @@ import {
   useFormContext,
 } from "react-hook-form"
 
-import { Label } from "./label"
-// import { cn } from "@/lib/utils"
-// Utility function to concatenate class names conditionally
-export function cn(...classes: (string | undefined | false | null)[]): string {
-  return classes.filter(Boolean).join(' ');
-}
+import { cn } from "@/lib/utils"
+import { Label } from "@/components/ui/label"
+
 const Form = FormProvider
 
 type FormFieldContextValue<

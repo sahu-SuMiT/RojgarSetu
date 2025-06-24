@@ -1,10 +1,10 @@
 
 import React from "react";
-import AppLayout from "../components/layouts/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import AppLayout from "@/components/layouts/AppLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line } from "recharts";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Sample data for the charts
 const placementData = {
