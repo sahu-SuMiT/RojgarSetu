@@ -243,8 +243,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   <User className="h-5 w-5 text-gray-600" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg z-50">
+              
+              <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg z-[1500] profile-dropdown">
                 <DropdownMenuLabel className="text-gray-900">{firstName} {lastName}</DropdownMenuLabel>
+                
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={handleProfile}

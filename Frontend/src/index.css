@@ -1,4 +1,3 @@
-
 @import 'tailwindcss';
 
 @layer base {
@@ -96,4 +95,128 @@
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+}
+
+/* Dialog component fixes */
+[data-radix-dialog-content] {
+  background-color: white !important;
+  color: black !important;
+}
+
+[data-radix-dialog-overlay] {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.bg-background {
+  background-color: white !important;
+}
+
+/* Fix for ticket creation dialog */
+[data-radix-dialog-content] input,
+[data-radix-dialog-content] textarea,
+[data-radix-dialog-content] select,
+[data-radix-dialog-content] button {
+  background-color: white;
+  border: 1px solid hsl(var(--border));
+}
+
+/* Make sure dialog form elements are styled correctly */
+[data-radix-dialog-content] input::placeholder,
+[data-radix-dialog-content] textarea::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Ensure dialog title and content are visible */
+[data-radix-dialog-title],
+[data-radix-dialog-description] {
+  color: black !important;
+}
+
+/* Fix for select dropdown in placement analysis page */
+[data-radix-popper] {
+  z-index: 1000 !important;
+  position: absolute !important;
+  left: auto !important;
+  right: 0 !important;
+  top: 100% !important;
+  margin-top: 5px !important;
+  width: auto !important;
+  min-width: 180px !important;
+  transform: none !important;
+}
+
+/* Ensure batch dropdown has correct styling */
+[data-radix-select-content] {
+  background-color: white !important;
+  color: black !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid #e5e7eb !important;
+  max-height: 300px !important;
+  overflow-y: auto !important;
+}
+
+/* Specific fix for Placement Analysis select dropdown */
+.flex.gap-3 .w-\[180px\] + [data-radix-popper] {
+  right: 0 !important;
+  left: auto !important;
+  transform: none !important;
+}
+
+/* Batch select dropdown override for placement analysis */
+div[style*="z-index: 1000"] {
+  right: 20px !important;
+  left: auto !important;
+  top: 120px !important;
+  margin-top: 0 !important;
+  position: fixed !important;
+  width: 180px !important;
+  max-width: 180px !important;
+  transform: none !important;
+}
+
+/* Notification and profile dropdown should have higher z-index than batch selector */
+[data-radix-popper-content-wrapper] {
+  z-index: 1500 !important; /* Higher than batch dropdown */
+}
+
+/* Notification and user profile specific selectors */
+.notification-dropdown,
+.profile-dropdown {
+  z-index: 1500 !important;
+}
+
+/* Override for select dropdown in placement analysis */
+[data-radix-select-content][data-side="bottom"] {
+  position: absolute !important;
+  top: 45px !important;
+  left: auto !important; 
+  right: 0 !important;
+  margin-top: 0 !important;
+  z-index: 1000 !important; /* Lower than notification/profile dropdowns */
+  background-color: white !important;
+  transform: translateY(0) !important;
+}
+
+/* Item-aligned dropdown positioning (for placement analysis) */
+[data-radix-select-content][data-position="item-aligned"] {
+  position: absolute !important;
+  top: calc(100% + 5px) !important;
+  transform: none !important;
+  margin-top: 4px !important;
+  z-index: 1000 !important; /* Lower than notification/profile dropdowns */
+}
+
+/* Specific override for placement analysis batch dropdown */
+.relative[style*="z-index: 100"] [data-radix-select-content] {
+  top: 100% !important;
+  margin-top: 5px !important;
+  width: 180px !important;
+  z-index: 1000 !important; /* Lower than notification/profile dropdowns */
+}
+
+/* Fix for batch dropdown visibility and prevent cut-off */
+[data-radix-select-viewport] {
+  background-color: white !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
 }
