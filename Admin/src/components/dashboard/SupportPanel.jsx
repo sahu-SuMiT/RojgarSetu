@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,13 +22,16 @@ import {
   User,
   Search,
   Send,
-  Phone,
   Eye,
   Edit,
   Trash2,
-  Filter
+  Filter,
+  Users,
+  RefreshCw
 } from "lucide-react";
 import "./SupportPanel.css";
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export function SupportPanel() {
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -37,9 +41,11 @@ export function SupportPanel() {
   const [userTypeFilter, setUserTypeFilter] = useState("all");
   const [chatSearchQuery, setChatSearchQuery] = useState("");
   const [chatStatusFilter, setChatStatusFilter] = useState("all");
+  const [staffSearchQuery, setStaffSearchQuery] = useState("");
   const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [isLiveChatOpen, setIsLiveChatOpen] = useState(false);
+  const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
   const [newTicket, setNewTicket] = useState({
     subject: "",
     description: "",
@@ -51,6 +57,38 @@ export function SupportPanel() {
     subject: "",
     message: ""
   });
+  const [newStaff, setNewStaff] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: ""
+  });
+  const [users, setUsers] = useState([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [userError, setUserError] = useState(null);
+
+  const fetchUsers = async () => {
+    setIsLoadingUsers(true);
+    setUserError(null);
+    try {
+      const response = await axios.get(`${API_URL}/api/admin/user`);
+      setUsers(response.data);
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message;
+      setUserError(errorMessage);
+      toast({
+        title: "Error",
+        description: `Failed to fetch staff: ${errorMessage}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   const supportStats = [
     {
@@ -191,6 +229,12 @@ export function SupportPanel() {
     return matchesSearch && matchesStatus;
   });
 
+  const filteredStaff = users.filter((user) => {
+    const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
+    return fullName.includes(staffSearchQuery.toLowerCase()) ||
+           user.email.toLowerCase().includes(staffSearchQuery.toLowerCase());
+  });
+
   const clearAllFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
@@ -198,6 +242,7 @@ export function SupportPanel() {
     setUserTypeFilter("all");
     setChatSearchQuery("");
     setChatStatusFilter("all");
+    setStaffSearchQuery("");
     toast({
       title: "Filters Cleared",
       description: "All search and filter criteria have been reset",
@@ -244,6 +289,14 @@ export function SupportPanel() {
   };
 
   const handleCreateTicket = () => {
+    if (!newTicket.userEmail || !newTicket.subject || !newTicket.description) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
     console.log("Creating ticket:", newTicket);
     toast({
       title: "Ticket Created",
@@ -254,6 +307,14 @@ export function SupportPanel() {
   };
 
   const handleSendEmail = () => {
+    if (!emailData.to || !emailData.subject || !emailData.message) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
     console.log("Sending email:", emailData);
     toast({
       title: "Email Sent",
@@ -268,14 +329,6 @@ export function SupportPanel() {
     toast({
       title: "Joined Chat",
       description: `Connected to chat session #${chatId}`,
-    });
-  };
-
-  const handleCallCenter = () => {
-    console.log("Opening call center");
-    toast({
-      title: "Call Center",
-      description: "Connecting to call center system...",
     });
   };
 
@@ -310,6 +363,50 @@ export function SupportPanel() {
       title: "System Alert",
       description: "System alert broadcast to all users",
     });
+  };
+
+  const handleAddStaff = async () => {
+    const { firstName, lastName, email, password } = newStaff;
+    if (!firstName || !lastName || !email || !password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      const response = await axios.post(`${API_URL}/api/admin/staff`, newStaff);
+      toast({
+        title: "Staff Added",
+        description: `Staff member ${firstName} ${lastName} added successfully`,
+      });
+      setNewStaff({ firstName: "", lastName: "", email: "", password: "" });
+      setIsAddStaffOpen(false);
+      fetchUsers(); // Refresh staff list
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to add staff: ${error.response?.data?.message || error.message}`,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -355,7 +452,7 @@ export function SupportPanel() {
           <Card className="dashboard-card">
             <CardHeader>
               <CardTitle>Support Dashboard</CardTitle>
-              <CardDescription>Manage tickets and live support</CardDescription>
+              <CardDescription>Manage tickets, live support, emails, and staff</CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="tickets" className="dashboard-tabs">
@@ -371,6 +468,10 @@ export function SupportPanel() {
                   <TabsTrigger value="email" className="tab-trigger">
                     <Mail className="w-4 h-4" />
                     <span>Email</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="staff" className="tab-trigger">
+                    <Users className="w-4 h-4" />
+                    <span>Staff</span>
                   </TabsTrigger>
                 </TabsList>
 
@@ -647,6 +748,78 @@ export function SupportPanel() {
                     </Dialog>
                   </div>
                 </TabsContent>
+
+                <TabsContent value="staff" className="staff-content">
+                  <div className="filters-section">
+                    <div className="search-box">
+                      <div className="search-input">
+                        <Search className="search-icon" />
+                        <Input 
+                          placeholder="Search staff by name or email..." 
+                          className="search-field" 
+                          value={staffSearchQuery}
+                          onChange={(e) => setStaffSearchQuery(e.target.value)}
+                        />
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={fetchUsers} disabled={isLoadingUsers}>
+                        <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingUsers ? 'animate-spin' : ''}`} />
+                        Refresh
+                      </Button>
+                    </div>
+                    <div className="filter-info">
+                      <p className="result-count">
+                        Showing {filteredStaff.length} of {users.length} staff members
+                      </p>
+                      {staffSearchQuery && (
+                        <Button variant="ghost" size="sm" onClick={() => setStaffSearchQuery("")}>
+                          Clear search
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <Table className="staff-table">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Joined Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoadingUsers ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="empty-state">
+                            <p>Loading staff...</p>
+                          </TableCell>
+                        </TableRow>
+                      ) : userError ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="empty-state">
+                            <p className="error-text">Error: {userError}</p>
+                          </TableCell>
+                        </TableRow>
+                      ) : filteredStaff.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="empty-state">
+                            <div className="empty-content">
+                              <Users className="empty-icon" />
+                              <p className="empty-text">No staff found matching your criteria</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredStaff.map((user) => (
+                          <TableRow key={user._id} className="staff-row">
+                            <TableCell>{user.firstName} {user.lastName}</TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            <TableCell>{new Date(user.date).toLocaleString()}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TabsContent>
               </Tabs>
             </CardContent>
           </Card>
@@ -752,6 +925,65 @@ export function SupportPanel() {
                 </DialogContent>
               </Dialog>
 
+              <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="action-button">
+                    <Users className="w-4 h-4 mr-2" />
+                    Add Staff
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="staff-dialog">
+                  <DialogHeader>
+                    <DialogTitle>Add New Staff</DialogTitle>
+                    <DialogDescription>Create a new staff account</DialogDescription>
+                  </DialogHeader>
+                  <div className="staff-form">
+                    <div className="form-field">
+                      <Label htmlFor="staff-firstname">First Name</Label>
+                      <Input
+                        id="staff-firstname"
+                        placeholder="Enter first name"
+                        value={newStaff.firstName}
+                        onChange={(e) => setNewStaff({...newStaff, firstName: e.target.value})}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <Label htmlFor="staff-lastname">Last Name</Label>
+                      <Input
+                        id="staff-lastname"
+                        placeholder="Enter last name"
+                        value={newStaff.lastName}
+                        onChange={(e) => setNewStaff({...newStaff, lastName: e.target.value})}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <Label htmlFor="staff-email">Email</Label>
+                      <Input
+                        id="staff-email"
+                        placeholder="staff@example.com"
+                        type="email"
+                        value={newStaff.email}
+                        onChange={(e) => setNewStaff({...newStaff, email: e.target.value})}
+                      />
+                    </div>
+                    <div className="form-field">
+                      <Label htmlFor="staff-password">Password</Label>
+                      <Input
+                        id="staff-password"
+                        placeholder="Enter password"
+                        type="password"
+                        value={newStaff.password}
+                        onChange={(e) => setNewStaff({...newStaff, password: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsAddStaffOpen(false)}>Cancel</Button>
+                    <Button onClick={handleAddStaff}>Add Staff</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
               <Button variant="outline" className="action-button" onClick={() => setIsEmailDialogOpen(true)}>
                 <Mail className="w-4 h-4 mr-2" />
                 Send Bulk Email
@@ -767,14 +999,14 @@ export function SupportPanel() {
             <CardHeader>
               <CardTitle className="card-title">Knowledge Base</CardTitle>
             </CardHeader>
-            <CardContent className="knowledge-content">
+            <CardContent>
               <div className="knowledge-section">
                 <h4 className="section-title">Popular Articles</h4>
                 <ul className="article-list">
-                  <li className="article-link" onClick={() => toast({title: "Article", description: "Opening: How to reset password"})}>How to reset password</li>
+                  <li className="article-link" onClick={() => toast({title: "Article", description: "Opening: How to reset password"})}>Reset password</li>
                   <li className="article-link" onClick={() => toast({title: "Article", description: "Opening: Upload resume guide"})}>Upload resume guide</li>
-                  <li className="article-link" onClick={() => toast({title: "Article", description: "Opening: Company verification process"})}>Company verification process</li>
-                  <li className="article-link" onClick={() => toast({title: "Article", description: "Opening: Student profile setup"})}>Student profile setup</li>
+                  <li className="article-link" onClick={() => toast({title: "Article", description: "Opening: Company verification"})}>Company verification</li>
+                  <li className="article-link" onClick={() => toast({title: "Article", description: "Opening: Employee profile setup"})}>Employee profile setup</li>
                 </ul>
               </div>
             </CardContent>
@@ -787,7 +1019,7 @@ export function SupportPanel() {
             <CardContent className="metrics-content">
               <div className="metric-item">
                 <span className="metric-label">Resolution Rate</span>
-                <span className="metric-value">94.2%</span>
+                <span className="metric-value">94.5%</span>
               </div>
               <div className="metric-item">
                 <span className="metric-label">Satisfaction Score</span>
@@ -795,14 +1027,13 @@ export function SupportPanel() {
               </div>
               <div className="metric-item">
                 <span className="metric-label">First Response</span>
-                <span className="metric-value">&lt; 1 hour</span>
+                <span className="metric-value">45 min</span>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Ticket Detail Dialog */}
       <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
         <DialogContent className="ticket-detail-dialog">
           <DialogHeader>

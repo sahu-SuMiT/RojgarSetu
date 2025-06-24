@@ -1,30 +1,64 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, School, Building2, TrendingUp, Activity, Shield, HeadphonesIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';// Adjust as per your env setup
+
 export function DashboardOverview() {
+  const [counts, setCounts] = useState({
+    colleges: 0,
+    companies: 0,
+    students: 0,
+    loading: true,
+  });
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const [collegesRes, companiesRes, studentsRes] = await Promise.all([
+          axios.get(`${API_URL}/api/admin/college-count`),
+          axios.get(`${API_URL}/api/admin/company-count`),
+          axios.get(`${API_URL}/api/admin/student-count`),
+        ]);
+        setCounts({
+          colleges: collegesRes.data.count || 0,
+          companies: companiesRes.data.count || 0,
+          students: studentsRes.data.count || 0,
+          loading: false,
+        });
+      } catch (err) {
+        setCounts({ colleges: 0, companies: 0, students: 0, loading: false });
+      }
+    };
+    fetchCounts();
+  }, []);
+
   const stats = [
     {
       title: "Total Users",
-      value: "12,847",
-      change: "+12%",
+      value: counts.loading
+        ? "..."
+        : (counts.colleges + counts.companies + counts.students).toLocaleString(),
+      change: "",
       icon: Users,
       color: "text-blue-600",
       bgColor: "bg-blue-100",
     },
     {
       title: "Active Colleges",
-      value: "342",
-      change: "+8%",
+      value: counts.loading ? "..." : counts.colleges.toLocaleString(),
+      change: "",
       icon: School,
       color: "text-green-600",
       bgColor: "bg-green-100",
     },
     {
       title: "Companies",
-      value: "1,156",
-      change: "+15%",
+      value: counts.loading ? "..." : counts.companies.toLocaleString(),
+      change: "",
       icon: Building2,
       color: "text-purple-600",
       bgColor: "bg-purple-100",
