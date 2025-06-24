@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Target, ShieldAlert, Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = 'http://localhost:5000';
 
 const Profile = () => {
   // Sidebar open state for mobile
@@ -14,6 +14,7 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [profilePicFile, setProfilePicFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [kycStatus, setKycStatus] = useState('pending'); // New state for KYC status
 
   // JWT-based: Get token from localStorage
   const token = localStorage.getItem('token');
@@ -23,6 +24,26 @@ const Profile = () => {
     if (!token) {
       window.location.href = '/student-login';
     }
+  }, [token]);
+
+  // fetch kyc status from the backend
+  useEffect(() => {
+    const fetchKycStatus = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/kyc/status`, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ })
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setKycStatus(data.status || 'pending');
+        }
+      } catch (error) {
+        console.error('Error fetching KYC status:', error);
+      }
+    };
+    fetchKycStatus();
   }, [token]);
 
   useEffect(() => {
@@ -43,7 +64,9 @@ const Profile = () => {
           throw new Error('Failed to fetch profile data');
         }
         const data = await response.json();
-        setProfileData(data.profile || data); // fallback if direct object
+        setProfileData(data.profile || data);
+        // Mock KYC status fetch (assuming profile data includes kycStatus)
+        setKycStatus(data.profile?.kycStatus || 'pending');
       } catch (err) {
         setError(err.message || 'Unknown error');
       } finally {
@@ -85,8 +108,7 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
-      // Update main profile
-      const response = await fetch(`${API_URL}/api/student/profile`, {
+      const response = await fetch(`${API_URL}/api/student/me`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -101,7 +123,6 @@ const Profile = () => {
       if (!response.ok) throw new Error('Failed to update profile');
       let data = await response.json();
 
-      // Upload profile pic if selected
       if (profilePicFile) {
         const formData = new FormData();
         formData.append('profilePic', profilePicFile);
@@ -126,9 +147,42 @@ const Profile = () => {
     }
   };
 
-  // Handle complete verification button click
-  const handleVerification = () => {
-    window.location.href = '/profile?tab=verification';
+  const handleVerification = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/kyc/verify-digio`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          email: profileData.email,
+          phone: profileData.phone,
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+        }),
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        window.location.href = '/student-login';
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to initiate KYC verification');
+      }
+
+      const data = await response.json();
+      if (data.digilockerUrl) {
+        // Redirect to DigiLocker (mocked as Digio) for KYC verification
+        window.location.href = data.digilockerUrl;
+      } else {
+        alert('KYC verification initiated. Please check your profile later.');
+      }
+    } catch (error) {
+      console.error('KYC verification error:', error);
+      alert('Failed to initiate KYC verification');
+    }
   };
 
   if (loading) {
@@ -139,19 +193,15 @@ const Profile = () => {
     return <div className="p-10 text-center text-gray-500">No profile data found.</div>;
   }
 
-  // Get profile pic URL for <img> tag
   const getProfilePicUrl = () => {
     if (previewUrl) return previewUrl;
-    if (profileData && profileData._id)
-      return `${API_URL}/api/student/profile/profile-pic?${Date.now()}`;
+    if (profileData) return `${API_URL}/api/student/me/profile-pic?${Date.now()}`;
     if (profileData && profileData.profileImage) return profileData.profileImage;
     return '';
   };
 
-  // Helper to render array values nicely
   const renderArray = arr => Array.isArray(arr) ? arr.join(', ') : '';
 
-  // Helper for sub-array rendering (projects, etc.)
   const renderSubArray = (arr, fields) =>
     Array.isArray(arr) && arr.length
       ? arr.map((item, idx) => (
@@ -163,7 +213,6 @@ const Profile = () => {
         ))
       : <span className="italic text-gray-400">None</span>;
 
-  // Field definitions for dynamic array editing
   const PROJECT_FIELDS = [
     { key: "title", label: "Title" },
     { key: "description", label: "Description" },
@@ -197,7 +246,7 @@ const Profile = () => {
   ];
   const HACKATHON_FIELDS = [
     { key: "name", label: "Name" },
-    { key: "year", label: "Year", type: "number" },
+    { key: "year", label: "Year Adventure", type: "number" },
     { key: "achievement", label: "Achievement" },
     { key: "description", label: "Description" }
   ];
@@ -217,7 +266,7 @@ const Profile = () => {
                     <input
                       className="w-full p-2 border border-gray-300 rounded"
                       type={type || "text"}
-                      value={Array.isArray(item[key]) ? item[key].join(', ') : (item[key] || '')}
+                      value={Array10Array.isArray(item[key]) ? item[key].join(', ') : (item[key] || '')}
                       onChange={e =>
                         handleArrayItemChange(
                           field, idx, key,
@@ -254,15 +303,12 @@ const Profile = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar for desktop and mobile */}
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         sectionLabel="CAMPUS SERVICES"
       />
-      {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Mobile Header */}
         <div className="lg:hidden p-4 bg-white shadow flex items-center">
           <button onClick={() => setSidebarOpen(true)}>
             <Menu size={24} />
@@ -301,7 +347,7 @@ const Profile = () => {
                         <img
                           src={getProfilePicUrl()}
                           alt="Profile"
-                          className="w-full h-full object-cover rounded-full"
+                          className="w-full h-full object-cover roundedvious-full"
                         />
                       ) : (
                         <span className="text-white font-bold text-3xl">
@@ -375,7 +421,6 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Career Objective */}
             <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8 shadow-sm hover:shadow-md transition-shadow duration-200">
               <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                 <Target className="mr-2 text-red-600" size={20} />
@@ -395,7 +440,6 @@ const Profile = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Personal Information */}
               <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                 <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                   <User className="mr-2 text-blue-600" size={20} />
@@ -428,7 +472,6 @@ const Profile = () => {
                   ))}
                 </div>
               </div>
-              {/* Academic Information */}
               <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                 <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                   <Calendar className="mr-2 text-green-600" size={20} />
@@ -470,7 +513,6 @@ const Profile = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-              {/* Skills & Tech */}
               <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Skills & Technologies</h3>
                 <div className="space-y-2">
@@ -493,7 +535,6 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Resume & Portfolio */}
               <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Resume & Portfolio</h3>
                 <div className="space-y-2">
@@ -541,7 +582,6 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Projects, Achievements, Certifications, Extracurricular, Research, Hackathons */}
             <ArraySection
               label="Projects"
               field="projects"
@@ -579,15 +619,15 @@ const Profile = () => {
               emptyObj={{ name: "", year: "", achievement: "", description: "" }}
             />
 
-            {/* Complete Verification Button */}
             <div className="flex justify-center mt-12 mb-4">
               <button
                 onClick={handleVerification}
                 className="flex items-center gap-2 px-6 py-3 bg-yellow-100 text-yellow-800 rounded-xl font-semibold border border-yellow-200 hover:bg-yellow-200 transition-colors text-lg shadow"
                 style={{ outline: 'none' }}
+                disabled={kycStatus === 'verified'}
               >
                 <ShieldAlert className="w-6 h-6" />
-                Complete Your Verification
+                {kycStatus === 'verified' ? 'KYC Verified' : 'Complete Your Verification'}
               </button>
             </div>
           </div>

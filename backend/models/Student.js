@@ -115,6 +115,7 @@ const studentSchema = new mongoose.Schema({
 
   // Verifications
   verified: { type: Boolean, default: false },
+  iskycVerified: { type: Boolean, default: false },
   isCollegeVerified: { type: Boolean, default: false },
   isSalesVerified: { type: Boolean, default: false },
 
