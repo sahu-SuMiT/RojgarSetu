@@ -22,6 +22,25 @@ const Student = require('../models/Student');
 // app.post('/api/auth/college-admin') .....Post, login using college-contact mail
 // app.post('/api/auth/company-admin') .....Post, login using company mail or employee registered mail
 // app.post('/api/auth/register/check-otp') opt needed using college or company registration
+router.get('/check-college-company-auth', (req, res) => {
+  const token = req.cookies.token; console.log(token)
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+  let decoded;
+  try {
+    decoded = verifyToken(token); // should throw on failure
+    if(!decoded) {
+      return res.status(401).json({ error: 'Invalid token' });
+    } 
+  } catch (err) {
+    return res.status(403).json({ error: 'Invalid token' });
+  }
+  if (!['college','company','employee'].includes(decoded.type)) {
+    return res.status(401).json({ error: 'Unauthorized access' });
+  }
+  res.status(200).json({ message: 'Authorized access', user: decoded });
+});
 
 router.post('/college-admin', async (req, res) => {
   try {
@@ -53,9 +72,9 @@ router.post('/college-admin', async (req, res) => {
     
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Use true for HTTPS
+      secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 86400000 // 24 hours
+      maxAge: 360000 // 100 hours
     });
 
 
@@ -181,7 +200,7 @@ router.post('/company-admin', async (req, res) => {
           secure: process.env.NODE_ENV === 'production',
           sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
           maxAge: 360000 // 100 hours
-        });
+        }); 
         
         return res.json({
           _id: company._id,
@@ -276,7 +295,7 @@ router.post('/register', [
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 3600000 // 1 hour
+      maxAge: 360000 // 100 hours
     });
 
     res.json({
@@ -340,7 +359,7 @@ router.post('/login', [
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 3600000 // 1 hour
+      maxAge: 360000 // 100 hours
     });
 
     res.json({
@@ -360,8 +379,14 @@ router.post('/login', [
 
 // Logout route
 router.post('/logout', (req, res) => {
-  res.clearCookie('token');
-  res.json({ message: 'Logged out successfully' });
+  const isProduction = process.env.NODE_ENV === 'production' || false;
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    path: '/',
+  });
+  res.status(200).json({ message: 'Logged out successfully' });
 });
 
 // Add this test route
