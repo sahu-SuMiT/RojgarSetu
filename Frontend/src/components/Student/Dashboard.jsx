@@ -310,7 +310,7 @@ const Dashboard = () => {
                     </span>
                   ) : (
                     <button
-                      onClick={() => navigate('/profile?tab=verification')}
+                      onClick={() => navigate('/studentProfile?tab=verification')}
                       className="flex items-center gap-2 px-6 py-3 bg-yellow-100 text-yellow-700 rounded-xl font-semibold border border-yellow-200 hover:bg-yellow-200 transition-colors"
                     >
                       <ShieldAlert className="w-5 h-5" />
@@ -387,7 +387,7 @@ const Dashboard = () => {
                     </div>
                     <div className="flex">
                       <button
-                        onClick={() => navigate('/profile')}
+                        onClick={() => navigate('/studentProfile')}
                         className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow"
                       >
                         <UserCircle className="w-5 h-5" />
