@@ -75,12 +75,12 @@ const managementItems = [
     view: "users" as AdminView,
     permission: "User Management"
   },
-  {
-    title: "Content Moderation",
-    icon: Shield,
-    view: "moderation" as AdminView,
-    permission: "Content Moderation"
-  },
+  // {
+  //   title: "Content Moderation",
+  //   icon: Shield,
+  //   view: "moderation" as AdminView,
+  //   permission: "Content Moderation"
+  // },
   {
     title: "Support Panel",
     icon: Headphones,
