@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
+import axios from "axios";
+import { useEffect, useState } from "react";
 // Sample data for the charts
-const placementData = {
+const placementData_Dummy = {
   overview: {
     totalStudents: 850,
     placed: 680,
@@ -68,6 +69,37 @@ const placementData = {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const PlacementAnalysis = () => {
+
+    const [placementData, setPlacementData] = useState(placementData_Dummy);
+
+    useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [overviewRes, deptRes, salaryRes, trendRes, recruitersRes, monthRes] =
+          await Promise.all([
+            axios.get("https://campusadmin.onrender.com/api/v1/placement/overview"),
+            axios.get("https://campusadmin.onrender.com/api/v1/placement/by-department"),
+            axios.get("https://campusadmin.onrender.com/api/v1/placement/salary-distribution"),
+            axios.get("https://campusadmin.onrender.com/api/v1/placement/trend"),
+            axios.get("https://campusadmin.onrender.com/api/v1/placement/top-recruiters"),
+            axios.get("https://campusadmin.onrender.com/api/v1/placement/offers-by-month"),
+          ]);
+
+        setPlacementData({
+          overview: overviewRes.data,
+          placementByDepartment: deptRes.data,
+          salaryDistribution: salaryRes.data,
+          placementTrend: trendRes.data,
+          topRecruiters: recruitersRes.data,
+          offersByMonth: monthRes.data,
+        });
+      } catch (error) {
+        console.error("Error fetching placement dashboard data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
   const token = localStorage.getItem("token");
   if(!token){
     window.location.href = "https://company.rojgarsetu.org/";
