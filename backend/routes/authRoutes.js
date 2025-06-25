@@ -63,7 +63,7 @@ router.post('/student/forgot-password', authController.studentForgotPassword);
 
 router.post('/student/reset-password/:token', authController.sendStudentResetPasswordToken);
 
-router.get('/check-college-company-auth', authController.checkCollegeCompanyAuth); //or send them back to login page
+router.get('/check-bypass-auth', authController.checkBypassAuth); //or send them back to login page
 
 
 module.exports = router;

@@ -561,8 +561,8 @@ exports.sendStudentResetPasswordToken = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while resetting the password.' });
   }
 }
-exports.checkCollegeCompanyAuth = (req, res) => {
-  const token = req.cookies.token; console.log(token)
+exports.checkBypassAuth = (req, res) => {
+  const token = req.cookies.token;
   if (!token) {
     return res.status(401).json({ error: 'No token provided' });
   }
@@ -575,7 +575,7 @@ exports.checkCollegeCompanyAuth = (req, res) => {
   } catch (err) {
     return res.status(403).json({ error: 'Invalid token' });
   }
-  if (!['college','company','employee'].includes(decoded.type)) {
+  if (!['college','company','employee','student'].includes(decoded.type)) {
     return res.status(401).json({ error: 'Unauthorized access' });
   }
   res.status(200).json({ message: 'Authorized access', user: decoded });
