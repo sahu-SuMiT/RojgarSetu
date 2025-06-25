@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const studentController = require('../controllers/studentController');
-const authMiddleware = require('../middleware/authMiddleware');
+const authMiddleware  = require('../middleware/authMiddleware');
 const { imageUpload } = require('../middleware/uploadMiddleware');
 
 // Profile routes using /me (token-based auth)
@@ -11,3 +11,4 @@ router.post('/me/profile-pic', authMiddleware, imageUpload.single('profilePic'),
 router.get('/me/profile-pic', authMiddleware, studentController.getProfilePic);
 
 module.exports = router;
+ 

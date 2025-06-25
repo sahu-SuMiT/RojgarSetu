@@ -2,14 +2,25 @@ const Job = require('../models/Job');
 const Application = require('../models/Application');
 const Feedback = require('../models/Feedback');
 const Student = require('../models/Student');
+const jwt = require('jsonwebtoken');
 
 exports.getDashboardData = async (req, res) => {
   try {
-    if (!req.session || !req.session.user || !req.session.user.id) {
+    console.log("Debug 1");
+    if (!req.cookies) {
       return res.status(401).json({ message: 'Unauthorized: No session user' });
     }
+    console.log("Debug 3");
+    const decoded = jwt.verify(req.cookies.token, process.env.JWT_SECRET);
+    if (!decoded || !decoded.user) {
+      console.log("Debug 4");
+      console.log("decoded and decoded user:....", decoded,"..."  , decoded.user);
+      return res.status(401).json({ message: 'Unauthorized: Invalid session' });
+    }
+    console.log("Debug 5");
+    const userId = decoded.id;
+    console.log("Decoded from Datshboard controller............"  , decoded);
 
-    const userId = req.session.user.id;
 
     // Opportunities
     const totalOpportunities = await Job.countDocuments();

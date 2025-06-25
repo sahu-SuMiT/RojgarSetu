@@ -16,6 +16,7 @@ module.exports = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("Decoded token inside auth middleware........................:", decoded);
     if (decoded.id) {
       req.user = { id: decoded.id, email: decoded.email, name: decoded.name };
     } else if (decoded.user && decoded.user.id) {

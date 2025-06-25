@@ -188,7 +188,7 @@ const Dashboard = () => {
   useEffect(() => {
     setLoading(true);
     setError("");
-    safeFetch("/api/dashboard", { credentials: "include" })
+    safeFetch(`${import.meta.env.VITE_API_URL}/api/dashboard`, { credentials: "include" })
       .then((data) => {
         setStudent(data.student || {});
         setProfileCompletion(data.profileCompletion || 0);
