@@ -6,22 +6,14 @@ const jwt = require('jsonwebtoken');
 
 exports.getDashboardData = async (req, res) => {
   try {
-    console.log("Debug 1");
     if (!req.cookies) {
       return res.status(401).json({ message: 'Unauthorized: No session user' });
     }
-    console.log("Debug 3");
     const decoded = jwt.verify(req.cookies.token, process.env.JWT_SECRET);
     if (!decoded || !decoded.type) {
-      console.log("Debug 4");
-      console.log("decoded and decoded user:....", decoded,"..."  , decoded.user);
       return res.status(401).json({ message: 'Unauthorized: Invalid session' });
     }
-    console.log("Debug 5");
     const userId = decoded.id;
-    console.log("Decoded from Datshboard controller............"  , decoded);
-
-
     // Opportunities
     const totalOpportunities = await Job.countDocuments();
     const savedOpportunities = await Job.countDocuments({ savedBy: userId });

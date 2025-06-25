@@ -4,8 +4,8 @@ const Job = require('../models/Job');
 // List student's applications
 exports.listMyApplications = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) return res.status(401).json({ success: false, message: 'Not logged in' });
-    const studentId = req.user._id;
+    if (!req.user || !req.user.id) return res.status(401).json({ success: false, message: 'Not logged in' });
+    const studentId = req.user.id;
     const applications = await Application.find({ student: studentId })
       .sort({ appliedDate: -1 })
       .populate('job');
@@ -18,8 +18,8 @@ exports.listMyApplications = async (req, res) => {
 // Apply to a job
 exports.applyToJob = async (req, res) => {
   try {
-    if (!req.user || !req.user._id) return res.status(401).json({ success: false, message: 'Not logged in' });
-    const studentId = req.user._id;
+    if (!req.user || !req.user.id) return res.status(401).json({ success: false, message: 'Not logged in' });
+    const studentId = req.user.id;
     const jobId = req.params.jobId;
     const { coverLetter, experience, availability } = req.body;
 

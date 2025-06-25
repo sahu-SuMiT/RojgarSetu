@@ -4,6 +4,6 @@ const portfolioController = require('../controllers/portfolioController');
 const authMiddleware = require('../middleware/authMiddleware')
 
 // Generate portfolio route
-router.get('/generate',portfolioController.generatePortfolio);
+router.get('/generate',authMiddleware, portfolioController.generatePortfolio);
 
 module.exports = router;
