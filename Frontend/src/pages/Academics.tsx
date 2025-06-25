@@ -1,13 +1,11 @@
 
 import React from "react";
-// Update the import path if the file is in a different location, for example:
-import AppLayout from "../components/layouts/AppLayout";
-// Or create the file at src/components/layouts/AppLayout.tsx if it doesn't exist.
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Button } from "../components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Progress } from "../components/ui/progress";
+import AppLayout from "@/components/layouts/AppLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { Book, FileText, CheckCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
 
@@ -120,7 +118,9 @@ const Academics = () => {
                             <p className="text-xs text-gray-500">{resource.course} • {resource.size}</p>
                           </div>
                         </div>
-                        <Button
+                        <Button 
+                          variant="outline" 
+                          size="sm"
                           onClick={() => toast.success(`Downloading ${resource.name}`)}
                         >
                           Download
@@ -209,6 +209,8 @@ const CourseCard: React.FC<{ course: Course }> = ({ course }) => {
               </span>
             </div>
             <Button 
+              variant="outline" 
+              size="sm" 
               className="h-8"
               onClick={() => toast.info(`Viewing ${course.title} details`)}
             >
@@ -220,6 +222,7 @@ const CourseCard: React.FC<{ course: Course }> = ({ course }) => {
     </Card>
   );
 };
+
 const courses: Course[] = [
   {
     id: 1,

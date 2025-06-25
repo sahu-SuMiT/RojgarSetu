@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FaSearch, FaBell, FaCog, FaSignOutAlt } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 import NotificationDropdown from './components/NotificationDropdown';
-
+import axios from 'axios';
+axios.defaults.withCredentials = true; // Ensure cookies are sent with requests
 const SearchBar = ({ onSettingsClick }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -45,11 +46,15 @@ const SearchBar = ({ onSettingsClick }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    // Clear any stored user data
-    localStorage.clear();
-    // Redirect to login page
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+    // 1. Call backend logout route to clear the cookie
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/logout`, {});
+      localStorage.clear();
+      navigate('/login_panel');
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
   };
 
   const handleSettingsClick = () => {

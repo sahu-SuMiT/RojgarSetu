@@ -233,38 +233,39 @@ const Support = () => {
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 onClick={() => setShowTicketList(!showTicketList)}
-              style={{
+                style={{
                   padding: '8px 16px',
-                background: '#f3f4f6',
-                  border: '1px solid #e5e7eb',
-                borderRadius: '6px',
+                  background: '#2563eb',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#e5e7eb'}
-                onMouseOut={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                onMouseOver={(e) => e.currentTarget.style.background = '#1d4ed8'}
+                onMouseOut={(e) => e.currentTarget.style.background = '#2563eb'}
               >
                 {showTicketList ? 'Hide Tickets' : 'View Tickets'}
               </button>
               {currentTicket && (
-          <button
+                <button
                   onClick={handleNewConversation}
-            style={{
+                  style={{
                     padding: '8px 16px',
-                    background: '#6366f1',
+                    background: '#2563eb',
                     color: '#fff',
                     border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
                     transition: 'all 0.2s ease'
-            }}
-                  onMouseOver={(e) => e.currentTarget.style.background = '#5855eb'}
-                  onMouseOut={(e) => e.currentTarget.style.background = '#6366f1'}
-          >
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = '#1d4ed8'}
+                  onMouseOut={(e) => e.currentTarget.style.background = '#2563eb'}
+                >
                   New Conversation
-          </button>
-        )}
-      </div>
+                </button>
+              )}
+            </div>
           </div>
           
           <div style={{ 

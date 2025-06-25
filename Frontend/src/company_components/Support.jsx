@@ -193,7 +193,8 @@ const Support = () => {
   const sidebarUser = {
     name: company?.name || 'Company Admin',
     role: 'Company Admin',
-    initials: company?.name ? company.name.substring(0, 2).toUpperCase() : 'CA'
+    initials: company?.name ? company.name.substring(0, 2).toUpperCase() : 'CA',
+    profileImage: localStorage.getItem('profileImage') || company?.profileImage || ''
   };
 
   const formatDate = (dateString) => {
@@ -225,14 +226,15 @@ const Support = () => {
                 onClick={() => setShowTicketList(!showTicketList)}
                 style={{
                   padding: '8px 16px',
-                  background: '#f3f4f6',
-                  border: '1px solid #e5e7eb',
+                  background: '#2563eb',
+                  color: '#fff',
+                  border: 'none',
                   borderRadius: '6px',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#e5e7eb'}
-                onMouseOut={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                onMouseOver={(e) => e.currentTarget.style.background = '#1d4ed8'}
+                onMouseOut={(e) => e.currentTarget.style.background = '#2563eb'}
               >
                 {showTicketList ? 'Hide Tickets' : 'View Tickets'}
               </button>
@@ -241,15 +243,15 @@ const Support = () => {
                   onClick={handleNewConversation}
                   style={{
                     padding: '8px 16px',
-                    background: '#6366f1',
+                    background: '#2563eb',
                     color: '#fff',
                     border: 'none',
                     borderRadius: '6px',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.background = '#5855eb'}
-                  onMouseOut={(e) => e.currentTarget.style.background = '#6366f1'}
+                  onMouseOver={(e) => e.currentTarget.style.background = '#1d4ed8'}
+                  onMouseOut={(e) => e.currentTarget.style.background = '#2563eb'}
                 >
                   New Conversation
                 </button>
@@ -726,7 +728,8 @@ const Support = () => {
             setSidebarUser({
               initials: updatedCompany.name.substring(0, 2).toUpperCase(),
               name: updatedCompany.name,
-              role: 'Company Admin'
+              role: 'Company Admin',
+              profileImage: localStorage.getItem('profileImage') || updatedCompany?.profileImage || ''
             });
           }}
         />

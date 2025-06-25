@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -53,15 +52,15 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
-  cookie: { 
-    secure: process.env.NODE_ENV === 'production', 
-    httpOnly: true, 
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',  // Always true for HTTPS (Render)
+    httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  }, // 1 day
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Required for cross-site cookies over HTTPS
+  },
 }));
 
-// CORS setup
+// CORS setup for Render/production: allow credentials and set allowed origins
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
@@ -73,8 +72,10 @@ const allowedOrigins = [
   'https://company.rojgarsetu.org',
   'https://campusconnect-sumit-sahus-projects-83ef9bf1.vercel.app',
   'https://campusconnect-git-main-sumit-sahus-projects-83ef9bf1.vercel.app',
-  'https://campusconnect-dk9xkuzk0-sumit-sahus-projects-83ef9bf1.vercel.app'
+  'https://campusconnect-dk9xkuzk0-sumit-sahus-projects-83ef9bf1.vercel.app',
+  'https://campusadmin.onrender.com', // Add Render backend itself if needed
 ];
+
 if (process.env.REACT_URL) allowedOrigins.push(process.env.REACT_URL);
 app.use(cors({
   origin: function (origin, callback) {

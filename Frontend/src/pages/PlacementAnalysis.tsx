@@ -1,13 +1,13 @@
-
 import React from "react";
-import AppLayout from "../components/layouts/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import AppLayout from "@/components/layouts/AppLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line } from "recharts";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import axios from "axios";
+import { useEffect, useState } from "react";
 // Sample data for the charts
-const placementData = {
+const placementData_Dummy = {
   overview: {
     totalStudents: 850,
     placed: 680,
@@ -69,6 +69,45 @@ const placementData = {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const PlacementAnalysis = () => {
+
+    const [placementData, setPlacementData] = useState(placementData_Dummy);
+
+    useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [overviewRes, deptRes, salaryRes, trendRes, recruitersRes, monthRes] =
+          await Promise.all([
+            axios.get("https://campusadmin.onrender.com/api/v1/placement/overview"),
+            axios.get("https://campusadmin.onrender.com/api/v1/placement/by-department"),
+            axios.get("https://campusadmin.onrender.com/api/v1/placement/salary-distribution"),
+            axios.get("https://campusadmin.onrender.com/api/v1/placement/trend"),
+            axios.get("https://campusadmin.onrender.com/api/v1/placement/top-recruiters"),
+            axios.get("https://campusadmin.onrender.com/api/v1/placement/offers-by-month"),
+          ]);
+
+        setPlacementData({
+          overview: overviewRes.data,
+          placementByDepartment: deptRes.data,
+          salaryDistribution: salaryRes.data,
+          placementTrend: trendRes.data,
+          topRecruiters: recruitersRes.data,
+          offersByMonth: monthRes.data,
+        });
+      } catch (error) {
+        console.error("Error fetching placement dashboard data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+  const token = localStorage.getItem("token");
+  if(!token){
+    window.location.href = "https://company.rojgarsetu.org/";
+  }
+  console.log("Token:", token);
+  const [selectedBatch, setSelectedBatch] = React.useState("2025");
+  const batches = ["2025", "2024", "2023"];
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -78,17 +117,30 @@ const PlacementAnalysis = () => {
             <p className="text-gray-500">Comprehensive analysis of student placements</p>
           </div>
           
-          <div className="flex gap-3">
-            <Select defaultValue="2025">
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select Year" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2025">2025 Batch</SelectItem>
-                <SelectItem value="2024">2024 Batch</SelectItem>
-                <SelectItem value="2023">2023 Batch</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="w-full flex justify-end mb-4">
+            <div className="relative" style={{ zIndex: 100 }}>
+              <Select
+                value={selectedBatch}
+                onValueChange={(value) => setSelectedBatch(value)}
+              >
+                <SelectTrigger className="w-[180px] bg-white">
+                  <SelectValue placeholder="Select batch" />
+                </SelectTrigger>
+                <SelectContent 
+                  className="bg-white shadow-lg z-[1000]" 
+                  position="item-aligned" 
+                  sideOffset={8} 
+                  align="end"
+                  style={{ width: '180px' }}
+                >
+                  {batches.map((batch) => (
+                    <SelectItem key={batch} value={batch}>
+                      {batch} Batch
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
         

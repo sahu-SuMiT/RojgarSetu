@@ -46,7 +46,7 @@ const Sidebar = ({
 
   const navigationItems = [
     { icon: FileText, label: 'Dashboard', path: '/dashboard' },
-    { icon: User, label: 'Profile', path: '/profile' },
+    { icon: User, label: 'Profile', path: '/studentProfile' },
     { icon: Briefcase, label: 'Jobs/Internships', path: '/jobs' },
     { icon: FileText, label: 'Applications', path: '/applications' },
     { icon: Calendar, label: 'Interview Schedule', path: '/interviews' },

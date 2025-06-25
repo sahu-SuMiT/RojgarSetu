@@ -134,14 +134,16 @@ const PlacementAnalysis = () => {
               onClick={handleDownloadReport}
               style={{
                 padding: '8px 16px',
-                background: '#6366f1',
+                background: '#2563eb',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px'
+                gap: '8px',
+                position: 'relative',
+                zIndex: 1
               }}
             >
               <FaDownload />
