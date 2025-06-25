@@ -12,7 +12,7 @@ exports.getDashboardData = async (req, res) => {
     }
     console.log("Debug 3");
     const decoded = jwt.verify(req.cookies.token, process.env.JWT_SECRET);
-    if (!decoded || !decoded.user) {
+    if (!decoded || !decoded.type) {
       console.log("Debug 4");
       console.log("decoded and decoded user:....", decoded,"..."  , decoded.user);
       return res.status(401).json({ message: 'Unauthorized: Invalid session' });
