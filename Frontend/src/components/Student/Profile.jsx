@@ -13,6 +13,8 @@ const Profile = () => {
   const [profilePicFile, setProfilePicFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [kycStatus, setKycStatus] = useState('pending'); // New state for KYC status
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
 
   const token = localStorage.getItem('token');
 
@@ -25,15 +27,19 @@ const Profile = () => {
   // fetch kyc status from the backend
   useEffect(() => {
     const fetchKycStatus = async () => {
+      const token = localStorage.getItem('token');
       try {
         const response = await fetch(`${API_URL}/api/kyc/status`, {
           method: 'GET',
-          headers: { Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ })
+          headers: { Authorization: `Bearer ${token}` }
         });
         if (response.ok) {
           const data = await response.json();
-          setKycStatus(data.status || 'pending');
+          console.log('KYC status data:', data);
+          // If iskycVerified is true, set to approved
+          if (data.kycStatus === 'verified' || data.iskycVerified) {
+            setKycStatus('approved');
+          }
         }
       } catch (error) {
         console.error('Error fetching KYC status:', error);
@@ -60,6 +66,7 @@ const Profile = () => {
         }
         const data = await response.json();
         setProfileData(data.profile || data);
+        console.log('Profile data:', data.profile || data);
         // Mock KYC status fetch (assuming profile data includes kycStatus)
         setKycStatus(data.profile?.kycStatus || 'pending');
       } catch (err) {
@@ -144,40 +151,57 @@ const Profile = () => {
 
   const handleVerification = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/kyc/verify-digio`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          email: profileData.email,
-          phone: profileData.phone,
-          firstName: profileData.firstName,
-          lastName: profileData.lastName,
-        }),
-      });
-
-      if (response.status === 401 || response.status === 403) {
-        window.location.href = '/student-login';
+      if (kycStatus === 'verified') {
+        alert('KYC is already verified.');
         return;
       }
-
-      if (!response.ok) {
-        throw new Error('Failed to initiate KYC verification');
-      }
-
-      const data = await response.json();
-      if (data.digilockerUrl) {
-        // Redirect to DigiLocker (mocked as Digio) for KYC verification
-        window.location.href = data.digilockerUrl;
-      } else {
-        alert('KYC verification initiated. Please check your profile later.');
-      }
+      // Show payment dialog before proceeding
+      setIsPaymentDialogOpen(true);
     } catch (error) {
       console.error('KYC verification error:', error);
       alert('Failed to initiate KYC verification');
     }
+  };
+
+  const handleMockPayment = async () => {
+    setPaymentProcessing(true);
+    // Simulate payment delay
+    setTimeout(async () => {
+      setIsPaymentDialogOpen(false);
+      setPaymentProcessing(false);
+      // Proceed with KYC verification after payment
+      try {
+        const response = await fetch(`${API_URL}/api/kyc/verify-digio`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            email: profileData.email,
+            phone: profileData.phone,
+            firstName: profileData.firstName,
+            lastName: profileData.lastName,
+          }),
+        });
+        if (response.status === 401 || response.status === 403) {
+          window.location.href = '/student-login';
+          return;
+        }
+        if (!response.ok) {
+          throw new Error('Failed to initiate KYC verification');
+        }
+        const data = await response.json();
+        if (data.digilockerUrl) {
+          window.location.href = data.digilockerUrl;
+        } else {
+          alert('KYC verification initiated. Please check your profile later.');
+        }
+      } catch (error) {
+        console.error('KYC verification error:', error);
+        alert('Failed to initiate KYC verification');
+      }
+    }, 2000); // 2 seconds mock payment
   };
 
   if (loading) {
@@ -316,7 +340,18 @@ const Profile = () => {
                 <User className="text-gray-600" size={20} />
                 <h1 className="text-lg font-medium text-gray-900">Complete Profile</h1>
               </div>
-              <div className="flex space-x-2">
+              <div className="flex space-x-2 items-center">
+                {/* KYC Button at the top */}
+                <button
+                  onClick={handleVerification}
+                  className="flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-xl font-semibold border border-yellow-200 hover:bg-yellow-200 transition-colors text-base shadow mr-2"
+                  style={{ outline: 'none' }}
+                  disabled={kycStatus === 'approved' || kycStatus === 'verified' || kycStatus === 'pending'}
+                >
+                  <ShieldAlert className="w-5 h-5" />
+                  {kycStatus === 'approved' ? 'KYC Done' : kycStatus === 'verified' ? 'KYC Verified' : kycStatus === 'pending' ? 'Pending' : kycStatus === 'pending approval' ? 'Pending Approval' : 'Complete Your Verification'}
+                </button>
+                {/* Edit/Save/Cancel buttons */}
                 {isEditing ? (
                   <>
                     <button onClick={handleCancel} className="bg-gray-500 text-white px-4 py-2 rounded-lg">Cancel</button>
@@ -612,21 +647,37 @@ const Profile = () => {
               fields={HACKATHON_FIELDS}
               emptyObj={{ name: "", year: "", achievement: "", description: "" }}
             />
-
-            <div className="flex justify-center mt-12 mb-4">
-              <button
-                onClick={handleVerification}
-                className="flex items-center gap-2 px-6 py-3 bg-yellow-100 text-yellow-800 rounded-xl font-semibold border border-yellow-200 hover:bg-yellow-200 transition-colors text-lg shadow"
-                style={{ outline: 'none' }}
-                disabled={kycStatus === 'verified'}
-              >
-                <ShieldAlert className="w-6 h-6" />
-                {kycStatus === 'verified' ? 'KYC Verified' : 'Complete Your Verification'}
-              </button>
-            </div>
           </div>
         </div>
       </div>
+
+      {/* Payment Dialog */}
+      {isPaymentDialogOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full">
+            <h2 className="text-xl font-bold mb-4">Pay KYC Verification Fee</h2>
+            <p className="mb-4">To start your KYC verification, please pay the verification fee.</p>
+            <div className="mb-4 flex items-center justify-between">
+              <span className="font-semibold">Amount:</span>
+              <span className="text-green-700 font-bold">₹100</span>
+            </div>
+            <button
+              className="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+              onClick={handleMockPayment}
+              disabled={paymentProcessing}
+            >
+              {paymentProcessing ? 'Processing Payment...' : 'Pay & Start KYC'}
+            </button>
+            <button
+              className="w-full mt-2 bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+              onClick={() => setIsPaymentDialogOpen(false)}
+              disabled={paymentProcessing}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

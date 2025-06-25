@@ -10,6 +10,8 @@ const multerS3 = require('multer-s3');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const rateLimit = require('express-rate-limit');
+const Student = require('../models/Student'); // Adjust the import path as needed
+const User = require('../models/User');
 
 dotenv.config();
 
@@ -95,27 +97,42 @@ const authenticateToken = (req, res, next) => {
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ error: 'Invalid token' });
     req.user = user;
+    req.user.userId = user.id || user._id; // Ensure user ID is set
     next();
   });
 };
+
+// Middleware to check if user is admin (optional, uncomment to restrict to admins)
+const restrictToAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied: Admin only' });
+    }
+    next();
+  } catch (error) {
+    console.error('Error checking admin status:', error.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
 const generateVerificationId = () => {
   return `REF_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
 };
+
 const verifyWithDigio = async (kycData, retries = 3, backoff = 3000) => {
-  const {  email, phone, firstName, lastName, verificationId } = kycData;
+  const { email, phone, firstName, lastName, verificationId } = kycData;
   const productionUrl = process.env.DIGIO_PRODUCTION_URL || 'https://api.digio.in';
   const clientId = process.env.DIGIO_CLIENT_ID;
   const clientSecret = process.env.DIGIO_CLIENT_SECRET;
 
-  // Input validation
   if (!email && !phone) throw new Error('Either email or phone is required');
 
-  const refId = verificationId && /^REF_\d+_[a-z0-9]+$/.test(verificationId) 
-    ? verificationId 
+  const refId = verificationId && /^REF_\d+_[a-z0-9]+$/.test(verificationId)
+    ? verificationId
     : generateVerificationId();
 
   try {
-    // Step 1: Initiate KYC request
     const requestPayload = {
       customer_identifier: email || phone,
       identifier_type: email ? 'email' : 'mobile',
@@ -173,29 +190,133 @@ const checkKycStatus = async (verificationId, retries = 3, backoff = 3000) => {
   } catch (error) {
     if (retries > 0 && error.response?.status >= 500) {
       await new Promise(resolve => setTimeout(resolve, backoff));
-      return checkKycStatus(kycId, retries - 1, backoff * 2);
+      return checkKycStatus(verificationId, retries - 1, backoff * 2);
     }
     console.error('Digio status check error:', error.response?.data);
     throw new Error('Failed to check KYC status');
   }
 };
 
+// @route   POST api/kyc/decision
+// @desc    Approve or reject a KYC request using Digio API
+// @access  Private (Admin only, uncomment restrictToAdmin to enforce)
+router.post('/decision',  /* restrictToAdmin, */ async (req, res) => {
+  const { verificationId, decision, reason } = req.body;
+
+  // Validate inputs
+  if (!verificationId || !decision || (decision === 'reject' && !reason)) {
+    return res.status(400).json({ error: 'Verification ID and decision are required. Reason is required for rejection.' });
+  }
+
+  if (!['approved', 'rejected'].includes(decision)) {
+    return res.status(400).json({ error: 'Invalid decision. Must be "approved" or "rejected".' });
+  }
+
+  const productionUrl = process.env.DIGIO_PRODUCTION_URL || 'https://api.digio.in';
+  const clientId = process.env.DIGIO_CLIENT_ID;
+  const clientSecret = process.env.DIGIO_CLIENT_SECRET;
+
+  try {
+    // Find student by verificationId
+    const student = await Student.findOne({ 'kycData.verificationId': verificationId });
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found with provided verification ID' });
+    }
+
+    // Call Digio API to approve/reject KYC
+    const response = await axios.post(
+      `${productionUrl}/client/kyc/v2/request/${verificationId}/manage_approval`,
+      {
+        status:decision,
+        ...(reason && { reason }) // Include reason only for rejection
+      },
+      {
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    // Update student KYC data
+    student.kycStatus = decision === 'approved' ? 'verified' : 'rejected';
+    student.kycData = {
+      ...student.kycData,
+      status: decision === 'approved' ? 'verified' : 'rejected',
+      lastUpdated: new Date().toISOString().split('T')[0],
+      ...(reason && { rejectionReason: reason }) // Store rejection reason if provided
+    };
+    student.iskycVerified = true;
+
+    await student.save();
+
+    res.json({
+      success: true,
+      message: `KYC request ${decision === 'approve' ? 'approved' : 'rejected'} successfully`,
+      kycStatus: student.kycStatus,
+      kycData: student.kycData
+    });
+  } catch (error) {
+    console.error(`Error ${decision}ing KYC:`, error.response?.data || error.message);
+    res.status(500).json({
+      error: `Failed to ${decision} KYC: ${error.response?.data?.message || error.message || 'Unknown error'}`
+    });
+  }
+});
+
 // @route   POST api/kyc/verify-digio
 // @desc    Verify KYC with Digio API (for standalone use)
 // @access  Private
-router.post('/verify-digio',async (req, res) => {
+router.post('/verify-digio', async (req, res) => {
   try {
     const kycData = req.body;
-    console.log('Starting Digio verification for user:', req);
+    const user = await Student.findOne({ email: req.body.email });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
-    const digioResult = await verifyWithDigio(kycData);
+    let verificationId = user.kycData?.verificationId;
+    let digioResult;
+    if (!verificationId) {
+      digioResult = await verifyWithDigio({ ...kycData });
+      verificationId = digioResult.verificationId;
+    } else {
+      digioResult = await verifyWithDigio({ ...kycData, verificationId });
+    }
 
-    res.json({
+    user.kycData = {
+      verificationId: digioResult.verificationId,
+      accessToken: digioResult.accessToken,
+      expiresInDays: digioResult.expiresInDays,
+      status: digioResult.status || 'pending',
+      digilockerUrl: digioResult.digilockerUrl
+    };
+
+    if (digioResult.status === 'verified' || digioResult.status === 'approved') {
+      user.kycStatus = 'verified';
+      user.iskycVerified = true;
+    } else if (digioResult.status === 'pending' || digioResult.status === 'pending approval') {
+      user.kycStatus = 'pending approval';
+      user.iskycVerified = false;
+    } else if (digioResult.status === 'rejected') {
+      user.kycStatus = 'rejected';
+      user.iskycVerified = false;
+    } else {
+      user.kycStatus = 'pending';
+      user.iskycVerified = false;
+    }
+
+    await user.save();
+
+    return res.json({
       success: true,
       verificationId: digioResult.verificationId,
       accessToken: digioResult.accessToken,
       expiresInDays: digioResult.expiresInDays,
-      message: 'KYC verification initiated with Digio'
+      message: 'KYC verification initiated with Digio',
+      status: user.kycStatus,
+      iskycVerified: user.iskycVerified,
+      digilockerUrl: digioResult.digilockerUrl
     });
   } catch (error) {
     console.error('Digio verification failed:', error.message);
@@ -206,37 +327,28 @@ router.post('/verify-digio',async (req, res) => {
   }
 });
 
-
 // @route   GET api/kyc/status
 // @desc    Get KYC status
 // @access  Private
-router.get('/status',  async (req, res) => {
+router.get('/status', authenticateToken, async (req, res) => {
   try {
-    const user = await Student.findById();
+    const user = await Student.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
 
-    // If status is pending and verificationId exists, check Digio API
     if (user.kycStatus === 'pending' && user.kycData?.verificationId) {
-
       try {
         const digioStatus = await checkKycStatus(user.kycData.verificationId);
-        const updatedUser = await updateUserKycData(
-          user,
-          user.kycData.verificationId,
-          digioStatus.status,
-          digioStatus,
-          digioStatus.actions,
-          req.app.get('io')
-        );
-        return res.json({
-          kycStatus: updatedUser.kycStatus,
-          kycData: updatedUser.kycData
-        });
+        user.kycStatus = digioStatus.status === 'completed' ? 'verified' : digioStatus.status || 'pending';
+        user.kycData = {
+          ...user.kycData,
+          status: digioStatus.status,
+          lastUpdated: new Date().toISOString().split('T')[0]
+        };
+        await user.save();
       } catch (error) {
         console.error(`Failed to check Digio status for user ${user._id}:`, error.message);
-        // Return current user data if API call fails
       }
     }
 
@@ -250,16 +362,15 @@ router.get('/status',  async (req, res) => {
     res.status(500).send('Server Error');
   }
 });
-// Initiate KYC Verification (New Route)
-router.post('/verify', async (req, res) => {
+
+// Initiate KYC Verification
+router.post('/verify', authenticateToken, async (req, res) => {
   try {
-    // Simulate Digio KYC initiation using DigiLocker logic
-    const response = await axios.post(`${"https://api.digio.in"}/request`, {
+    const response = await axios.post(`${DIGILOCKER_CONFIG.BASE_URL}/request`, {
       clientId: DIGILOCKER_CONFIG.CLIENT_ID,
       redirectUrl: DIGILOCKER_CONFIG.REDIRECT_URI,
     });
 
-    // Store KYC initiation record (optional, for tracking)
     const newDoc = new Document({
       id: `kyc-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       name: 'KYC Verification Request',
@@ -315,11 +426,8 @@ router.get('/digilocker/callback', authenticateToken, async (req, res) => {
     });
 
     const { accessToken } = response.data;
-
-    // Store access token in user session or database (simplified here)
     req.user.accessToken = accessToken;
 
-    // Update KYC status in Document collection
     await Document.updateOne(
       { userId: req.user.userId, type: 'kyc', status: 'pending' },
       { status: 'verified', lastUpdated: new Date().toISOString().split('T')[0] }
@@ -462,8 +570,20 @@ router.get('/download/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// @route   GET api/kyc/all-status
+// @desc    Get all students' KYC status and data
+// @access  Private (Admin only, uncomment restrictToAdmin to enforce)
+router.get('/all-status', /* restrictToAdmin, */ async (req, res) => {
+  try {
+    const students = await Student.find({}, 'name email kycStatus kycData');
+    res.json(students);
+  } catch (err) {
+    console.error('Error fetching all KYC statuses:', err.message);
+    res.status(500).json({ error: 'Failed to fetch KYC statuses' });
+  }
+});
+
 // Mount router to app
 app.use('/api', router);
-
 
 module.exports = router;

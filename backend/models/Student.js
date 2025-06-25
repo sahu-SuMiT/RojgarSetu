@@ -118,6 +118,17 @@ const studentSchema = new mongoose.Schema({
   passwordResetToken: { type: String },
   passwordResetExpires: { type: Date },
 
+  // KYC fields
+  kycStatus: { type: String, enum: ['pending', 'pending approval', 'verified', 'rejected', 'not started'], default: 'not started' },
+  kycData: {
+    verificationId: { type: String },
+    accessToken: { type: String },
+    expiresInDays: { type: Number },
+    status: { type: String },
+    digilockerUrl: { type: String },
+    // Add any other fields you want to store from Digio
+  },
+
   // Timestamps
   createdAt: { type: Date, default: Date.now }
 }, {
@@ -174,7 +185,14 @@ studentSchema.pre('save', async function(next) {
   }
   next();
 });
-
+// Get hook to find student by email
+studentSchema.pre('findOne', async function(next) {
+  const email = this.getQuery().email;
+  if (email) {
+    this.populate('email');
+  }
+  next();
+});
 // Post-update hooks for score recalculation
 studentSchema.post(['findOneAndUpdate', 'updateOne', 'updateMany'], async function(result) {
   const doc = await this.model.findOne(this.getQuery());
