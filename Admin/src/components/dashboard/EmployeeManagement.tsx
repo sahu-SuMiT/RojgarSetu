@@ -561,9 +561,9 @@ export function EmployeeManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map((emp) => (
-                <TableRow key={emp.id} className="h-8 text-xs">
-                  <TableCell className="p-1 align-middle">{emp.id}</TableCell>
+              {employees.map((emp, idx) => (
+                <TableRow key={emp._id} className="h-8 text-xs">
+                  <TableCell className="p-1 align-middle">{idx + 1}</TableCell>
                   <TableCell className="p-1 align-middle">{emp.username}</TableCell>
                   <TableCell className="p-1 align-middle">{emp.email}</TableCell>
                   <TableCell className="p-1 align-middle">

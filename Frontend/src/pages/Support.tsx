@@ -28,6 +28,11 @@ interface SupportTicket {
 }
 
 const Support = () => {
+  const token = localStorage.getItem("token");
+  if(!token){
+    window.location.href = "https://company.rojgarsetu.org/";
+  }
+  console.log("Token:", token);
   const [tickets, setTickets] = useState<SupportTicket[]>([
     {
       id: "TICK-001",

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Menu } from 'lucide-react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
-
+import ProtectedRoute from './components/ProtectedRoute';
 // Import all page components
 import Sidebar from './components/Student/Sidebar';
 import Dashboard from './components/Student/Dashboard';
@@ -259,26 +259,26 @@ const App = () => {
         <Route path="/sales-login" element={<SalesLogin />} />
 
         {/* Company Dashboard Routes */}
-        <Route path="/company/:companyId/dashboard" element={<DashboardCompany />} />
-        <Route path="/company/:companyId/post-job" element={<PostJobForm />} />
-        <Route path="/company/:companyId/scheduled-interviews" element={<ScheduledInterviews />} />
-        <Route path="/company/:companyId/applications" element={<ViewApplications />} />
-        <Route path="/company/:companyId/support" element={<CompanySupport />} />
-        <Route path="/company/:companyId/placement-analysis" element={<CompanyPlacementAnalysis />} />
-        <Route path="/company/:companyId/employees" element={<ManageEmployees />} />
+        <Route path="/company/:companyId/dashboard" element={<ProtectedRoute><DashboardCompany /></ProtectedRoute>} />
+        <Route path="/company/:companyId/post-job" element={<ProtectedRoute><PostJobForm /></ProtectedRoute>} />
+        <Route path="/company/:companyId/scheduled-interviews" element={<ProtectedRoute><ScheduledInterviews /></ProtectedRoute>} />
+        <Route path="/company/:companyId/applications" element={<ProtectedRoute><ViewApplications /></ProtectedRoute>} />
+        <Route path="/company/:companyId/support" element={<ProtectedRoute><CompanySupport /></ProtectedRoute>} />
+        <Route path="/company/:companyId/placement-analysis" element={<ProtectedRoute><CompanyPlacementAnalysis /></ProtectedRoute>} />
+        <Route path="/company/:companyId/employees" element={<ProtectedRoute><ManageEmployees /></ProtectedRoute>} />
 
         {/* College Dashboard Routes */}
-        <Route path="/college/:collegeId/dashboard" element={<CollegeDashboard />} />
-        <Route path="/college/:collegeId/view-jobs" element={<ViewJobs />} />
-        <Route path="/college/:collegeId/scheduled-applications" element={<ScheduledApplications />} />
-        <Route path="/college/:collegeId/add-students" element={<AddStudents />} />
-        <Route path="/college/:collegeId/analytics" element={<Analytics />} />
-        <Route path="/college/:collegeId/support" element={<CollegeSupport />} />
-        <Route path="/college/:collegeId/placement-analysis" element={<CollegePlacementAnalysis />} />
+        <Route path="/college/:collegeId/dashboard" element={<ProtectedRoute><CollegeDashboard /></ProtectedRoute>} />
+        <Route path="/college/:collegeId/view-jobs" element={<ProtectedRoute><ViewJobs /></ProtectedRoute>} />
+        <Route path="/college/:collegeId/scheduled-applications" element={<ProtectedRoute><ScheduledApplications /></ProtectedRoute>} />
+        <Route path="/college/:collegeId/add-students" element={<ProtectedRoute><AddStudents /></ProtectedRoute>} />
+        <Route path="/college/:collegeId/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+        <Route path="/college/:collegeId/support" element={<ProtectedRoute><CollegeSupport /></ProtectedRoute>} />
+        <Route path="/college/:collegeId/placement-analysis" element={<ProtectedRoute><CollegePlacementAnalysis /></ProtectedRoute>} />
 
         {/* Profile Routes */}
-        <Route path="/student/:studentId" element={<StudentProfile />} />
-        <Route path="/college/:collegeId/student/:studentId" element={<CollegeProfile />} />
+        <Route path="/student/:studentId" element={<ProtectedRoute><StudentProfile /></ProtectedRoute>} />
+        <Route path="/college/:collegeId/student/:studentId" element={<ProtectedRoute><CollegeProfile /></ProtectedRoute>} />
 
 
         {/* Landing website */}

@@ -165,10 +165,13 @@ const CompanyLogin = () => {
 
     try {
       const response = await axios.post(`${apiUrl}/api/auth/company-admin`, formData);
-      const { _id, name, role } = response.data;
+      const { _id, name, role, profileImage } = response.data;
       localStorage.setItem('companyId', _id);
       localStorage.setItem('companyName', name);
       localStorage.setItem('userRole', role);
+      if (profileImage) {
+        localStorage.setItem('profileImage', profileImage);
+      }
       
       setMessage({ type: "success", text: "Login successful! Redirecting..." });
       setTimeout(() => {

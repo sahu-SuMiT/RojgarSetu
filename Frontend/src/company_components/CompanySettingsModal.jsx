@@ -110,6 +110,10 @@ const CompanySettingsModal = ({ isOpen, onClose, company, onUpdate }) => {
               if (onUpdate) {
                 onUpdate(response.data);
               }
+              // Save to localStorage for sidebar
+              if (response.data.profileImage) {
+                localStorage.setItem('profileImage', response.data.profileImage);
+              }
               // Auto-hide success message after 3 seconds
               setTimeout(() => {
                 setSuccess(false);
@@ -228,7 +232,7 @@ const CompanySettingsModal = ({ isOpen, onClose, company, onUpdate }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1000,
+      zIndex: 2000,
       padding: '20px'
     }}>
       <div style={{
@@ -240,7 +244,8 @@ const CompanySettingsModal = ({ isOpen, onClose, company, onUpdate }) => {
         maxHeight: '90vh',
         overflowY: 'auto',
         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-        position: 'relative'
+        position: 'relative',
+        zIndex: 2001
       }}>
         {/* Header */}
         <div style={{
