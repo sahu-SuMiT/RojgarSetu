@@ -26,7 +26,7 @@ const ProtectedRoute = ({ children }) => {
   };
 
   useEffect(() => {
-    axios.get(`${apiUrl}/api/auth/check-college-company-auth`, { withCredentials: true })
+    axios.get(`${apiUrl}/api/auth/check-bypass-auth`, { withCredentials: true })
       .then((res) => {
         if (res.status === 200) {
           setAuthorized(true);

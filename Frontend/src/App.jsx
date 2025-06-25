@@ -227,14 +227,14 @@ const App = () => {
         {/* <Route index element={<Dashboard user={user} />} /> */}
         <Route path="/*" element={<Index_Website />} />
         <Route path="/login_panel" element={<Login />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="studentProfile" element={<Student />} />
-        <Route path="jobs" element={<Jobs />} />
-        <Route path="applications" element={<Applications />} />
-        <Route path="interviews" element={<Interviews />} />
-        <Route path="feedback" element={<FeedbackCenter />} />
-        <Route path="portfolio" element={<ErrorBoundary><AIPortfolioSection /></ErrorBoundary>} />
-        <Route path="chat" element={<Chatbot />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /> </ProtectedRoute>} />
+        <Route path="/studentProfile" element={<ProtectedRoute><Student /></ProtectedRoute>} />
+        <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
+        <Route path="/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
+        <Route path="/interviews" element={<ProtectedRoute><Interviews /></ProtectedRoute>} />
+        <Route path="/feedback" element={<ProtectedRoute><FeedbackCenter /></ProtectedRoute>} />
+        <Route path="/portfolio" element={<ProtectedRoute><ErrorBoundary><AIPortfolioSection /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="chat" element={<ProtectedRoute><Chatbot /></ProtectedRoute>} />
 
         {/* Sales and Support pages */}
         <Route path="/signup" element={<Signup />} />
@@ -283,7 +283,7 @@ const App = () => {
 
         {/* Landing website */}
         <Route path="/contact" element={<Contact />} />
-        <Route path="/portfolio-view" element={<PortfolioView />} />
+        <Route path="/portfolio-view" element={<ProtectedRoute><PortfolioView /></ProtectedRoute>} />
       </Route>
 
       {/* Catch all: redirect to dashboard or auth */}
