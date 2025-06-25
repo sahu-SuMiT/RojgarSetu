@@ -45,9 +45,9 @@ interface AdminData {
 // Permission mapping for sidebar items
 const permissionMapping = {
   "Dashboard": "Dashboard",
-  "Analytics": "Analytics",
+  // "Analytics": "Analytics",
   "User Management": "User Management",
-  "Content Moderation": "Content Moderation",
+  // "Content Moderation": "Content Moderation",
   "Support Panel": "Support Panel",
   "Employee Management": "Employee Management",
   "Platform Settings": "Platform Settings"
@@ -60,12 +60,12 @@ const mainMenuItems = [
     view: "overview" as AdminView,
     permission: "Dashboard"
   },
-  {
-    title: "Analytics",
-    icon: BarChart3,
-    view: "analytics" as AdminView,
-    permission: "Analytics"
-  },
+  // {
+  //   title: "Analytics",
+  //   icon: BarChart3,
+  //   view: "analytics" as AdminView,
+  //   permission: "Analytics"
+  // },
 ];
 
 const managementItems = [

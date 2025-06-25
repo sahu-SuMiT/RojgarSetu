@@ -149,7 +149,7 @@ app.use('/api/notifications', notificationRoutes);
 
 app.use('/api/admin', studentAdminRoutes);
 app.use('/api/signup', signup);
-
+app.use('/api/admin', require('./routes/admin/platformSettingsRoutes'));
 
 
 

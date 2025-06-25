@@ -392,7 +392,7 @@ export function SupportPanel() {
       return;
     }
     try {
-      const response = await axios.post(`${API_URL}/api/admin/staff`, newStaff);
+      const response = await axios.post(`${API_URL}/api/signup`, newStaff);
       toast({
         title: "Staff Added",
         description: `Staff member ${firstName} ${lastName} added successfully`,

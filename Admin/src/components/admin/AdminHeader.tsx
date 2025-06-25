@@ -29,7 +29,7 @@ interface AdminData {
   phone?: string;
 }
 
-export function AdminHeader() {
+export function AdminHeader({ setCurrentView }: { setCurrentView?: (view: string) => void }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [adminData, setAdminData] = useState<AdminData | null>(null);
@@ -80,6 +80,12 @@ export function AdminHeader() {
           : notification
       )
     );
+  };
+
+  const handleSettingsClick = () => {
+    if (setCurrentView) {
+      setCurrentView("settings");
+    }
   };
     
   const unreadCount = notifications.filter(n => n.unread).length;
@@ -172,7 +178,7 @@ export function AdminHeader() {
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSettingsClick}>
                     <Shield className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
