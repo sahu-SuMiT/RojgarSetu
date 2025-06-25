@@ -52,7 +52,8 @@ const ViewApplications = () => {
   const [sidebarUser, setSidebarUser] = useState({
     name: 'Company Admin',
     role: 'Company Admin',
-    initials: 'CA'
+    initials: 'CA',
+    profileImage: localStorage.getItem('profileImage') || ''
   });
 
   useEffect(() => {
@@ -74,7 +75,8 @@ const ViewApplications = () => {
           setSidebarUser({
             name: companyData.name,
             role: 'Company Admin',
-            initials: companyData.name.substring(0, 2).toUpperCase()
+            initials: companyData.name.substring(0, 2).toUpperCase(),
+            profileImage: localStorage.getItem('profileImage') || companyData.profileImage || ''
           });
         }
       } catch (err) {
@@ -1943,7 +1945,8 @@ const ViewApplications = () => {
               const updatedSidebarUser = {
                 name: updatedCompany.name,
                 role: 'Company Admin',
-                initials: updatedCompany.name.substring(0, 2).toUpperCase()
+                initials: updatedCompany.name.substring(0, 2).toUpperCase(),
+                profileImage: localStorage.getItem('profileImage') || updatedCompany.profileImage || ''
               };
               setSidebarUser(updatedSidebarUser);
             }
