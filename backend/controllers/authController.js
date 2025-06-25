@@ -6,7 +6,7 @@ const nodemailer = require('nodemailer');
 
 const Student = require('../models/Student');
 const College = require('../models/College');
-const Employee = require('../models/Company')
+const Employee = require('../models/Employee')
 const Company = require('../models/Company')
 const {emailTransport} = require('../config/email');
 
