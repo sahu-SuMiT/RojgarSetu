@@ -2,6 +2,8 @@ const Student = require('../../models/Student');
 const College = require('../../models/College');
 const Company = require('../../models/Company');
 const User = require('../../models/User'); 
+const SupportTicket = require('../../models/SupportTicket'); // Assuming this model exists
+const moment = require('moment'); // Ensure moment is installed and required
 
 // GET all students
 exports.getAllStudents = async (req, res) => {
@@ -83,5 +85,28 @@ exports.getUserDetails = async (req, res, next) => {
     console.error("Error fetching user details:", error);
     res.status(500).json({ message: "Server error while fetching users" });
     next(error);
+  }
+};
+
+
+exports.getRecentActivity = async (req, res) => {
+  try {
+    const oneDayAgo = moment().subtract(1, 'days').toDate();
+
+    const recentStudents = await Student.find({ createdAt: { $gte: oneDayAgo } });
+    const recentColleges = await College.find({ createdAt: { $gte: oneDayAgo } });
+    const recentCompanies = await Company.find({ createdAt: { $gte: oneDayAgo } });
+    const recentSupportTickets = await SupportTicket.find({ createdAt: { $gte: oneDayAgo } });
+
+    res.status(200).json({
+      success: true,
+      students: recentStudents,
+      colleges: recentColleges,
+      companies: recentCompanies,
+      supportTickets: recentSupportTickets,
+    });
+  } catch (error) {
+    console.error('Error fetching recent activity:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch recent activity' });
   }
 };

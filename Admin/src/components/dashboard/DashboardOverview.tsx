@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, School, Building2, TrendingUp, Activity, Shield, HeadphonesIcon } from "lucide-react";
+import { Users, School, Building2, Ticket, MessageSquare, Mail, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';// Adjust as per your env setup
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export function DashboardOverview() {
   const [counts, setCounts] = useState({
@@ -14,6 +14,9 @@ export function DashboardOverview() {
     students: 0,
     loading: true,
   });
+
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loadingActivity, setLoadingActivity] = useState(true);
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -33,7 +36,73 @@ export function DashboardOverview() {
         setCounts({ colleges: 0, companies: 0, students: 0, loading: false });
       }
     };
+
+    const fetchRecentActivity = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/admin/recent-activity`);
+        const activities = [];
+
+        const oneDayAgo = new Date();
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
+        res.data.students.forEach(student => {
+          const createdAt = new Date(student.createdAt);
+          if (createdAt >= oneDayAgo) {
+            activities.push({
+              type: "New Student",
+              description: `Student ${student.name} registered`,
+              time: createdAt.toLocaleString(),
+              status: "new",
+            });
+          }
+        });
+
+        res.data.colleges.forEach(college => {
+          const createdAt = new Date(college.createdAt);
+          if (createdAt >= oneDayAgo) {
+            activities.push({
+              type: "New College",
+              description: `College ${college.name} added`,
+              time: createdAt.toLocaleString(),
+              status: "new",
+            });
+          }
+        });
+
+        res.data.companies.forEach(company => {
+          const createdAt = new Date(company.createdAt);
+          if (createdAt >= oneDayAgo) {
+            activities.push({
+              type: "New Company",
+              description: `Company ${company.name} added`,
+              time: createdAt.toLocaleString(),
+              status: "new",
+            });
+          }
+        });
+
+        res.data.supportTickets.forEach(ticket => {
+          const createdAt = new Date(ticket.createdAt);
+          if (createdAt >= oneDayAgo) {
+            activities.push({
+              type: "New Support Ticket",
+              description: `Support ticket #${ticket.ticketId} created: ${ticket.subject}`,
+              time: createdAt.toLocaleString(),
+              status: "new",
+            });
+          }
+        });
+
+        setRecentActivity(activities);
+        setLoadingActivity(false);
+      } catch (err) {
+        setRecentActivity([]);
+        setLoadingActivity(false);
+      }
+    };
+
     fetchCounts();
+    fetchRecentActivity();
   }, []);
 
   const stats = [
@@ -65,47 +134,42 @@ export function DashboardOverview() {
     },
   ];
 
-  const recentActivity = [
-    {
-      type: "User Registration",
-      description: "New student registered from Delhi University",
-      time: "2 minutes ago",
-      status: "pending",
-    },
-    {
-      type: "Content Moderation",
-      description: "Job posting flagged for review",
-      time: "15 minutes ago",
-      status: "flagged",
-    },
-    {
-      type: "Support Ticket",
-      description: "Password reset request from company user",
-      time: "1 hour ago",
-      status: "resolved",
-    },
-    {
-      type: "Platform Alert",
-      description: "High server load detected",
-      time: "2 hours ago",
-      status: "monitoring",
-    },
-  ];
-
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "flagged":
-        return "bg-red-100 text-red-800";
-      case "resolved":
+      case "new":
         return "bg-green-100 text-green-800";
-      case "monitoring":
-        return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
+
+  const quickActions = [
+    {
+      icon: <Ticket className="w-5 h-5 mr-2" />,
+      label: "Create New Ticket",
+      onClick: () => { },
+    },
+    {
+      icon: <MessageSquare className="w-5 h-5 mr-2" />,
+      label: "Start Live Chat",
+      onClick: () => { },
+    },
+    {
+      icon: <Users className="w-5 h-5 mr-2" />,
+      label: "Add Staff",
+      onClick: () => { },
+    },
+    {
+      icon: <Mail className="w-5 h-5 mr-2" />,
+      label: "Send Bulk Email",
+      onClick: () => { },
+    },
+    {
+      icon: <AlertCircle className="w-5 h-5 mr-2" />,
+      label: "System Alert",
+      onClick: () => { },
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -114,7 +178,6 @@ export function DashboardOverview() {
         <p className="text-gray-600 mt-2">Monitor and manage your placement platform</p>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {stats.map((stat) => (
           <Card key={stat.title} className="hover:shadow-lg transition-shadow">
@@ -135,105 +198,51 @@ export function DashboardOverview() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Quick Actions */}
-        <Card>
+        <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <TrendingUp className="w-5 h-5" />
-              <span>Quick Actions</span>
-            </CardTitle>
-            <CardDescription>Common administrative tasks</CardDescription>
+            <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg hover:bg-blue-100 cursor-pointer transition-colors">
-                <div className="flex items-center space-x-3">
-                  <Users className="w-5 h-5 text-blue-600" />
-                  <span className="font-medium">Verify Users</span>
-                </div>
-                <Badge variant="secondary">23 pending</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg hover:bg-red-100 cursor-pointer transition-colors">
-                <div className="flex items-center space-x-3">
-                  <Shield className="w-5 h-5 text-red-600" />
-                  <span className="font-medium">Content Review</span>
-                </div>
-                <Badge variant="destructive">8 flagged</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg hover:bg-green-100 cursor-pointer transition-colors">
-                <div className="flex items-center space-x-3">
-                  <HeadphonesIcon className="w-5 h-5 text-green-600" />
-                  <span className="font-medium">Support Tickets</span>
-                </div>
-                <Badge variant="outline">12 open</Badge>
-              </div>
-            </div>
+          <CardContent className="flex flex-col gap-3">
+            {quickActions.map((action, idx) => (
+              <Button
+                key={action.label}
+                variant="outline"
+                className="justify-start w-full text-base font-medium flex items-center"
+                onClick={action.onClick}
+              >
+                {action.icon}
+                {action.label}
+              </Button>
+            ))}
           </CardContent>
         </Card>
 
-        {/* Platform Health */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Platform Health</CardTitle>
-            <CardDescription>System performance metrics</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Server Performance</span>
-                  <span>94%</span>
-                </div>
-                <Progress value={94} className="h-2" />
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Database Health</span>
-                  <span>97%</span>
-                </div>
-                <Progress value={97} className="h-2" />
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>User Satisfaction</span>
-                  <span>89%</span>
-                </div>
-                <Progress value={89} className="h-2" />
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Security Score</span>
-                  <span>96%</span>
-                </div>
-                <Progress value={96} className="h-2" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Activity */}
-        <Card>
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
             <CardDescription>Latest platform events</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-gray-900">{activity.type}</p>
-                    <p className="text-sm text-gray-600 truncate">{activity.description}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="text-xs text-gray-500">{activity.time}</p>
-                      <Badge className={`text-xs ${getStatusColor(activity.status)}`}>
-                        {activity.status}
-                      </Badge>
+              {loadingActivity ? (
+                <p>Loading recent activity...</p>
+              ) : (
+                recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-gray-900">{activity.type}</p>
+                      <p className="text-sm text-gray-600 truncate">{activity.description}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-xs text-gray-500">{activity.time}</p>
+                        <Badge className={`text-xs ${getStatusColor(activity.status)}`}>
+                          {activity.status}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
