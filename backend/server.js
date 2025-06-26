@@ -30,6 +30,10 @@ const supportRoutes = require('./routes/support');
 const studentMatchingRoutes = require('./routes/studentMatchingRoutes');
 const bcrypt = require('bcrypt');
 
+//admin
+const studentAdminRoutes = require('./routes/admin/studentAdminRoutes');
+const signup = require('./controllers/user/signup');
+
 const app = express();
 
 // Debug middleware
@@ -139,6 +143,17 @@ app.use('/api/support', supportRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
+
+
+
+// admin routes
+
+app.use('/api/admin', studentAdminRoutes);
+app.use('/api/signup', signup);
+app.use('/api/admin', require('./routes/admin/platformSettingsRoutes'));
+
+
+
 // Make sure portfolioRoutes is properly loaded
 const portfolioRoutes = require('./routes/portfolioRoutes');
 app.use('/api/portfolio', portfolioRoutes);
