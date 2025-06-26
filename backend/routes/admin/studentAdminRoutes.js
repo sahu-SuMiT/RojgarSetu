@@ -7,6 +7,8 @@ const { getUserDetails } = require('../../controllers/admin/studentController');
 const {getStudentCount} = require('../../controllers/admin/studentController');
 const {getCollegeCount} = require('../../controllers/admin/studentController');
 const {getCompanyCount} = require('../../controllers/admin/studentController');
+const { getRecentActivity } = require('../../controllers/admin/studentController');
+
 
 router.get('/students', getAllStudents);
 router.get('/colleges', getAllColleges);
@@ -15,6 +17,6 @@ router.get('/user', getUserDetails);
 router.get('/student-count', getStudentCount);
 router.get('/college-count', getCollegeCount);
 router.get('/company-count', getCompanyCount);
-
+router.get('/recent-activity', getRecentActivity);
 
 module.exports = router;

@@ -122,7 +122,7 @@ export function PlatformSettings() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* System Health Overview */}
-        <Card className="lg:col-span-4">
+        {/* <Card className="lg:col-span-4">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Zap className="w-5 h-5" />
@@ -143,7 +143,7 @@ export function PlatformSettings() {
               ))}
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
 
       {/* Settings Tabs */}
