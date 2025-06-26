@@ -152,7 +152,7 @@ const SearchBar = ({ onSettingsClick }) => {
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               minWidth: 200,
               border: '1px solid #e5e7eb',
-              zIndex: 1000
+              zIndex: 1999
             }}>
               <div style={{
                 padding: '12px 16px',

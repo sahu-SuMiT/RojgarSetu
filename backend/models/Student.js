@@ -44,7 +44,7 @@ const studentSchema = new mongoose.Schema({
   // Skills and technologies
   skills: [{ type: String, trim: true }],
   programmingLanguages: [String],
-  technologies: [String],
+  technologies: [{type: String, trim: true}],
 
   // Projects
   projects: [{

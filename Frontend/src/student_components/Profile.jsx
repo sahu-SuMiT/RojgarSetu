@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo, useMemo } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Target, ShieldAlert, Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +6,56 @@ import { SidebarContext } from './Sidebar';
 import Loader from '../components/Loader';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+// Move ArraySection outside the main component
+const ArraySection = memo(({ label, field, fields, emptyObj, profileData, isEditing, handleArrayItemChange, handleRemoveArrayItem, handleAddArrayItem, renderSubArray }) => {
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200 mb-8">
+      <h3 className="text-xl font-semibold text-gray-900 mb-4">{label}</h3>
+      {isEditing ? (
+        <>
+          {(profileData[field] || []).map((item, idx) => (
+            <div key={`${field}-${idx}`} className="mb-4 p-3 bg-gray-50 rounded border relative">
+              {fields.map(({ key, label, type }) => (
+                <div key={key} className="mb-2">
+                  <label className="block text-gray-700 text-sm font-medium mb-1">{label}</label>
+                  <input
+                    className="w-full p-2 border border-gray-300 rounded"
+                    type={type || "text"}
+                    value={Array.isArray(item[key]) ? item[key].join(', ') : (item[key] || '')}
+                    onChange={e =>
+                      handleArrayItemChange(
+                        field, idx, key,
+                        type === "number"
+                          ? Number(e.target.value)
+                          : key === "technologies"
+                            ? e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                            : e.target.value
+                      )
+                    }
+                    placeholder={label}
+                  />
+                </div>
+              ))}
+              <button
+                type="button"
+                className="absolute top-2 right-2 text-red-500 text-xs px-2 py-1 rounded hover:bg-red-100"
+                onClick={() => handleRemoveArrayItem(field, idx)}
+              >Remove</button>
+            </div>
+          ))}
+          <button
+            type="button"
+            className="bg-blue-200 px-3 py-1 rounded"
+            onClick={() => handleAddArrayItem(field, { ...emptyObj })}
+          >+ Add {label.split(' ')[0]}</button>
+        </>
+      ) : (
+        renderSubArray(profileData[field], fields.map(f => f.key))
+      )}
+    </div>
+  );
+});
 
 const Profile = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -63,28 +113,28 @@ const Profile = () => {
     setProfilePicFile(null);
   };
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = useCallback((field, value) => {
     setProfileData(prev => ({
       ...prev,
       [field]: value
     }));
-  };
+  }, []);
 
-  const handleAddArrayItem = (field, emptyObj) => {
+  const handleAddArrayItem = useCallback((field, emptyObj) => {
     handleInputChange(field, [...(profileData[field] || []), emptyObj]);
-  };
+  }, [handleInputChange, profileData]);
 
-  const handleRemoveArrayItem = (field, idx) => {
+  const handleRemoveArrayItem = useCallback((field, idx) => {
     const arr = [...(profileData[field] || [])];
     arr.splice(idx, 1);
     handleInputChange(field, arr);
-  };
+  }, [handleInputChange, profileData]);
 
-  const handleArrayItemChange = (field, idx, key, value) => {
+  const handleArrayItemChange = useCallback((field, idx, key, value) => {
     const arr = [...(profileData[field] || [])];
-    arr[idx][key] = value;
+    arr[idx] = { ...arr[idx], [key]: value };
     handleInputChange(field, arr);
-  };
+  }, [handleInputChange, profileData]);
 
   const handleSave = async () => {
     try {
@@ -159,92 +209,43 @@ const Profile = () => {
       : <span className="italic text-gray-400">None</span>;
 
   // Field definitions for dynamic array editing
-  const PROJECT_FIELDS = [
+  const PROJECT_FIELDS = useMemo(() => [
     { key: "title", label: "Title" },
     { key: "description", label: "Description" },
     { key: "technologies", label: "Technologies (comma separated)" },
     { key: "startDate", label: "Start Date", type: "date" },
     { key: "endDate", label: "End Date", type: "date" },
     { key: "link", label: "Link" }
-  ];
-  const ACHIEVEMENT_FIELDS = [
+  ], []);
+  const ACHIEVEMENT_FIELDS = useMemo(() => [
     { key: "title", label: "Title" },
     { key: "description", label: "Description" },
     { key: "date", label: "Date", type: "date" },
     { key: "issuer", label: "Issuer" }
-  ];
-  const CERTIFICATION_FIELDS = [
+  ], []);
+  const CERTIFICATION_FIELDS = useMemo(() => [
     { key: "name", label: "Name" },
     { key: "issuer", label: "Issuer" },
     { key: "date", label: "Date", type: "date" },
     { key: "link", label: "Link" }
-  ];
-  const EXTRACURRICULAR_FIELDS = [
+  ], []);
+  const EXTRACURRICULAR_FIELDS = useMemo(() => [
     { key: "activity", label: "Activity" },
     { key: "role", label: "Role" },
     { key: "achievement", label: "Achievement" }
-  ];
-  const RESEARCH_FIELDS = [
+  ], []);
+  const RESEARCH_FIELDS = useMemo(() => [
     { key: "title", label: "Title" },
     { key: "role", label: "Role" },
     { key: "year", label: "Year", type: "number" },
     { key: "description", label: "Description" }
-  ];
-  const HACKATHON_FIELDS = [
+  ], []);
+  const HACKATHON_FIELDS = useMemo(() => [
     { key: "name", label: "Name" },
     { key: "year", label: "Year", type: "number" },
     { key: "achievement", label: "Achievement" },
     { key: "description", label: "Description" }
-  ];
-
-  function ArraySection({ label, field, fields, emptyObj }) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200 mb-8">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">{label}</h3>
-        {isEditing ? (
-          <>
-            {(profileData[field] || []).map((item, idx) => (
-              <div key={idx} className="mb-4 p-3 bg-gray-50 rounded border relative">
-                {fields.map(({ key, label, type }) => (
-                  <div key={key} className="mb-2">
-                    <label className="block text-gray-700 text-sm font-medium mb-1">{label}</label>
-                    <input
-                      className="w-full p-2 border border-gray-300 rounded"
-                      type={type || "text"}
-                      value={Array.isArray(item[key]) ? item[key].join(', ') : (item[key] || '')}
-                      onChange={e =>
-                        handleArrayItemChange(
-                          field, idx, key,
-                          type === "number"
-                            ? Number(e.target.value)
-                            : key === "technologies"
-                              ? e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                              : e.target.value
-                        )
-                      }
-                      placeholder={label}
-                    />
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  className="absolute top-2 right-2 text-red-500 text-xs px-2 py-1 rounded hover:bg-red-100"
-                  onClick={() => handleRemoveArrayItem(field, idx)}
-                >Remove</button>
-              </div>
-            ))}
-            <button
-              type="button"
-              className="bg-blue-200 px-3 py-1 rounded"
-              onClick={() => handleAddArrayItem(field, { ...emptyObj })}
-            >+ Add {label.split(' ')[0]}</button>
-          </>
-        ) : (
-          renderSubArray(profileData[field], fields.map(f => f.key))
-        )}
-      </div>
-    );
-  }
+  ], []);
 
   return (
     <SidebarContext.Provider value={{ isCollapsed }}>
@@ -485,8 +486,32 @@ const Profile = () => {
                           {isEditing ? (
                             <input
                               type="text"
-                              value={renderArray(profileData[field])}
-                              onChange={e => handleInputChange(field, e.target.value.split(',').map(i => i.trim()))}
+                              value={Array.isArray(profileData[field]) ? profileData[field].join(', ') : (profileData[field] || '')}
+                              onChange={e => {
+                                const value = e.target.value;
+                                // Store as string while typing
+                                handleInputChange(field, value);
+                              }}
+                              onKeyDown={e => {
+                                // Handle comma key press
+                                if (e.key === ',') {
+                                  e.preventDefault();
+                                  const currentValue = e.target.value;
+                                  const cursorPosition = e.target.selectionStart;
+                                  const newValue = currentValue.slice(0, cursorPosition) + ',' + currentValue.slice(cursorPosition);
+                                  handleInputChange(field, newValue);
+                                  // Set cursor position after comma
+                                  setTimeout(() => {
+                                    e.target.setSelectionRange(cursorPosition + 1, cursorPosition + 1);
+                                  }, 0);
+                                }
+                              }}
+                              onBlur={e => {
+                                // When losing focus, convert to array
+                                const value = e.target.value;
+                                const items = value.split(',').map(item => item.trim()).filter(Boolean);
+                                handleInputChange(field, items);
+                              }}
                               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all duration-200"
                               placeholder={`Enter ${field.replace(/([A-Z])/g, ' $1').toLowerCase()} (comma separated)`}
                             />
@@ -552,36 +577,72 @@ const Profile = () => {
                   field="projects"
                   fields={PROJECT_FIELDS}
                   emptyObj={{ title: "", description: "", technologies: [], startDate: "", endDate: "", link: "" }}
+                  profileData={profileData}
+                  isEditing={isEditing}
+                  handleArrayItemChange={handleArrayItemChange}
+                  handleRemoveArrayItem={handleRemoveArrayItem}
+                  handleAddArrayItem={handleAddArrayItem}
+                  renderSubArray={renderSubArray}
                 />
                 <ArraySection
                   label="Achievements"
                   field="achievements"
                   fields={ACHIEVEMENT_FIELDS}
                   emptyObj={{ title: "", description: "", date: "", issuer: "" }}
+                  profileData={profileData}
+                  isEditing={isEditing}
+                  handleArrayItemChange={handleArrayItemChange}
+                  handleRemoveArrayItem={handleRemoveArrayItem}
+                  handleAddArrayItem={handleAddArrayItem}
+                  renderSubArray={renderSubArray}
                 />
                 <ArraySection
                   label="Certifications"
                   field="certifications"
                   fields={CERTIFICATION_FIELDS}
                   emptyObj={{ name: "", issuer: "", date: "", link: "" }}
+                  profileData={profileData}
+                  isEditing={isEditing}
+                  handleArrayItemChange={handleArrayItemChange}
+                  handleRemoveArrayItem={handleRemoveArrayItem}
+                  handleAddArrayItem={handleAddArrayItem}
+                  renderSubArray={renderSubArray}
                 />
                 <ArraySection
                   label="Extracurricular Activities"
                   field="extracurricular"
                   fields={EXTRACURRICULAR_FIELDS}
                   emptyObj={{ activity: "", role: "", achievement: "" }}
+                  profileData={profileData}
+                  isEditing={isEditing}
+                  handleArrayItemChange={handleArrayItemChange}
+                  handleRemoveArrayItem={handleRemoveArrayItem}
+                  handleAddArrayItem={handleAddArrayItem}
+                  renderSubArray={renderSubArray}
                 />
                 <ArraySection
                   label="Research"
                   field="research"
                   fields={RESEARCH_FIELDS}
                   emptyObj={{ title: "", role: "", year: "", description: "" }}
+                  profileData={profileData}
+                  isEditing={isEditing}
+                  handleArrayItemChange={handleArrayItemChange}
+                  handleRemoveArrayItem={handleRemoveArrayItem}
+                  handleAddArrayItem={handleAddArrayItem}
+                  renderSubArray={renderSubArray}
                 />
                 <ArraySection
                   label="Hackathons"
                   field="hackathons"
                   fields={HACKATHON_FIELDS}
                   emptyObj={{ name: "", year: "", achievement: "", description: "" }}
+                  profileData={profileData}
+                  isEditing={isEditing}
+                  handleArrayItemChange={handleArrayItemChange}
+                  handleRemoveArrayItem={handleRemoveArrayItem}
+                  handleAddArrayItem={handleAddArrayItem}
+                  renderSubArray={renderSubArray}
                 />
 
                 {/* Complete Verification Button */}
