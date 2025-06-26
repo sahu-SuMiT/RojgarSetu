@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,7 +20,6 @@ import {
   UserCheck,
   UserX
 } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,57 +27,59 @@ export function UserManagement() {
   const [students, setStudents] = useState([]);
   const [colleges, setColleges] = useState([]);
   const [companies, setCompanies] = useState([]);
+  const [studentCount, setStudentCount] = useState(0);
+  const [collegeCount, setCollegeCount] = useState(0);
+  const [companyCount, setCompanyCount] = useState(0);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [studentRes, collegeRes, companyRes, studentCountRes, collegeCountRes, companyCountRes] = await Promise.all([
+          axios.get(`${API_URL}/api/admin/students`),
+          axios.get(`${API_URL}/api/admin/colleges`),
+          axios.get(`${API_URL}/api/admin/companies`),
+          axios.get(`${API_URL}/api/admin/student-count`),
+          axios.get(`${API_URL}/api/admin/college-count`),
+          axios.get(`${API_URL}/api/admin/company-count`),
+        ]);
 
-useEffect(() => {
-  const fetchStudents = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/api/admin/students`);
-      if (res.data && Array.isArray(res.data.data)) {
-        setStudents(res.data.data);
-      } else {
+        if (studentRes.data && Array.isArray(studentRes.data.data)) {
+          setStudents(studentRes.data.data);
+        } else {
+          setStudents([]);
+        }
+
+        if (collegeRes.data && Array.isArray(collegeRes.data.data)) {
+          setColleges(collegeRes.data.data);
+        } else {
+          setColleges([]);
+        }
+
+        if (companyRes.data && Array.isArray(companyRes.data.data)) {
+          setCompanies(companyRes.data.data);
+        } else {
+          setCompanies([]);
+        }
+
+        setStudentCount(studentCountRes.data.count || 0);
+        setCollegeCount(collegeCountRes.data.count || 0);
+        setCompanyCount(companyCountRes.data.count || 0);
+
+      } catch (err) {
+        console.error("Error fetching data:", err);
         setStudents([]);
-      }
-    } catch (err) {
-      console.error("Error fetching students:", err);
-      setStudents([]);
-    }
-  };
-
-  const fetchColleges = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/api/admin/colleges`);
-      if (res.data && Array.isArray(res.data.data)) {
-        setColleges(res.data.data);
-      } else {
         setColleges([]);
-      }
-    } catch (err) {
-      console.error("Error fetching colleges:", err);
-      setColleges([]);
-    }
-  };
-
-  const fetchCompanies = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/api/admin/companies`);
-      if (res.data && Array.isArray(res.data.data)) {
-        setCompanies(res.data.data);
-      } else {
         setCompanies([]);
+        setStudentCount(0);
+        setCollegeCount(0);
+        setCompanyCount(0);
       }
-    } catch (err) {
-      console.error("Error fetching companies:", err);
-      setCompanies([]);
-    }
-  };
+    };
 
-  fetchStudents();
-  fetchColleges();
-  fetchCompanies();
-}, []);
+    fetchData();
+  }, []);
 
   const filteredStudents = students.filter(student =>
     student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -99,46 +99,33 @@ useEffect(() => {
   const userStats = [
     {
       title: "Total Students",
-      value: students.length.toString(),
+      value: studentCount.toString(),
       change: "+234",
       icon: GraduationCap,
       color: "text-blue-600",
     },
     {
-      title: "College Admins",
-      value: "342",
+      title: "Colleges",
+      value: collegeCount.toString(),
       change: "+12",
       icon: School,
       color: "text-green-600",
     },
     {
       title: "Companies",
-      value: "1,156",
+      value: companyCount.toString(),
       change: "+89",
       icon: Building2,
       color: "text-purple-600",
     },
-    {
-      title: "Pending Verifications",
-      value: students.filter(s => s.status === "pending").length.toString(),
-      change: "-5",
-      icon: UserCheck,
-      color: "text-orange-600",
-    },
+    // {
+    //   title: "Pending Verifications",
+    //   value: students.filter(s => s.status === "pending").length.toString(),
+    //   change: "-5",
+    //   icon: UserCheck,
+    //   color: "text-orange-600",
+    // },
   ];
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "verified":
-        return <Badge className="bg-green-100 text-green-800">Verified</Badge>;
-      case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      case "rejected":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
-      default:
-        return <Badge variant="secondary">Unknown</Badge>;
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -149,7 +136,7 @@ useEffect(() => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {userStats.map((stat) => (
           <Card key={stat.title}>
             <CardContent className="p-6">
@@ -217,10 +204,10 @@ useEffect(() => {
                   <TableRow>
                     <TableHead>Student</TableHead>
                     <TableHead>College</TableHead>
-                    <TableHead>Course</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Join Date</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>Roll Number</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Batch</TableHead>
+                    <TableHead>CGPA</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -237,37 +224,10 @@ useEffect(() => {
                           ? student.college.name
                           : "-"}
                       </TableCell>
-                      <TableCell>
-                        <div>
-                          <p>{student.course}</p>
-                          <p className="text-sm text-gray-500">{student.year}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(student.status)}</TableCell>
-                      <TableCell>{student.joinDate}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="w-4 h-4 mr-2" />
-                              View Profile
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Check className="w-4 h-4 mr-2" />
-                              Verify User
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
-                              <X className="w-4 h-4 mr-2" />
-                              Suspend
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                      <TableCell>{student.rollNumber || "-"}</TableCell>
+                      <TableCell>{student.department || "-"}</TableCell>
+                      <TableCell>{student.batch || "-"}</TableCell>
+                      <TableCell>{student.cgpa || "-"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -281,7 +241,6 @@ useEffect(() => {
                     <TableHead>College Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Location</TableHead>
-                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -290,21 +249,6 @@ useEffect(() => {
                       <TableCell>{college.name}</TableCell>
                       <TableCell>{college.contactEmail}</TableCell>
                       <TableCell>{college.location || "-"}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="w-4 h-4 mr-2" />
-                              View Profile
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -318,7 +262,6 @@ useEffect(() => {
                     <TableHead>Company Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Location</TableHead>
-                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -327,21 +270,6 @@ useEffect(() => {
                       <TableCell>{company.name}</TableCell>
                       <TableCell>{company.contactEmail}</TableCell>
                       <TableCell>{company.location || "-"}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="w-4 h-4 mr-2" />
-                              View Profile
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
