@@ -561,6 +561,37 @@ exports.sendStudentResetPasswordToken = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while resetting the password.' });
   }
 }
+exports.generateRegistrationOtp = async (req, res) => {
+  try {
+    const { email, otp, type } = req.body;
+
+    if (!email || !otp || !type) {
+      return res.status(400).json({ valid: false, error: 'Missing required fields: email, otp, and type.' });
+    }
+
+    // Find the OTP entry for the specific type
+    const registrationOtp = await RegistrationOtp.findOne({ email, type });
+
+    if (!registrationOtp) {
+      return res.status(400).json({ valid: false, error: `Invalid email or ${type} registration session expired.` });
+    }
+
+    // Check if OTP is valid and not expired
+    if (registrationOtp.otp === otp && registrationOtp.expiresAt > new Date()) {
+      return res.json({ valid: true });
+    } else if (registrationOtp.expiresAt < new Date()) {
+      // Optionally delete expired OTP here
+      await RegistrationOtp.deleteOne({ _id: registrationOtp._id });
+      return res.status(400).json({ valid: false, error: 'OTP expired.' });
+    } else {
+      return res.status(400).json({ valid: false, error: 'Invalid OTP.' });
+    }
+
+  } catch (err) {
+    console.error('Error checking OTP validity:', err);
+    res.status(500).json({ valid: false, error: 'Failed to check OTP validity.', details: err.message });
+  }
+}
 exports.checkBypassAuth = (req, res) => {
   const token = req.cookies.token;
   if (!token) {
