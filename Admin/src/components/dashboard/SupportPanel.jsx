@@ -306,7 +306,7 @@ export function SupportPanel() {
     setIsCreateTicketOpen(false);
   };
 
-  const handleSendEmail = () => {
+  const handleSendEmail = async () => {
     if (!emailData.to || !emailData.subject || !emailData.message) {
       toast({
         title: "Error",
@@ -315,13 +315,29 @@ export function SupportPanel() {
       });
       return;
     }
-    console.log("Sending email:", emailData);
-    toast({
-      title: "Email Sent",
-      description: `Email sent successfully to ${emailData.to}`,
-    });
-    setEmailData({ to: "", subject: "", message: "" });
-    setIsEmailDialogOpen(false);
+    try {
+      const response = await axios.post(`${API_URL}/api/support/email`, emailData);
+      if (response.data.success) {
+        toast({
+          title: "Email Sent",
+          description: `Email sent successfully to ${emailData.to}`,
+        });
+        setEmailData({ to: "", subject: "", message: "" });
+        setIsEmailDialogOpen(false);
+      } else {
+        toast({
+          title: "Error",
+          description: response.data.message || "Failed to send email",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || error.message || "Failed to send email",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleJoinChat = (chatId) => {
