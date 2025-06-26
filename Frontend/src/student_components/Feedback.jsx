@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   Star, Building2, Users, Calendar, Filter, Search, Plus, Eye, MessageSquare, ThumbsUp, Trash2, X, Check, Menu
 } from 'lucide-react';
 import Sidebar from './Sidebar';
+import { SidebarContext } from './Sidebar';
+import Loader from '../components/Loader';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const API_BASE = `${apiUrl}/api/feedback`;
@@ -10,6 +12,10 @@ const API_BASE = `${apiUrl}/api/feedback`;
 const FeedbackCenter = () => {
   // Sidebar open state for mobile
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const stored = localStorage.getItem('sidebarCollapsed');
+    return stored === 'true';
+  });
 
   const [activeTab, setActiveTab] = useState('received');
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,6 +38,15 @@ const FeedbackCenter = () => {
     rating: 5,
     feedback: ''
   });
+
+  // Feedback targets
+  const [studentJobs, setStudentJobs] = useState([]);
+  const [studentInterviews, setStudentInterviews] = useState([]);
+  const [studentInterviewers, setStudentInterviewers] = useState([]);
+  const [studentInternships, setStudentInternships] = useState([]);
+
+  // Track selected feedback target
+  const [selectedFeedbackTarget, setSelectedFeedbackTarget] = useState(null); // {type, data}
 
   // Fetch feedback lists from backend
   useEffect(() => {
@@ -61,9 +76,45 @@ const FeedbackCenter = () => {
         );
       })
       .finally(() => setLoading(false));
-    // Only run on mount
-    // eslint-disable-next-line
+
+    // Fetch jobs
+    fetch(`${apiUrl}/api/studentJobs/my`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setStudentJobs(data.jobs || data || []))
+      .catch(() => setStudentJobs([]));
+
+    // Fetch interviews
+    fetch(`${apiUrl}/api/studentInterviews/my`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setStudentInterviews(data.interviews || data || []))
+      .catch(() => setStudentInterviews([]));
+
+    // Fetch internships
+    fetch(`${apiUrl}/api/studentInternships/my`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setStudentInternships(data.internships || data || []))
+      .catch(() => setStudentInternships([]));
   }, []);
+
+  // Extract unique interviewers from interviews
+  useEffect(() => {
+    if (studentInterviews.length > 0) {
+      const uniqueInterviewers = [];
+      const seen = new Set();
+      studentInterviews.forEach(intv => {
+        if (intv.interviewer && !seen.has(intv.interviewer)) {
+          uniqueInterviewers.push({
+            name: intv.interviewer,
+            job: intv.jobTitle || intv.title || '',
+            company: intv.company || '',
+            interviewId: intv._id || intv.id
+          });
+          seen.add(intv.interviewer);
+        }
+      });
+      setStudentInterviewers(uniqueInterviewers);
+    }
+  }, [studentInterviews]);
 
   const filteredReceived = receivedFeedbackList.filter(item => {
     const matchesSearch = item.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -220,31 +271,29 @@ const FeedbackCenter = () => {
   };
 
   return (
+    <SidebarContext.Provider value={{ isCollapsed }}>
     <div className="flex min-h-screen">
-      {/* Sidebar for desktop & mobile */}
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        sectionLabel="CAMPUS SERVICES"
-      />
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Mobile Header */}
-        <div className="lg:hidden p-4 bg-white shadow flex items-center">
-          <button onClick={() => setSidebarOpen(true)}>
-            <Menu size={24} />
-          </button>
-          <span className="ml-4 font-bold">Rojgar Setu</span>
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+        <div className={`flex-1 flex flex-col relative min-w-0 transition-all duration-300 ease-in-out ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+          {/* Mobile Header */}
+          <div className="lg:hidden p-4 bg-white shadow flex items-center">
+            <button onClick={() => setSidebarOpen(true)}>
+              <Menu size={24} />
+            </button>
+            <span className="ml-4 font-bold">Rojgar Setu</span>
+          </div>
+          {loading && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+              <Loader message="Loading feedback..." />
         </div>
+          )}
         <div className="min-h-screen bg-gray-50 p-6 flex-1">
-          <div className="max-w-6xl mx-auto">
-            {/* Header */}
+            <div>
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Feedback Center</h1>
               <p className="text-gray-600">View feedback received and provide your own feedback</p>
             </div>
 
-            {/* Tab Navigation */}
             <div className="flex space-x-1 bg-gray-200 rounded-lg p-1 mb-6 w-fit">
               {[
                 { id: 'received', label: 'Received Feedback' },
@@ -265,7 +314,6 @@ const FeedbackCenter = () => {
               ))}
             </div>
 
-            {/* Search and Filter Bar */}
             {activeTab !== 'give' && (
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <div className="relative flex-1">
@@ -296,7 +344,6 @@ const FeedbackCenter = () => {
               </div>
             )}
 
-            {/* Content Area */}
             {activeTab === 'received' && (
               <div className="space-y-4">
                 {loading ? (
@@ -405,7 +452,6 @@ const FeedbackCenter = () => {
                           Delete Feedback
                         </button>
                       </div>
-                      {/* Edit Modal */}
                       {editId === item._id && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
                           <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-lg relative">
@@ -478,77 +524,146 @@ const FeedbackCenter = () => {
             )}
 
             {activeTab === 'give' && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-green-50 rounded-lg">
-                    <Plus className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">Give Feedback</h2>
-                    <p className="text-gray-600">Share your experience to help others</p>
-                  </div>
-                </div>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Company/Organization</label>
-                      <input
-                        type="text"
-                        value={newFeedback.company}
-                        onChange={(e) => setNewFeedback({...newFeedback, company: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter company name"
-                      />
+              <div className="space-y-8">
+                {/* List all feedback targets */}
+                {!selectedFeedbackTarget && (
+                  <>
+                  {(studentJobs.length === 0 && studentInterviews.length === 0 && studentInterviewers.length === 0 && studentInternships.length === 0) ? (
+                    <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-500 text-lg shadow-sm">
+                      No jobs, interviews, interviewers, or internships to give feedback upon.
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Position/Role</label>
-                      <input
-                        type="text"
-                        value={newFeedback.type}
-                        onChange={(e) => setNewFeedback({...newFeedback, type: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter position or role"
-                      />
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Jobs */}
+                      {studentJobs.length > 0 && (
+                        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                          <h3 className="text-lg font-semibold mb-4 text-blue-700">Jobs</h3>
+                          <ul className="space-y-3">
+                            {studentJobs.map(job => (
+                              <li key={job._id || job.id} className="flex items-center justify-between">
+                                <div>
+                                  <div className="font-medium text-gray-900">{job.jobTitle || job.title}</div>
+                                  <div className="text-sm text-gray-500">{job.companyId?.name || job.company || ''}</div>
+                                </div>
+                                <button className="bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200" onClick={() => setSelectedFeedbackTarget({ type: 'job', data: job })}>Give Feedback</button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {/* Interviews */}
+                      {studentInterviews.length > 0 && (
+                        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                          <h3 className="text-lg font-semibold mb-4 text-purple-700">Interviews</h3>
+                          <ul className="space-y-3">
+                            {studentInterviews.map(intv => (
+                              <li key={intv._id || intv.id} className="flex items-center justify-between">
+                                <div>
+                                  <div className="font-medium text-gray-900">{intv.jobTitle || intv.title}</div>
+                                  <div className="text-sm text-gray-500">{intv.company || ''} {intv.interviewer ? `• Interviewer: ${intv.interviewer}` : ''}</div>
+                                </div>
+                                <button className="bg-purple-100 text-purple-700 px-3 py-1 rounded hover:bg-purple-200" onClick={() => setSelectedFeedbackTarget({ type: 'interview', data: intv })}>Give Feedback</button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {/* Interviewers */}
+                      {studentInterviewers.length > 0 && (
+                        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                          <h3 className="text-lg font-semibold mb-4 text-indigo-700">Interviewers</h3>
+                          <ul className="space-y-3">
+                            {studentInterviewers.map(interviewer => (
+                              <li key={interviewer.name + interviewer.interviewId} className="flex items-center justify-between">
+                                <div>
+                                  <div className="font-medium text-gray-900">{interviewer.name}</div>
+                                  <div className="text-sm text-gray-500">{interviewer.company} {interviewer.job ? `• ${interviewer.job}` : ''}</div>
+                                </div>
+                                <button className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded hover:bg-indigo-200" onClick={() => setSelectedFeedbackTarget({ type: 'interviewer', data: interviewer })}>Give Feedback</button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {/* Internships */}
+                      {studentInternships.length > 0 && (
+                        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                          <h3 className="text-lg font-semibold mb-4 text-green-700">Internships</h3>
+                          <ul className="space-y-3">
+                            {studentInternships.map(intern => (
+                              <li key={intern._id || intern.id} className="flex items-center justify-between">
+                                <div>
+                                  <div className="font-medium text-gray-900">{intern.title || intern.jobTitle}</div>
+                                  <div className="text-sm text-gray-500">{intern.company || ''}</div>
+                                </div>
+                                <button className="bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200" onClick={() => setSelectedFeedbackTarget({ type: 'internship', data: intern })}>Give Feedback</button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  </>
+                )}
+                {/* Feedback form for selected target */}
+                {selectedFeedbackTarget && (
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <button className="mb-4 text-xs text-gray-500 hover:underline" onClick={() => setSelectedFeedbackTarget(null)}>&larr; Back to list</button>
+                    <h3 className="text-lg font-semibold mb-2">Give Feedback for {selectedFeedbackTarget.type.charAt(0).toUpperCase() + selectedFeedbackTarget.type.slice(1)}</h3>
+                    <div className="mb-4 text-sm text-gray-700">
+                      {selectedFeedbackTarget.type === 'job' && (
+                        <>
+                          <div><b>Job:</b> {selectedFeedbackTarget.data.jobTitle || selectedFeedbackTarget.data.title}</div>
+                          <div><b>Company:</b> {selectedFeedbackTarget.data.companyId?.name || selectedFeedbackTarget.data.company || ''}</div>
+                        </>
+                      )}
+                      {selectedFeedbackTarget.type === 'interview' && (
+                        <>
+                          <div><b>Job:</b> {selectedFeedbackTarget.data.jobTitle || selectedFeedbackTarget.data.title}</div>
+                          <div><b>Company:</b> {selectedFeedbackTarget.data.company || ''}</div>
+                          {selectedFeedbackTarget.data.interviewer && <div><b>Interviewer:</b> {selectedFeedbackTarget.data.interviewer}</div>}
+                        </>
+                      )}
+                      {selectedFeedbackTarget.type === 'interviewer' && (
+                        <>
+                          <div><b>Interviewer:</b> {selectedFeedbackTarget.data.name}</div>
+                          <div><b>Company:</b> {selectedFeedbackTarget.data.company}</div>
+                          {selectedFeedbackTarget.data.job && <div><b>Job:</b> {selectedFeedbackTarget.data.job}</div>}
+                        </>
+                      )}
+                      {selectedFeedbackTarget.type === 'internship' && (
+                        <>
+                          <div><b>Internship:</b> {selectedFeedbackTarget.data.title || selectedFeedbackTarget.data.jobTitle}</div>
+                          <div><b>Company:</b> {selectedFeedbackTarget.data.company || ''}</div>
+                        </>
+                      )}
+                    </div>
+                    {/* Feedback form (reuse existing form fields) */}
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                          <InteractiveStarRating rating={newFeedback.rating} onChange={r => setNewFeedback(fb => ({ ...fb, rating: r }))} />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                          <input type="text" className="w-full border border-gray-300 rounded-lg px-3 py-2" value={newFeedback.type} onChange={e => setNewFeedback(fb => ({ ...fb, type: e.target.value }))} placeholder="Feedback type (e.g. Interview, Job, Internship)" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Feedback</label>
+                        <textarea className="w-full border border-gray-300 rounded-lg px-3 py-2" rows={4} value={newFeedback.feedback} onChange={e => setNewFeedback(fb => ({ ...fb, feedback: e.target.value }))} placeholder="Write your feedback..." />
+                      </div>
+                      <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors" onClick={handleSubmitFeedback} disabled={loading}>
+                        {loading ? 'Submitting...' : 'Submit Feedback'}
+                      </button>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
-                    <InteractiveStarRating
-                      rating={newFeedback.rating}
-                      onChange={(rating) => setNewFeedback({...newFeedback, rating})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Your Feedback</label>
-                    <textarea
-                      rows="4"
-                      value={newFeedback.feedback}
-                      onChange={(e) => setNewFeedback({...newFeedback, feedback: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Share your detailed feedback..."
-                    />
-                  </div>
-                  <div className="flex gap-4">
-                    <button
-                      onClick={handleSubmitFeedback}
-                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                      disabled={loading}
-                    >
-                      Submit Feedback
-                    </button>
-                    <button
-                      onClick={() => setNewFeedback({ company: '', type: '', rating: 5, feedback: '' })}
-                      className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-                      disabled={loading}
-                    >
-                      Reset Form
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
             )}
 
-            {/* Stats Summary */}
             <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center gap-3">
@@ -603,6 +718,7 @@ const FeedbackCenter = () => {
         </div>
       </div>
     </div>
+    </SidebarContext.Provider>
   );
 };
 

@@ -70,9 +70,6 @@ const allowedOrigins = [
   'https://campusadmin.vercel.app',
   'https://www.rojgarsetu.org',
   'https://company.rojgarsetu.org',
-  'https://campusconnect-sumit-sahus-projects-83ef9bf1.vercel.app',
-  'https://campusconnect-git-main-sumit-sahus-projects-83ef9bf1.vercel.app',
-  'https://campusconnect-dk9xkuzk0-sumit-sahus-projects-83ef9bf1.vercel.app',
   'https://campusadmin.onrender.com', // Add Render backend itself if needed
 ];
 
@@ -122,14 +119,13 @@ db.once('open', () => {
 
 //additional routes that are not included here from routes folder
 app.use('/api/admin', require('./routes/adminRoutes'));
-app.use('/api/auth', require('./routes/auth'));
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/interviews', require('./routes/interviews'));
 app.use('/api/applications', require('./routes/applications'));
 app.use('/api/students', require('./routes/students'));
 
 // New REST endpoints
-app.use('/api/student', authRoutes); // for authentication-related endpoints (login/register)
+app.use('/api/auth', authRoutes); // for authentication-related endpoints (login/register)
 app.use('/api/studentJobs', jobRoutes);
 app.use('/api/internships', internshipsRoutes);
 app.use('/api/studentInterviews', interviewRoutes);

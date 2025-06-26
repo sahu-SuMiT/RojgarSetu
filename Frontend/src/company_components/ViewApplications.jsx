@@ -660,19 +660,22 @@ const ViewApplications = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000
+            zIndex: 9999,
+            padding: '20px'
           }}>
             <div style={{
               background: '#fff',
               padding: '24px',
               borderRadius: '16px',
-              width: '600px',
+              width: '90%',
+              maxWidth: '600px',
               height: '90vh',
               maxHeight: '90vh',
               display: 'flex',
               flexDirection: 'column',
               boxSizing: 'border-box',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              position: 'relative'
             }}>
               <div style={{ 
                 display: 'flex', 

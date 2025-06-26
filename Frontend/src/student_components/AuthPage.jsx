@@ -60,8 +60,8 @@ export const AuthPage = ({ onAuthSuccess }) => {
     try {
       const endpoint =
         currentView === "login"
-          ? `${apiUrl}/api/student/login`
-          : `${apiUrl}/api/student/signup`;
+          ? `${apiUrl}/api/auth/student-login`
+          : `${apiUrl}/api/auth/student-signup`;
       const payload =
         currentView === "login"
           ? { email: formData.email, password: formData.password }
@@ -70,6 +70,7 @@ export const AuthPage = ({ onAuthSuccess }) => {
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // Include cookies in the request
         body: JSON.stringify(payload),
       });
 

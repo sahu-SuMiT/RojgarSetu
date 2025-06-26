@@ -2,10 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Briefcase, Search, Filter, MapPin, Clock, DollarSign, Eye, X, Calendar, Users, Building, Award } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { Menu } from 'lucide-react';
-import API from '../../api';
+import API from '../api';
+import { SidebarContext } from './Sidebar';
+import Loader from '../components/Loader';
 
 const Jobs = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const stored = localStorage.getItem('sidebarCollapsed');
+    return stored === 'true';
+  });
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
@@ -24,42 +30,45 @@ const Jobs = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [setError] = useState(null);
-  const [pagination, setPagination] = useState({});
+  const [pagination, setPagination] = useState({ totalPages: 1, currentPage: 1 });
   const [currentPage, setCurrentPage] = useState(1);
   const [applying, setApplying] = useState(false);
 
   useEffect(() => {
     fetchJobs();
     // eslint-disable-next-line
-  }, [currentPage, selectedFilter]);
+  }, [currentPage]);
 
   const fetchJobs = async () => {
     try {
       setLoading(true);
       setError && setError(null);
 
-      const params = {
-        page: currentPage,
-        limit: 10
-      };
+      // Fetch jobs from the roles model with pagination
+      const response = await API.get('/api/roles', {
+        params: { page: currentPage, limit: 10 }
+      });
 
-      if (selectedFilter !== 'all') {
-        params.type = selectedFilter === 'internship' ? 'internship'
-          : selectedFilter === 'part-time' ? 'part-time'
-          : 'job';
-      }
-
-      const response = await API.get('/api/roles', { params });
-
-      if (response.data.success) {
-        setJobs(response.data.jobs);
-        setPagination(response.data.pagination);
+      if (Array.isArray(response.data)) {
+        setJobs(response.data);
+        // If backend doesn't return pagination, estimate it
+        setPagination(prev => ({ ...prev, currentPage, totalPages: response.data.length === 10 ? currentPage + 1 : currentPage }));
+      } else if (response.data && Array.isArray(response.data.roles)) {
+        setJobs(response.data.roles);
+        setPagination({
+          currentPage: response.data.currentPage || currentPage,
+          totalPages: response.data.totalPages || 1
+        });
       } else {
-        setError && setError('Failed to fetch jobs');
+        setJobs([]);
+        setPagination({ totalPages: 1, currentPage: 1 });
+        setError && setError('No jobs found.');
       }
     } catch (err) {
       console.error('Error fetching jobs:', err);
       setError && setError('Failed to fetch jobs. Please try again later.');
+      setJobs([]);
+      setPagination({ totalPages: 1, currentPage: 1 });
     } finally {
       setLoading(false);
     }
@@ -90,9 +99,26 @@ const Jobs = () => {
     setSelectedJob(null);
   };
 
+  const fetchUserProfile = async () => {
+    try {
+      const res = await API.get('/api/student/me'); // Adjust endpoint if needed
+      if (res.data && (res.data.name || res.data.email)) {
+        setApplicationData(prev => ({
+          ...prev,
+          fullName: res.data.name || '',
+          email: res.data.email || '',
+          phone: res.data.phone || ''
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch user profile', err);
+    }
+  };
+
   const handleApplyNow = (job) => {
     setApplicationJob(job);
     setShowApplicationModal(true);
+    fetchUserProfile(); // Fetch and fill user data
     if (showModal) {
       setShowModal(false);
     }
@@ -125,13 +151,15 @@ const Jobs = () => {
       setApplying(true);
 
       const res = await API.post(
-        `/api/studentJobs/${applicationJob._id}/apply`,
+        `/api/studentapplications/${applicationJob._id}/apply`,
         applicationData,
         { headers: { 'Content-Type': 'application/json' } }
       );
 
       if (res.data.success) {
-        alert(`Application submitted successfully for ${applicationJob.title} at ${applicationJob.company}!`);
+        const jobTitle = applicationJob.jobTitle || applicationJob.title || 'Job';
+        const companyName = (applicationJob.companyId && applicationJob.companyId.name) || applicationJob.company || 'Company';
+        alert(`Application submitted successfully for ${jobTitle} at ${companyName}!`);
         closeApplicationModal();
         fetchJobs();
       } else {
@@ -151,22 +179,21 @@ const Jobs = () => {
   };
 
   const filteredJobs = jobs.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.company.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (job.jobTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.companyId?.name?.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesSearch;
   });
 
   return (
+    <SidebarContext.Provider value={{ isCollapsed }}>
     <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        sectionLabel="CAMPUS SERVICES"
-      />
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+        <div className={`flex-1 flex flex-col relative min-w-0 transition-all duration-300 ease-in-out ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+          {loading && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-lg">
+              <Loader message="Loading jobs..." />
+            </div>
+          )}
         {/* Mobile Header */}
         <div className="lg:hidden p-4 bg-white shadow flex items-center">
           <button onClick={() => setSidebarOpen(true)}>
@@ -219,97 +246,96 @@ const Jobs = () => {
             {/* Job Listings */}
             <div className="space-y-6">
               {filteredJobs.map((job) => (
-                <div key={job._id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">{job.title}</h3>
-                      <p className="text-lg text-gray-700 mb-2">{job.company}</p>
-
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-3">
-                        <div className="flex items-center space-x-1">
-                          <MapPin size={16} />
-                          <span>{job.location}</span>
+                  <div key={job._id} className="bg-white rounded-xl border border-gray-200 p-6 shadow hover:shadow-lg transition-shadow duration-200 mb-6">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-2">
+                      <div>
+                        <h3 className="text-2xl font-bold text-blue-900 mb-1">{job.jobTitle}</h3>
+                        <div className="flex flex-wrap gap-3 text-sm text-gray-500 mb-2">
+                          <span className="flex items-center gap-1"><MapPin size={16} />{job.location}</span>
+                          {job.jobType === 'job' ? (
+                            <span className="flex items-center gap-1"><DollarSign size={16} />{job.ctc ? `CTC: ₹${job.ctc}` : 'CTC: N/A'}</span>
+                          ) : (
+                            <span className="flex items-center gap-1"><DollarSign size={16} />{job.stipend ? `₹${job.stipend}` : 'N/A'}</span>
+                          )}
+                          <span className="flex items-center gap-1"><Clock size={16} />{job.duration}</span>
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold
+                            ${job.jobType === 'internship' ? 'bg-green-100 text-green-800' :
+                              job.jobType === 'full-time' ? 'bg-blue-100 text-blue-800' :
+                              job.jobType === 'part-time' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-purple-100 text-purple-800'}`}>
+                            {job.jobType.charAt(0).toUpperCase() + job.jobType.slice(1)}
+                          </span>
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold
+                            ${job.status === 'active' ? 'bg-green-50 text-green-700 border border-green-200' :
+                              job.status === 'closed' ? 'bg-red-50 text-red-700 border border-red-200' :
+                              'bg-gray-50 text-gray-700 border border-gray-200'}`}>
+                            {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                          </span>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <DollarSign size={16} />
-                          <span>{job.salary}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Clock size={16} />
-                          <span>{job.posted}</span>
+                        <p className="text-gray-700 mb-3 line-clamp-2">{job.description}</p>
+                        <div className="flex flex-wrap gap-2 items-center mb-2">
+                          <span className="text-sm font-medium text-gray-900 mr-2">Skills:</span>
+                          {job.skills && job.skills.map((skill, i) => (
+                            <span key={skill + i} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold">
+                              {skill}
+                            </span>
+                          ))}
                         </div>
                       </div>
-
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                        job.type === 'Internship' ? 'bg-green-100 text-green-800' :
-                          job.type === 'Full-time' ? 'bg-blue-100 text-blue-800' :
-                            job.type === 'Part-time' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-purple-100 text-purple-800'
-                        }`}>
-                        {job.type}
-                      </span>
-                    </div>
-
-                    <div className="flex gap-2">
+                      <div className="flex flex-col items-end min-w-[120px] md:pl-4 mt-2 md:mt-0">
+                        <span className="text-base font-semibold text-blue-700 whitespace-nowrap">{job.companyId?.name}</span>
+                        <div className="flex gap-2 mt-3 md:mt-6">
                       <button
                         onClick={() => handleViewDetails(job)}
-                        className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+                            className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2 font-normal text-sm"
                       >
                         <Eye size={16} />
                         View Details
                       </button>
                       <button
                         onClick={() => handleApplyNow(job)}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                            className="bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 transition-colors font-normal text-sm"
                       >
                         Apply Now
                       </button>
                     </div>
                   </div>
-
-                  <p className="text-gray-700 mb-4 line-clamp-2">{job.description}</p>
-
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Required Skills:</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {job.requirements && job.requirements.slice(0, 5).map((skill, i) => (
-                        <span key={skill + i} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                          {skill}
-                        </span>
-                      ))}
-                      {job.requirements && job.requirements.length > 5 && (
-                        <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                          +{job.requirements.length - 5} more
-                        </span>
-                      )}
                     </div>
+                    {/* Bottom row: Posted at (left) and Updated at (right) */}
+                    <div className="flex justify-between items-center text-xs text-gray-400 mt-2">
+                      <span>
+                        {job.createdAt && (
+                          <>Posted at {new Date(job.createdAt).toLocaleDateString()}</>
+                        )}
+                        </span>
+                      <span>
+                        {job.updatedAt && (
+                          <>Updated at {new Date(job.updatedAt).toLocaleDateString()}</>
+                        )}
+                        </span>
                   </div>
                 </div>
               ))}
             </div>
 
             {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="flex justify-center items-center space-x-2 mt-8">
+              <div className="flex justify-center mt-8">
                 <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={!pagination.hasPrevPage}
-                  className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  className="px-4 py-2 mx-1 bg-blue-100 text-blue-700 rounded disabled:opacity-50"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={pagination.currentPage === 1}
                 >
                   Previous
                 </button>
-                <span className="px-4 py-2 text-gray-700">
-                  Page {pagination.currentPage} of {pagination.totalPages}
-                </span>
+                <span className="px-4 py-2 mx-1">Page {pagination.currentPage} of {pagination.totalPages}</span>
                 <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.totalPages))}
-                  disabled={!pagination.hasNextPage}
-                  className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                  className="px-4 py-2 mx-1 bg-blue-100 text-blue-700 rounded disabled:opacity-50"
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, pagination.totalPages))}
+                  disabled={pagination.currentPage === pagination.totalPages}
                 >
                   Next
                 </button>
               </div>
-            )}
 
             {filteredJobs.length === 0 && !loading && (
               <div className="text-center py-12">
@@ -349,12 +375,34 @@ const Jobs = () => {
                         <p className="font-medium">{selectedJob.location}</p>
                       </div>
                     </div>
+                      <div className="flex items-center space-x-2">
+                        <Building size={18} className="text-gray-500" />
+                        {selectedJob.companyId?.logo || selectedJob.companyId?.profileImage ? (
+                          <img
+                            src={selectedJob.companyId?.logo || selectedJob.companyId?.profileImage}
+                            alt="Company Logo"
+                            className="w-10 h-10 rounded-full object-cover border border-gray-200 bg-white"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200">
+                            <Building size={20} className="text-gray-400" />
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm text-gray-500">Company</p>
+                          <p className="font-medium">{selectedJob.company || selectedJob.companyId?.name || 'N/A'}</p>
+                        </div>
+                      </div>
                     <div className="flex items-center space-x-2">
                       <DollarSign size={18} className="text-gray-500" />
                       <div>
-                        <p className="text-sm text-gray-500">Salary</p>
-                        <p className="font-medium">{selectedJob.salary}</p>
-                      </div>
+                          <p className="text-sm text-gray-500">{selectedJob.jobType === 'job' ? 'CTC' : 'Stipend'}</p>
+                          <p className="font-medium">
+                            {selectedJob.jobType === 'job'
+                              ? (selectedJob.ctc ? `₹${selectedJob.ctc}` : 'N/A')
+                              : (selectedJob.stipend ? `₹${selectedJob.stipend}` : 'N/A')}
+                          </p>
+                        </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Calendar size={18} className="text-gray-500" />
@@ -370,6 +418,35 @@ const Jobs = () => {
                         <p className="font-medium">{selectedJob.applicants}</p>
                       </div>
                     </div>
+                      {/* Posted at */}
+                      <div className="flex items-center space-x-2">
+                        <Calendar size={18} className="text-gray-500" />
+                        <div>
+                          <p className="text-sm text-gray-500">Posted at</p>
+                          <p className="font-medium">{selectedJob.createdAt ? new Date(selectedJob.createdAt).toLocaleDateString() : 'N/A'}</p>
+                        </div>
+                      </div>
+                      {/* Job Type */}
+                      <div className="flex items-center space-x-2">
+                        <Briefcase size={18} className="text-gray-500" />
+                        <div>
+                          <p className="text-sm text-gray-500">Job Type</p>
+                          <p className="font-medium">{selectedJob.jobType ? selectedJob.jobType.charAt(0).toUpperCase() + selectedJob.jobType.slice(1) : 'N/A'}</p>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Posted at and Updated at row */}
+                    <div className="flex justify-between items-center text-xs text-gray-400 mb-4">
+                      <span>
+                        {selectedJob.createdAt && (
+                          <>Posted at {new Date(selectedJob.createdAt).toLocaleDateString()}</>
+                        )}
+                      </span>
+                      <span>
+                        {selectedJob.updatedAt && (
+                          <>Updated at {new Date(selectedJob.updatedAt).toLocaleDateString()}</>
+                        )}
+                      </span>
                   </div>
 
                   {/* Job Description */}
@@ -408,16 +485,14 @@ const Jobs = () => {
                     </div>
                   )}
 
-                  {/* Required Skills */}
+                    {/* Requirements */}
                   <div className="mb-8">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4">Required Skills</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedJob.requirements && selectedJob.requirements.map((skill, i) => (
-                        <span key={skill + i} className="bg-blue-100 text-blue-800 px-3 py-2 rounded-full text-sm font-medium">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-4">Requirements</h3>
+                      <ul className="list-disc list-inside text-gray-700">
+                        {selectedJob.requirements && selectedJob.requirements.map((req, i) => (
+                          <li key={i}>{req}</li>
+                        ))}
+                      </ul>
                   </div>
 
                   {/* Benefits */}
@@ -471,13 +546,13 @@ const Jobs = () => {
                   <div className="flex gap-4 justify-end">
                     <button
                       onClick={closeModal}
-                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-normal text-sm"
                     >
                       Close
                     </button>
                     <button
                       onClick={() => handleApplyNow(selectedJob)}
-                      className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                        className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-normal text-sm"
                     >
                       Apply Now
                     </button>
@@ -620,11 +695,11 @@ const Jobs = () => {
                   <div className="bg-gray-50 rounded-lg p-4 mb-6">
                     <h4 className="font-semibold text-gray-900 mb-2">Job Summary</h4>
                     <div className="text-sm text-gray-600 space-y-1">
-                      <p><span className="font-medium">Position:</span> {applicationJob.title}</p>
-                      <p><span className="font-medium">Company:</span> {applicationJob.company}</p>
-                      <p><span className="font-medium">Location:</span> {applicationJob.location}</p>
-                      <p><span className="font-medium">Type:</span> {applicationJob.type}</p>
-                      <p><span className="font-medium">Salary:</span> {applicationJob.salary}</p>
+                      <p><span className="font-medium">Position:</span> {applicationJob.jobTitle || applicationJob.title || "N/A"}</p>
+                      <p><span className="font-medium">Company:</span> {(applicationJob.companyId && applicationJob.companyId.name) || applicationJob.company || "N/A"}</p>
+                      <p><span className="font-medium">Location:</span> {applicationJob.location || "N/A"}</p>
+                      <p><span className="font-medium">Type:</span> {applicationJob.jobType ? applicationJob.jobType.charAt(0).toUpperCase() + applicationJob.jobType.slice(1) : applicationJob.type || "N/A"}</p>
+                      <p><span className="font-medium">Salary:</span> {applicationJob.ctc ? `₹${applicationJob.ctc}` : applicationJob.stipend ? `₹${applicationJob.stipend}` : applicationJob.salary ? `₹${applicationJob.salary}` : "N/A"}</p>
                     </div>
                   </div>
 
@@ -633,13 +708,13 @@ const Jobs = () => {
                     <button
                       type="button"
                       onClick={closeApplicationModal}
-                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-normal text-sm"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                        className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-normal text-sm"
                       disabled={applying}
                     >
                       {applying ? "Submitting..." : "Submit Application"}
@@ -652,6 +727,7 @@ const Jobs = () => {
         </main>
       </div>
     </div>
+    </SidebarContext.Provider>
   );
 };
 

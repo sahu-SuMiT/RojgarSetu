@@ -3,7 +3,7 @@ const router = express.Router();
 const jobController = require('../controllers/jobController');
 
 // List jobs (with search/filter/pagination)
-router.get('/', jobController.listJobs);
+router.get('/my', jobController.listJobs);
 
 // Get job details
 router.get('/:id', jobController.getJobDetails);
