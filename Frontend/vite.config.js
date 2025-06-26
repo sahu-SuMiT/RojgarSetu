@@ -22,7 +22,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'https://campusadmin.onrender.com'
+      '/api': `${import.meta.env.VITE_API_URL}`
     }
   },
   build: {
