@@ -6,11 +6,14 @@ const authMiddleware = require('../middleware/authMiddleware');
 // Student gives feedback
 router.post('/give', authMiddleware, feedbackController.giveFeedback);
 
+// Student fetches feedback received
+router.get('/received', authMiddleware, feedbackController.getReceivedFeedback);
+
 // Student fetches feedback given
 router.get('/given', authMiddleware, feedbackController.getGivenFeedback);
 
-// Student fetches feedback received
-router.get('/received', authMiddleware, feedbackController.getReceivedFeedback);
+// Get feedback statistics
+router.get('/stats', authMiddleware, feedbackController.getFeedbackStats);
 
 // Edit feedback (PATCH)
 router.patch('/given/:id', authMiddleware, feedbackController.editFeedback);

@@ -7,7 +7,7 @@ axios.defaults.withCredentials = true;
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const initialRegisterData = {
-  name: '', code: '', contactEmail: '', contactPhone: '', password: ''
+  name: '', code: '', contactEmail: '', contactPhone: '', referralCode: '', password: ''
 };
 
 const CollegeLogin = () => {
@@ -153,7 +153,8 @@ const CollegeLogin = () => {
         name: registerData.name,
         code: registerData.code,
         contactEmail: registerData.contactEmail,
-        contactPhone: registerData.contactPhone
+        contactPhone: registerData.contactPhone,
+        referralCode: registerData.referralCode
       });
       setMessage({ type: "success", text: 'New OTP sent to your email.' });
     } catch (err) {
@@ -196,7 +197,8 @@ const CollegeLogin = () => {
         name: registerData.name,
         code: registerData.code,
         contactEmail: registerData.contactEmail,
-        contactPhone: registerData.contactPhone
+        contactPhone: registerData.contactPhone,
+        referralCode: registerData.referralCode
       });
       setMessage({ type: "success", text: res.data.message || 'OTP sent to your email.' });
       setRegisterStep(2);
@@ -392,10 +394,25 @@ const CollegeLogin = () => {
           autoComplete="off"
         />
         {errors.contactPhone && <p className="mt-1 text-sm text-red-600">{errors.contactPhone}</p>}
-                </div>
+      </div>
+
+      <div className="mb-4">
+        <label htmlFor="referralCode" className="block text-sm font-medium text-gray-400">
+          <i>Referral Code (optional)</i>
+        </label>
+        <input
+          type="text"
+          name="referralCode"
+          id="referralCode"
+          value={registerData.referralCode}
+          onChange={handleChange}
+          className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm`}
+          placeholder="Enter referral code"
+        />
+      </div>
 
       <div>
-                <button
+        <button
           type="submit"
           disabled={emailCheckLoading}
           className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-semibold rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
