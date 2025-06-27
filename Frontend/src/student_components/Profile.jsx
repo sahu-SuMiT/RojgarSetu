@@ -87,6 +87,7 @@ const Profile = () => {
         const response = await fetch(`${API_URL}/api/student/me`, {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
         });
         if (response.status === 401 || response.status === 403) {
           window.location.href = '/student-login';
