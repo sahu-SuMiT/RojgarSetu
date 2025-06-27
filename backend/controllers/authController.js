@@ -8,6 +8,7 @@ const Student = require('../models/Student');
 const College = require('../models/College');
 const Employee = require('../models/Employee')
 const Company = require('../models/Company')
+const RegistrationOtp = require('../models/RegistrationOtp')
 const {emailTransport} = require('../config/email');
 
 
@@ -561,17 +562,16 @@ exports.sendStudentResetPasswordToken = async (req, res) => {
     res.status(500).json({ error: 'An error occurred while resetting the password.' });
   }
 }
-exports.generateRegistrationOtp = async (req, res) => {
+exports.checkRegistrationOtp = async (req, res) => {
   try {
     const { email, otp, type } = req.body;
 
     if (!email || !otp || !type) {
       return res.status(400).json({ valid: false, error: 'Missing required fields: email, otp, and type.' });
     }
-
     // Find the OTP entry for the specific type
     const registrationOtp = await RegistrationOtp.findOne({ email, type });
-
+    
     if (!registrationOtp) {
       return res.status(400).json({ valid: false, error: `Invalid email or ${type} registration session expired.` });
     }

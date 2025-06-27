@@ -116,6 +116,7 @@ const studentSchema = new mongoose.Schema({
   // Password reset fields
   passwordResetToken: { type: String },
   passwordResetExpires: { type: Date },
+  referralCode: { type: String, unique: true },
 
   // Timestamps
   createdAt: { type: Date, default: Date.now }
