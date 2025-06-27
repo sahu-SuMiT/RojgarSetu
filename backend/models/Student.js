@@ -124,8 +124,7 @@ const studentSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Compound unique index for college + rollNumber (prevents conflicts between colleges)
-studentSchema.index({ college: 1, rollNumber: 1 }, { unique: true, sparse: true });
+
 
 // Campus score calculation logic (from CollegeStudent)
 studentSchema.pre('save', async function(next) {
@@ -180,5 +179,6 @@ studentSchema.post(['findOneAndUpdate', 'updateOne', 'updateMany'], async functi
   const doc = await this.model.findOne(this.getQuery());
   if (doc) await doc.save();
 });
+
 
 module.exports = mongoose.model('Student', studentSchema);

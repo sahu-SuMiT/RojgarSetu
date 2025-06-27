@@ -6,7 +6,6 @@ const RegistrationOtp = require('../models/RegistrationOtp');
 const authController = require('../controllers/authController');
 
 
-router.post('/student-signup', authController.signup_student);
 router.post('/student-login', authController.login_student);
 
 router.post('/college-admin', authController.login_college);

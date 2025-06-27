@@ -26,45 +26,11 @@ function generateStudentToken(student) {
   );
 }
 
-exports.signup_student = async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "Name, email, and password are required" });
-    }
-
-    const existing = await Student.findOne({ email });
-    if (existing) {
-      return res.status(400).json({ message: "Email already registered" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const student = new Student({ name, email, password: hashedPassword });
-    await student.save();
-
-    // Generate JWT token
-    const token = generateStudentToken(student);
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Prevent CSRF attacks
-    });
-    res.status(201).json({
-      token,
-      student: {
-        id: student._id,
-        name: student.name,
-        email: student.email
-      }
-    });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
 exports.login_student = async (req, res) => {
   try {
     const { email, password } = req.body;
     const student = await Student.findOne({ email });
+    console.log("login student found: ", student)
     if (!student) return res.status(400).json({ message: "Invalid credentials" });
 
     const isMatch = await bcrypt.compare(password, student.password);
@@ -564,6 +530,7 @@ exports.sendStudentResetPasswordToken = async (req, res) => {
 }
 exports.checkRegistrationOtp = async (req, res) => {
   try {
+    console.log(req.body);
     const { email, otp, type } = req.body;
 
     if (!email || !otp || !type) {
@@ -571,7 +538,7 @@ exports.checkRegistrationOtp = async (req, res) => {
     }
     // Find the OTP entry for the specific type
     const registrationOtp = await RegistrationOtp.findOne({ email, type });
-    
+
     if (!registrationOtp) {
       return res.status(400).json({ valid: false, error: `Invalid email or ${type} registration session expired.` });
     }
@@ -611,3 +578,4 @@ exports.checkBypassAuth = (req, res) => {
   }
   res.status(200).json({ message: 'Authorized access', user: decoded });
 }
+exports.generateStudentToken = generateStudentToken;
