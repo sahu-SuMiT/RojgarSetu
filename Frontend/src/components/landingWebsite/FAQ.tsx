@@ -26,7 +26,7 @@ const FAQ: React.FC = () => {
     },
     {
       question: 'Is Rojgar Setu free to use?',
-      answer: 'Yes! Rojgar Setu is completely free for students. Colleges and companies have affordable premium plans starting from ₹999/month with advanced features and priority support.'
+      answer: 'Yes! Rojgar Setu is completely free for colleges and companies. For students, there is only an affordable charge of ₹85 for the KYC process.'
     },
     {
       question: 'How does the job matching algorithm work?',
@@ -37,16 +37,12 @@ const FAQ: React.FC = () => {
       answer: 'Absolutely! Rojgar Setu covers all major cities across India. You can set multiple location preferences and apply for opportunities nationwide. We also provide relocation assistance information.'
     },
     {
-      question: 'What kind of support do you provide for interview preparation?',
-      answer: 'We offer comprehensive interview preparation including mock interviews, common questions database, resume optimization, and direct tips from industry experts. Premium users get 1-on-1 coaching sessions.'
-    },
-    {
       question: 'How do colleges benefit from Rojgar Setu?',
       answer: 'Colleges can manage student placements, track success metrics, connect with industry partners, and showcase their placement statistics. Our platform helps increase placement rates by up to 40%.'
     },
     {
       question: 'What verification process do you have for companies?',
-      answer: 'All companies undergo a thorough verification process including business registration checks, HR contact verification, and reputation analysis. We ensure only legitimate companies can post opportunities.'
+      answer: 'All companies undergo a thorough verification process by our sales team. We check their business registration, employee count, and past hiring history to ensure legitimacy.'
     },
     {
       question: 'Can I get internship opportunities through the platform?',
@@ -58,7 +54,7 @@ const FAQ: React.FC = () => {
     },
     {
       question: 'How can I contact customer support?',
-      answer: 'Our support team is available 24/7 through live chat, email (support@rojgarsetu.com), or phone (+91-8000-ROJGAR). Premium users get priority support with faster response times.'
+      answer: 'Our support team is available 24/7.'
     }
   ];
 

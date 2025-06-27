@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const SupportTicket = require('../models/SupportTicket');
+const { emailTransport } = require('../config/email');
 
 // Support bot responses based on keywords
 const botResponses = {
@@ -315,6 +316,26 @@ router.get('/quick-help/:userType', (req, res) => {
     success: true,
     topics: helpTopics
   });
+});
+
+// Send support email
+router.post('/email', async (req, res) => {
+  const { to, subject, message } = req.body;
+  if (!to || !subject || !message) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+  try {
+    await emailTransport.sendMail({
+      from: process.env.EMAIL_SENDER,
+      to,
+      subject,
+      html: message
+    });
+    res.json({ success: true, message: 'Email sent successfully' });
+  } catch (error) {
+    console.error('Error sending support email:', error);
+    res.status(500).json({ success: false, message: 'Failed to send email', error: error.message });
+  }
 });
 
 module.exports = router; 

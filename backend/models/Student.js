@@ -44,7 +44,7 @@ const studentSchema = new mongoose.Schema({
   // Skills and technologies
   skills: [{ type: String, trim: true }],
   programmingLanguages: [String],
-  technologies: [String],
+  technologies: [{type: String, trim: true}],
 
   // Projects
   projects: [{
@@ -117,6 +117,7 @@ const studentSchema = new mongoose.Schema({
   // Password reset fields
   passwordResetToken: { type: String },
   passwordResetExpires: { type: Date },
+  referralCode: { type: String, unique: true },
 
   // KYC fields
   kycStatus: { 
@@ -152,8 +153,7 @@ const studentSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Compound unique index for college + rollNumber (prevents conflicts between colleges)
-studentSchema.index({ college: 1, rollNumber: 1 }, { unique: true, sparse: true });
+
 
 // Campus score calculation logic (from CollegeStudent)
 studentSchema.pre('save', async function(next) {
@@ -217,5 +217,6 @@ studentSchema.post(['findOneAndUpdate', 'updateOne', 'updateMany'], async functi
   const doc = await this.model.findOne(this.getQuery());
   if (doc) await doc.save();
 });
+
 
 module.exports = mongoose.model('Student', studentSchema);

@@ -879,8 +879,8 @@ const Index_Website: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
             <div>
               <div className="flex items-center space-x-2 mb-6">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <GraduationCap className="w-5 h-5 text-white" />
+                <div>
+                  <img src="/images/favicon.png" alt="Rojgar Setu Logo" className="w-12 h-12 rounded-full border-2 border-blue-200 shadow-md bg-white p-1 mr-2" />
                 </div>
                 <span className="text-xl font-bold">ROJGAR SETU</span>
               </div>

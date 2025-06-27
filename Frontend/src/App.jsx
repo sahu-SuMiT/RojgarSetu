@@ -3,17 +3,17 @@ import { Menu } from 'lucide-react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 // Import all page components
-import Sidebar from './components/Student/Sidebar';
-import Dashboard from './components/Student/Dashboard';
-import Student from './components/Student/Profile';
-import Jobs from './components/Student/Jobs';
-import Applications from './components/Student/Applications';
-import Interviews from './components/Student/Interviews';
-import FeedbackCenter from './components/Student/Feedback';
-import AIPortfolioSection from './components/Student/AIProfilePortfolio';
-import ErrorBoundary from './components/Student/ErrorBoundary';
-import Chatbot from './components/Student/chatbot';
-import { AuthPage } from './components/Student/AuthPage';
+import Sidebar from './student_components/Sidebar';
+import Dashboard from './student_components/Dashboard';
+import Student from './student_components/Profile';
+import Jobs from './student_components/Jobs';
+import Applications from './student_components/Applications';
+import Interviews from './student_components/Interviews';
+import FeedbackCenter from './student_components/Feedback';
+import AIPortfolioSection from './student_components/AIProfilePortfolio';
+import ErrorBoundary from './student_components/ErrorBoundary';
+import Chatbot from './student_components/chatbot';
+import { AuthPage } from './student_components/AuthPage';
 import Support from "./pages/Support";
 import PlacementAnalysis from "./pages/PlacementAnalysis";
 import EKysDashboard from "./pages/EKysDashboard";
@@ -227,14 +227,14 @@ const App = () => {
         {/* <Route index element={<Dashboard user={user} />} /> */}
         <Route path="/*" element={<Index_Website />} />
         <Route path="/login_panel" element={<Login />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="studentProfile" element={<Student />} />
-        <Route path="jobs" element={<Jobs />} />
-        <Route path="applications" element={<Applications />} />
-        <Route path="interviews" element={<Interviews />} />
-        <Route path="feedback" element={<FeedbackCenter />} />
-        <Route path="portfolio" element={<ErrorBoundary><AIPortfolioSection /></ErrorBoundary>} />
-        <Route path="chat" element={<Chatbot />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /> </ProtectedRoute>} />
+        <Route path="/studentProfile" element={<ProtectedRoute><Student /></ProtectedRoute>} />
+        <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
+        <Route path="/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
+        <Route path="/interviews" element={<ProtectedRoute><Interviews /></ProtectedRoute>} />
+        <Route path="/feedback" element={<ProtectedRoute><FeedbackCenter /></ProtectedRoute>} />
+        <Route path="/portfolio" element={<ProtectedRoute><ErrorBoundary><AIPortfolioSection /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="chat" element={<ProtectedRoute><Chatbot /></ProtectedRoute>} />
 
         {/* Sales and Support pages */}
         <Route path="/signup" element={<Signup />} />
@@ -283,7 +283,7 @@ const App = () => {
 
         {/* Landing website */}
         <Route path="/contact" element={<Contact />} />
-        <Route path="/portfolio-view" element={<PortfolioView />} />
+        <Route path="/portfolio-view" element={<ProtectedRoute><PortfolioView /></ProtectedRoute>} />
       </Route>
 
       {/* Catch all: redirect to dashboard or auth */}

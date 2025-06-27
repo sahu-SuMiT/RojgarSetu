@@ -219,6 +219,7 @@ router.get('/student/:studentId', async (req, res) => {
       interviewee: req.params.studentId 
     })
     .populate('companyId', 'name')
+    .populate('interviewer', 'name email position')
     .sort({ date: -1 });
     res.json(interviews);
   } catch (err) {
