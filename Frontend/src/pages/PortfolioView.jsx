@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { motion } from 'framer-motion';
+import GlowingParticles from '../components/GlowingParticles';
 
 const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?name=Portfolio+User&background=0D8ABC&color=fff&size=256';
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -32,20 +33,14 @@ const PortfolioView = () => {
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [profileCareerObjective, setProfileCareerObjective] = useState('');
 
   // Get studentId from portfolio or localStorage
   const studentId = portfolio?.personalInfo?.studentId || localStorage.getItem('studentId');
 
   // Helper to get the correct image for both web and PDF
   const getProfileImgSrc = () => {
-    const photo = portfolio?.personalInfo?.profilePhoto;
-    if (photo && !photo.includes('ui-avatars.com')) {
-      return photo;
-    }
-    if (studentId) {
-      return getStudentProfileImageUrl(studentId);
-    }
-    return DEFAULT_AVATAR;
+    return `https://campusadmin.onrender.com/api/student/me/profile-pic?${Date.now()}`;
   };
 
   useEffect(() => {
@@ -64,6 +59,20 @@ const PortfolioView = () => {
         setLoading(false);
       });
     }
+
+    // Fetch career objective from profile API
+    fetch('https://campusadmin.onrender.com/api/student/me', {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data && (data.careerObjective || (data.profile && data.profile.careerObjective))) {
+          setProfileCareerObjective(data.careerObjective || data.profile.careerObjective);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const handleDownloadPDF = async () => {
@@ -81,73 +90,119 @@ const PortfolioView = () => {
     // Add content: image, name, title, email, phone, location, about, education, skills, projects
     let html = '';
     if (portfolio?.personalInfo) {
-      html += `<div style="text-align:center;margin-bottom:24px;">`;
-      const imgSrc = getProfileImgSrc();
-      html += `<img src="${imgSrc}" alt="Profile" style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:2px solid #eee;margin-bottom:12px;" onerror="this.src='${DEFAULT_AVATAR}'" />`;
-      html += `<h1 style="font-size:2em;font-weight:bold;margin:8px 0 4px 0;">${portfolio.personalInfo.name || ''}</h1>`;
-      html += `<div style="font-size:1.1em;margin-bottom:8px;">${portfolio.personalInfo.title || ''}</div>`;
-      html += `<div style="font-size:1em;color:#333;">${portfolio.personalInfo.email || ''} | ${portfolio.personalInfo.phone || ''} | ${portfolio.personalInfo.location || ''}</div>`;
-      html += `</div>`;
-      if (portfolio.personalInfo.careerObjective) {
-        html += `<div style="margin-bottom:18px;"><strong>About:</strong> ${portfolio.personalInfo.careerObjective}</div>`;
+      html += `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="text-align:left;">
+            <h1 style="font-size:2em;font-weight:bold;margin:0;">${portfolio.personalInfo.name || ''}</h1>
+          </div>
+          <div style="text-align:right;font-size:1em;">
+            <div>Email: ${portfolio.personalInfo.email || ''}</div>
+            <div>Contact: ${portfolio.personalInfo.phone || ''}</div>
+            <div>${portfolio.personalInfo.location || ''}</div>
+          </div>
+        </div>
+        <hr style="border:1px solid #222;margin:8px 0 16px 0;"/>
+      `;
+      if (portfolio.personalInfo.linkedin || portfolio.personalInfo.github || portfolio.personalInfo.website) {
+        html += `<div style="margin-bottom:10px;">`;
+        if (portfolio.personalInfo.linkedin) html += `<a href="${portfolio.personalInfo.linkedin}" style="color:#2563eb;text-decoration:underline;margin-right:10px;">LinkedIn</a>`;
+        if (portfolio.personalInfo.github) html += `<a href="${portfolio.personalInfo.github}" style="color:#2563eb;text-decoration:underline;margin-right:10px;">GitHub</a>`;
+        if (portfolio.personalInfo.website) html += `<a href="${portfolio.personalInfo.website}" style="color:#2563eb;text-decoration:underline;">Website</a>`;
+        html += `</div>`;
+      }
+      if (profileCareerObjective || portfolio.personalInfo.careerObjective) {
+        html += `<div style="margin-bottom:18px;"><span style="font-weight:bold;text-decoration:underline;">PROFESSIONAL SUMMARY</span><br>${profileCareerObjective || portfolio.personalInfo.careerObjective}</div>`;
       }
     }
-    if (portfolio?.education) {
-      html += `<div style="margin-bottom:18px;"><strong>Education:</strong><ul style="margin:6px 0 0 18px;">`;
-      if (portfolio.education.degree) html += `<li>Degree: ${portfolio.education.degree}</li>`;
-      if (portfolio.education.major) html += `<li>Major: ${portfolio.education.major}</li>`;
-      if (portfolio.education.year) html += `<li>Year: ${portfolio.education.year}</li>`;
-      if (portfolio.education.cgpa) html += `<li>CGPA: ${portfolio.education.cgpa}</li>`;
-      if (portfolio.education.expectedGraduation) html += `<li>Expected Graduation: ${portfolio.education.expectedGraduation}</li>`;
-      if (portfolio.education.department) html += `<li>Department: ${portfolio.education.department}</li>`;
-      html += `</ul></div>`;
-    }
-    if (portfolio?.skills) {
-      html += `<div style="margin-bottom:18px;"><strong>Skills:</strong> `;
-      if (portfolio.skills.skills?.length) html += `<span>${portfolio.skills.skills.join(', ')}</span>`;
-      if (portfolio.skills.programmingLanguages?.length) html += `<br/><span>Programming: ${portfolio.skills.programmingLanguages.join(', ')}</span>`;
-      if (portfolio.skills.technologies?.length) html += `<br/><span>Technologies: ${portfolio.skills.technologies.join(', ')}</span>`;
+    // Education
+    if (portfolio?.education && (portfolio.education.degree || portfolio.education.major || portfolio.education.year || portfolio.education.cgpa || portfolio.education.expectedGraduation || portfolio.education.department)) {
+      html += `<div style="margin-bottom:12px;"><span style="font-weight:bold;text-decoration:underline;">EDUCATION</span><hr style='border:0;border-top:1px solid #aaa;margin:4px 0 8px 0;'>`;
+      html += `<div><b>${portfolio.education.degree || ''}${portfolio.education.major ? ', ' + portfolio.education.major : ''}</b></div>`;
+      html += `<div>${portfolio.education.department || ''}${portfolio.education.year ? ', ' + portfolio.education.year : ''}</div>`;
+      html += `<div>${portfolio.education.cgpa ? 'CGPA: ' + portfolio.education.cgpa : ''}${portfolio.education.expectedGraduation ? ', Graduation: ' + portfolio.education.expectedGraduation : ''}</div>`;
       html += `</div>`;
     }
-    if (portfolio?.projects?.length) {
-      html += `<div style="margin-bottom:18px;"><strong>Projects & Achievements:</strong><ul style="margin:6px 0 0 18px;">`;
-      portfolio.projects.forEach(project => {
-        html += `<li><strong>${project.name}</strong>: ${project.description || ''}`;
-        if (project.technologies?.length) html += ` <span style='color:#333'>(Tech: ${project.technologies.join(', ')})</span>`;
-        html += `</li>`;
+    // Skills
+    if (portfolio?.skills && (portfolio.skills.skills?.length || portfolio.skills.programmingLanguages?.length || portfolio.skills.technologies?.length)) {
+      html += `<div style="margin-bottom:12px;"><span style="font-weight:bold;text-decoration:underline;">TECHNICAL SKILLS</span><hr style='border:0;border-top:1px solid #aaa;margin:4px 0 8px 0;'>`;
+      if (portfolio.skills.skills?.length) html += `<div><b>General:</b> ${portfolio.skills.skills.join(', ')}</div>`;
+      if (portfolio.skills.programmingLanguages?.length) html += `<div><b>Programming:</b> ${portfolio.skills.programmingLanguages.join(', ')}</div>`;
+      if (portfolio.skills.technologies?.length) html += `<div><b>Technologies:</b> ${portfolio.skills.technologies.join(', ')}</div>`;
+      html += `</div>`;
+    }
+    // Work Experience
+    if (portfolio?.experience?.length) {
+      html += `<div style="margin-bottom:12px;"><span style="font-weight:bold;text-decoration:underline;">WORK EXPERIENCE</span><hr style='border:0;border-top:1px solid #aaa;margin:4px 0 8px 0;'>`;
+      portfolio.experience.forEach(exp => {
+        html += `<div style='margin-bottom:6px;'><b>${exp.title || ''} | ${exp.company || ''}</b> <span style='float:right;'>${exp.startDate || ''}${exp.endDate ? ' – ' + exp.endDate : ''}</span><br>`;
+        if (exp.description) html += `<span>${exp.description}</span><br>`;
+        if (exp.responsibilities?.length) {
+          html += `<ul style='margin:0 0 0 18px;'>`;
+          exp.responsibilities.forEach(r => html += `<li>${r}</li>`);
+          html += `</ul>`;
+        }
+        html += `</div>`;
+      });
+      html += `</div>`;
+    }
+    // Projects (with achievements below if present)
+    if ((portfolio?.projects?.filter(p => p && p.name)?.length) || (portfolio?.achievements?.length)) {
+      html += `<div style=\"margin-bottom:12px;\"><span style=\"font-weight:bold;text-decoration:underline;\">PROJECTS</span><hr style='border:0;border-top:1px solid #aaa;margin:4px 0 8px 0;'>`;
+      // Projects
+      if (portfolio?.projects?.filter(p => p && p.name)?.length) {
+        portfolio.projects.filter(p => p && p.name).forEach(project => {
+          html += `<div style='margin-bottom:4px;'><b>${project.name}</b>${project.technologies?.length ? ' (' + project.technologies.join(', ') + ')' : ''}<br>`;
+          if (project.description) html += `<span>${project.description}</span><br>`;
+          if (project.achievement) html += `<span><i>${project.achievement}</i></span><br>`;
+          html += `</div>`;
+        });
+      }
+      // Achievements (as a bulleted list below projects)
+      if (portfolio?.achievements?.length) {
+        html += `<ul style='margin:0 0 0 18px;'>`;
+        portfolio.achievements.forEach(a => {
+          if (typeof a === 'string') {
+            html += `<li>${a}</li>`;
+          } else if (a && (a.title || a.description)) {
+            html += `<li><b>${a.title || ''}</b>${a.description ? ': ' + a.description : ''}</li>`;
+          }
+        });
+        html += `</ul>`;
+      }
+      html += `</div>`;
+    }
+    // Certifications
+    if (portfolio?.certifications?.filter(cert => cert && cert.name)?.length) {
+      html += `<div style="margin-bottom:12px;"><span style="font-weight:bold;text-decoration:underline;">CERTIFICATES</span><hr style='border:0;border-top:1px solid #aaa;margin:4px 0 8px 0;'>`;
+      html += `<ul style='margin:0 0 0 18px;'>`;
+      portfolio.certifications.filter(cert => cert && cert.name).forEach(cert => {
+        html += `<li><b>${cert.name}</b>${cert.issuer ? ' – ' + cert.issuer : ''}${cert.date ? ', ' + new Date(cert.date).toLocaleDateString() : ''}${cert.link ? ` <a href='${cert.link}' style='color:#2563eb;text-decoration:underline;'>[Link]</a>` : ''}</li>`;
       });
       html += `</ul></div>`;
     }
-    if (portfolio?.certifications?.length) {
-      html += `<div style="margin-bottom:18px;"><strong>Certifications:</strong><ul style="margin:6px 0 0 18px;">`;
-      portfolio.certifications.forEach(cert => {
-        html += `<li><strong>${cert.name}</strong> (${cert.issuer || ''}${cert.date ? ', ' + new Date(cert.date).toLocaleDateString() : ''})`;
-        if (cert.link) html += ` <a href='${cert.link}' style='color:#2563eb;text-decoration:underline;'>[Link]</a>`;
-        html += `</li>`;
-      });
-      html += `</ul></div>`;
-    }
-    if (portfolio?.extracurricular?.length) {
-      html += `<div style="margin-bottom:18px;"><strong>Extracurricular Activities:</strong><ul style="margin:6px 0 0 18px;">`;
+    // Extracurricular Activities Section
+    if (portfolio?.extracurricular?.length > 0 && (portfolio?.projects?.filter(p => p && p.name)?.length || portfolio?.achievements?.length)) {
+      html += `<div style="margin-bottom:12px;"><span style="font-weight:bold;text-decoration:underline;">EXTRACURRICULAR ACTIVITIES</span><hr style='border:0;border-top:1px solid #aaa;margin:4px 0 8px 0;'>`;
+      html += `<ul style='margin:0 0 0 18px;'>`;
       portfolio.extracurricular.forEach(item => {
-        html += `<li>${item.activity || ''}${item.role ? ' (' + item.role + ')' : ''}${item.achievement ? ': ' + item.achievement : ''}</li>`;
+        html += `<li>${item.activity}${item.role ? ' (' + item.role + ')' : ''}${item.achievement ? ': ' + item.achievement : ''}</li>`;
       });
       html += `</ul></div>`;
     }
-    if (portfolio?.research?.length) {
-      html += `<div style="margin-bottom:18px;"><strong>Research:</strong><ul style="margin:6px 0 0 18px;">`;
-      portfolio.research.forEach(item => {
-        html += `<li><strong>${item.title}</strong>${item.year ? ' (' + item.year + ')' : ''}${item.role ? ', ' + item.role : ''}${item.description ? ': ' + item.description : ''}</li>`;
+    // Research Section
+    if (portfolio?.research?.filter(item => item && item.title)?.length > 0 && (portfolio?.projects?.filter(p => p && p.name)?.length || portfolio?.achievements?.length)) {
+      html += `<div style="margin-bottom:12px;"><span style="font-weight:bold;text-decoration:underline;">RESEARCH</span><hr style='border:0;border-top:1px solid #aaa;margin:4px 0 8px 0;'>`;
+      html += `<ul style='margin:0 0 0 18px;'>`;
+      portfolio.research.filter(item => item && item.title).forEach(item => {
+        html += `<li><b>${item.title}</b>${item.year ? ' (' + item.year + ')' : ''}${item.role ? ', ' + item.role : ''}${item.description ? ': ' + item.description : ''}</li>`;
       });
       html += `</ul></div>`;
     }
-    if (portfolio?.hackathons?.length) {
-      html += `<div style="margin-bottom:18px;"><strong>Hackathons:</strong><ul style="margin:6px 0 0 18px;">`;
-      portfolio.hackathons.forEach(item => {
-        html += `<li><strong>${item.name}</strong>${item.year ? ' (' + item.year + ')' : ''}${item.achievement ? ': ' + item.achievement : ''}${item.description ? ' - ' + item.description : ''}</li>`;
-      });
-      html += `</ul></div>`;
-    }
+    // Footer with logo and bold colored text
+    html += `<div style='margin-top:24px;text-align:center;'>
+      <img src='https://campusadmin.onrender.com/assets/rojgarlogo.png' alt='Rojgar Setu Logo' style='height:28px;opacity:0.85;margin-bottom:4px;'/><br>
+      <span style='font-size:1.05em;font-weight:bold;color:#6C2EB5;'>Powered by Rojgar Setu</span>
+    </div>`;
     pdfDiv.innerHTML = html;
 
     // Hide the div off-screen
@@ -215,299 +270,192 @@ const PortfolioView = () => {
   const { personalInfo, education, skills, projects } = portfolio;
 
   return (
-    <div id="portfolio-root" className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 flex flex-col items-center px-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-[#2d0036] via-[#3a0ca3] to-[#7209b7] flex flex-col items-center px-4 py-0 relative overflow-x-hidden">
       {/* Hero Section */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7 }}
-        className="w-full max-w-4xl bg-white/5 backdrop-blur-sm rounded-3xl shadow-2xl p-8 flex flex-col items-center mb-10 mt-4 border border-white/10"
-      >
-        <div className="relative">
-          <div className="absolute inset-0 bg-indigo-500 rounded-full blur-2xl opacity-20"></div>
-          <img
-            src={getProfileImgSrc()}
-            alt="Profile"
-            className="w-32 h-32 rounded-full border-2 border-indigo-400/50 shadow-lg mb-6 object-cover bg-white relative z-10"
-            onError={e => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR; }}
-          />
-        </div>
-        <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-indigo-200 mb-3 text-center">
-          {personalInfo?.name || 'Your Name'}
-        </h1>
-        <p className="text-indigo-200/80 text-lg mb-4 text-center max-w-2xl">
-          {personalInfo?.title || 'Student'}
-        </p>
-        <div className="flex flex-wrap justify-center gap-4 text-slate-300 text-sm">
-          <motion.span 
-            whileHover={{ scale: 1.05 }}
-            className="px-4 py-2 bg-white/5 rounded-full border border-white/10"
-          >
-            {personalInfo?.email || 'email@example.com'}
-          </motion.span>
-          <motion.span 
-            whileHover={{ scale: 1.05 }}
-            className="px-4 py-2 bg-white/5 rounded-full border border-white/10"
-          >
-            {personalInfo?.phone || 'Phone Number'}
-          </motion.span>
-          <motion.span 
-            whileHover={{ scale: 1.05 }}
-            className="px-4 py-2 bg-white/5 rounded-full border border-white/10"
-          >
-            {personalInfo?.location || 'Location'}
-          </motion.span>
-        </div>
-      </motion.div>
-
-      {/* About Section */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.1 }}
-        className="w-full max-w-4xl bg-white/5 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-8 border border-white/10"
-      >
-        <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
-          <span className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mr-3">
-            <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
-          </span>
-          About
-        </h2>
-        <p className="text-slate-300 text-lg leading-relaxed">
-          {personalInfo?.careerObjective || 'No career objective provided.'}
-        </p>
-      </motion.div>
-
-      {/* Education Section */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.2 }}
-        className="w-full max-w-4xl bg-white/5 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-8 border border-white/10"
-      >
-        <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
-          <span className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mr-3">
-            <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
-          </span>
-          Education
-        </h2>
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-slate-300">
-            <div className="flex flex-col">
-              <span className="text-xs uppercase text-indigo-300/70">Degree</span>
-              <span className="text-lg">{education?.degree || 'N/A'}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs uppercase text-indigo-300/70">Major</span>
-              <span className="text-lg">{education?.major || 'N/A'}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs uppercase text-indigo-300/70">Year</span>
-              <span className="text-lg">{education?.year || 'N/A'}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs uppercase text-indigo-300/70">CGPA</span>
-              <span className="text-lg">{education?.cgpa || 'N/A'}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs uppercase text-indigo-300/70">Expected Graduation</span>
-              <span className="text-lg">{education?.expectedGraduation || 'N/A'}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs uppercase text-indigo-300/70">Department</span>
-              <span className="text-lg">{education?.department || 'N/A'}</span>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Skills Section */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.3 }}
-        className="w-full max-w-4xl bg-white/5 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-8 border border-white/10"
-      >
-        <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
-          <span className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mr-3">
-            <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
-          </span>
-          Skills
-        </h2>
-        
-        {skills?.skills?.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-sm uppercase text-indigo-300/70 mb-3">General Skills</h3>
-            <div className="flex flex-wrap gap-2">
-              {skills.skills.map((skill, idx) => (
-                <motion.span 
-                  key={idx} 
-                  whileHover={{ scale: 1.05 }}
-                  className="px-4 py-2 rounded-full bg-indigo-500/10 text-indigo-200 text-sm font-medium border border-indigo-500/20"
-                >
-                  {skill}
-                </motion.span>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {skills?.programmingLanguages?.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-sm uppercase text-indigo-300/70 mb-3">Programming Languages</h3>
-            <div className="flex flex-wrap gap-2">
-              {skills.programmingLanguages.map((lang, idx) => (
-                <motion.span 
-                  key={idx} 
-                  whileHover={{ scale: 1.05 }}
-                  className="px-4 py-2 rounded-full bg-purple-500/10 text-purple-200 text-sm font-medium border border-purple-500/20"
-                >
-                  {lang}
-                </motion.span>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {skills?.technologies?.length > 0 && (
-          <div>
-            <h3 className="text-sm uppercase text-indigo-300/70 mb-3">Technologies</h3>
-            <div className="flex flex-wrap gap-2">
-              {skills.technologies.map((tech, idx) => (
-                <motion.span 
-                  key={idx} 
-                  whileHover={{ scale: 1.05 }}
-                  className="px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-200 text-sm font-medium border border-emerald-500/20"
-                >
-                  {tech}
-                </motion.span>
-              ))}
-            </div>
-          </div>
-        )}
-      </motion.div>
-
-      {/* Projects & Achievements Section (optional) */}
-      {projects && projects.length > 0 && (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.4 }}
-          className="w-full max-w-4xl bg-white/5 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-8 border border-white/10"
-        >
-          <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
-            <span className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center mr-3">
-              <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
-            </span>
-            Projects & Achievements
+      <section className="w-full max-w-5xl flex flex-col md:flex-row items-center justify-between py-16">
+        {/* Left: Intro */}
+        <div className="flex-1 flex flex-col items-start gap-6">
+          <span className="uppercase text-xs tracking-widest text-purple-200 font-semibold">Welcome to my world ✨</span>
+          <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight">
+            Hi, I'm <span className="text-purple-300">{portfolio?.personalInfo?.name || "Your Name"}</span>
+          </h1>
+          <h2 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400 mb-2">
+            {portfolio?.personalInfo?.title || "UI/UX Designer"}
           </h2>
-          <div className="grid grid-cols-1 gap-4">
-            {projects.map((project, idx) => (
-              <motion.div 
-                key={idx} 
-                whileHover={{ y: -5, boxShadow: '0 10px 30px -15px rgba(0, 0, 0, 0.5)' }}
-                className="p-6 rounded-xl bg-white/5 border border-white/10 transition-all duration-300"
-              >
-                <h3 className="font-semibold text-indigo-300 text-lg mb-2">{project.name}</h3>
-                <p className="text-slate-400 mb-4">{project.description}</p>
-                {project.technologies && (
-                  <div className="flex flex-wrap gap-2">
-                    {project.technologies.map((tech, techIdx) => (
-                      <span key={techIdx} className="px-3 py-1 text-xs rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-                        {tech}
-                      </span>
+          <p className="text-slate-200 max-w-lg">
+            {profileCareerObjective || portfolio?.personalInfo?.careerObjective || "Passionate designer/developer..."}
+          </p>
+          <div className="flex gap-4 mt-4">
+            <button onClick={handleDownloadPDF} className="px-6 py-2 rounded-full border-2 border-purple-400 text-purple-200 font-semibold hover:bg-purple-700 hover:text-white transition">Download CV</button>
+          </div>
+          <div className="flex gap-3 mt-6">
+            {portfolio?.personalInfo?.linkedin && (
+              <a href={portfolio.personalInfo.linkedin} target="_blank" rel="noopener noreferrer">
+                <img src="/assets/linkedin.svg" alt="LinkedIn" className="h-7 w-7" />
+              </a>
+            )}
+            {/* Add more social icons as needed */}
+          </div>
+        </div>
+        {/* Right: Avatar */}
+        <div className="flex-1 flex justify-center items-center mt-10 md:mt-0">
+          <div className="rounded-3xl bg-gradient-to-br from-purple-700/60 to-pink-400/40 p-4 shadow-2xl">
+            <img
+              src={getProfileImgSrc()}
+              alt="Profile"
+              className="w-56 h-56 rounded-2xl object-cover border-4 border-purple-300 shadow-lg"
+              onError={e => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR; }}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Skills Section (icon buttons/cards) */}
+      {(portfolio?.skills?.skills?.length > 0 || portfolio?.skills?.programmingLanguages?.length > 0 || portfolio?.skills?.technologies?.length > 0) && (
+        <section className="w-full max-w-5xl flex flex-col items-start py-8">
+          <h2 className="text-2xl font-bold text-white mb-4">Skills</h2>
+          <div className="flex flex-wrap gap-4 mb-6">
+            {portfolio.skills.skills?.map((skill, idx) => (
+              <span key={idx} className="px-5 py-2 rounded-xl bg-purple-700/60 text-white font-semibold text-lg shadow hover:bg-purple-800 transition">
+                {skill}
+              </span>
+            ))}
+          </div>
+          {portfolio.skills.programmingLanguages?.length > 0 && (
+            <div className="mb-6 w-full">
+              <h3 className="text-lg font-semibold text-pink-200 mb-2">Programming Languages</h3>
+              <div className="flex flex-wrap gap-3">
+                {portfolio.skills.programmingLanguages.map((lang, idx) => (
+                  <span key={idx} className="px-5 py-2 rounded-xl bg-pink-600/60 text-white font-semibold text-lg shadow hover:bg-pink-700 transition">
+                    {lang}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {portfolio.skills.technologies?.length > 0 && (
+            <div className="mb-6 w-full">
+              <h3 className="text-lg font-semibold text-yellow-200 mb-2">Technologies</h3>
+              <div className="flex flex-wrap gap-3">
+                {portfolio.skills.technologies.map((tech, idx) => (
+                  <span key={idx} className="px-5 py-2 rounded-xl bg-yellow-500/60 text-white font-semibold text-lg shadow hover:bg-yellow-600 transition">
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Projects Section */}
+      {portfolio?.projects?.filter(p => p && p.name)?.length > 0 && (
+        <section className="w-full max-w-5xl py-8">
+          <h2 className="text-2xl font-bold text-white mb-4">Projects</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {portfolio.projects.filter(p => p && p.name).map((project, idx) => (
+              <div key={idx} className="rounded-2xl bg-white/10 p-6 shadow-lg border border-white/10 flex flex-col gap-2">
+                <h3 className="text-xl font-bold text-purple-200 mb-1">{project.name}</h3>
+                {project.technologies?.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-1">
+                    {project.technologies.map((tech, tIdx) => (
+                      <span key={tIdx} className="px-3 py-1 rounded-lg bg-purple-700/40 text-purple-100 text-xs font-semibold">{tech}</span>
                     ))}
                   </div>
                 )}
-              </motion.div>
+                <p className="text-slate-200 text-base">{project.description}</p>
+                {project.achievement && <div className="text-pink-200 text-sm mt-1">🏆 {project.achievement}</div>}
+              </div>
             ))}
           </div>
-        </motion.div>
+        </section>
+      )}
+
+      {/* Achievements Section */}
+      {portfolio?.achievements?.length > 0 && (
+        <section className="w-full max-w-5xl py-8">
+          <h2 className="text-2xl font-bold text-white mb-4">Achievements</h2>
+          <div className="flex flex-wrap gap-4">
+            {portfolio.achievements.map((a, idx) => (
+              <div key={idx} className="rounded-xl bg-pink-700/60 text-white px-6 py-4 font-semibold shadow">
+                {typeof a === 'string' ? a : (a.title || '') + (a.description ? ': ' + a.description : '')}
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Certifications Section */}
-      {portfolio?.certifications?.length > 0 && (
-        <div className="w-full max-w-4xl bg-white/5 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-8 border border-white/10">
-          <h2 className="text-2xl font-bold text-white mb-4 flex items-center">Certifications</h2>
-          <ul className="list-disc ml-6 text-slate-200">
-            {portfolio.certifications.map((cert, idx) => (
-              <li key={idx} className="mb-2">
-                <span className="font-semibold">{cert.name}</span>{' '}
-                {cert.issuer && <span>({cert.issuer})</span>}
-                {cert.date && <span>, {new Date(cert.date).toLocaleDateString()}</span>}
-                {cert.link && <a href={cert.link} className="text-blue-300 underline ml-2" target="_blank" rel="noopener noreferrer">[Link]</a>}
-              </li>
+      {portfolio?.certifications?.filter(cert => cert && cert.name)?.length > 0 && (
+        <section className="w-full max-w-5xl py-8">
+          <h2 className="text-2xl font-bold text-white mb-4">Certifications</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {portfolio.certifications.filter(cert => cert && cert.name).map((cert, idx) => (
+              <div key={idx} className="rounded-2xl bg-white/10 p-6 shadow-lg border border-white/10 flex flex-col gap-2">
+                <span className="font-bold text-purple-200">{cert.name}</span>
+                <span className="text-slate-200 text-sm">{cert.issuer}</span>
+                {cert.date && <span className="text-slate-400 text-xs">{new Date(cert.date).toLocaleDateString()}</span>}
+                {cert.link && <a href={cert.link} className="text-blue-300 underline text-xs mt-1" target="_blank" rel="noopener noreferrer">[Link]</a>}
+              </div>
             ))}
-          </ul>
-        </div>
+          </div>
+        </section>
       )}
 
       {/* Extracurricular Activities Section */}
       {portfolio?.extracurricular?.length > 0 && (
-        <div className="w-full max-w-4xl bg-white/5 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-8 border border-white/10">
-          <h2 className="text-2xl font-bold text-white mb-4 flex items-center">Extracurricular Activities</h2>
-          <ul className="list-disc ml-6 text-slate-200">
+        <section className="w-full max-w-5xl py-8">
+          <h2 className="text-2xl font-bold text-white mb-4">Extracurricular Activities</h2>
+          <div className="flex flex-wrap gap-4">
             {portfolio.extracurricular.map((item, idx) => (
-              <li key={idx} className="mb-2">
-                {item.activity}{item.role && <> ({item.role})</>}{item.achievement && <>: {item.achievement}</>}
-              </li>
+              <div key={idx} className="rounded-xl bg-purple-800/60 text-white px-6 py-4 font-semibold shadow">
+                {item.activity}{item.role ? ' (' + item.role + ')' : ''}{item.achievement ? ': ' + item.achievement : ''}
+              </div>
             ))}
-          </ul>
-        </div>
+          </div>
+        </section>
       )}
 
       {/* Research Section */}
-      {portfolio?.research?.length > 0 && (
-        <div className="w-full max-w-4xl bg-white/5 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-8 border border-white/10">
-          <h2 className="text-2xl font-bold text-white mb-4 flex items-center">Research</h2>
-          <ul className="list-disc ml-6 text-slate-200">
-            {portfolio.research.map((item, idx) => (
-              <li key={idx} className="mb-2">
-                <span className="font-semibold">{item.title}</span>{item.year && <> ({item.year})</>}{item.role && <>, {item.role}</>}{item.description && <>: {item.description}</>}
-              </li>
+      {portfolio?.research?.filter(item => item && item.title)?.length > 0 && (
+        <section className="w-full max-w-5xl py-8">
+          <h2 className="text-2xl font-bold text-white mb-4">Research</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {portfolio.research.filter(item => item && item.title).map((item, idx) => (
+              <div key={idx} className="rounded-2xl bg-white/10 p-6 shadow-lg border border-white/10 flex flex-col gap-2">
+                <span className="font-bold text-purple-200">{item.title}</span>
+                <span className="text-slate-200 text-sm">{item.role}</span>
+                {item.year && <span className="text-slate-400 text-xs">{item.year}</span>}
+                {item.description && <span className="text-slate-300 text-xs mt-1">{item.description}</span>}
+              </div>
             ))}
-          </ul>
-        </div>
+          </div>
+        </section>
       )}
 
       {/* Hackathons Section */}
-      {portfolio?.hackathons?.length > 0 && (
-        <div className="w-full max-w-4xl bg-white/5 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-8 border border-white/10">
-          <h2 className="text-2xl font-bold text-white mb-4 flex items-center">Hackathons</h2>
-          <ul className="list-disc ml-6 text-slate-200">
-            {portfolio.hackathons.map((item, idx) => (
-              <li key={idx} className="mb-2">
-                <span className="font-semibold">{item.name}</span>{item.year && <> ({item.year})</>}{item.achievement && <>: {item.achievement}</>}{item.description && <> - {item.description}</>}
-              </li>
+      {portfolio?.hackathons?.filter(item => item && item.name)?.length > 0 && (
+        <section className="w-full max-w-5xl py-8">
+          <h2 className="text-2xl font-bold text-white mb-4">Hackathons</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {portfolio.hackathons.filter(item => item && item.name).map((item, idx) => (
+              <div key={idx} className="rounded-2xl bg-pink-800/60 p-6 shadow-lg border border-white/10 flex flex-col gap-2 text-white">
+                <span className="font-bold">{item.name}</span>
+                {item.year && <span className="text-slate-200 text-xs">{item.year}</span>}
+                {item.achievement && <span className="text-yellow-200 text-xs">🏆 {item.achievement}</span>}
+                {item.description && <span className="text-slate-300 text-xs mt-1">{item.description}</span>}
+              </div>
             ))}
-          </ul>
-        </div>
+          </div>
+        </section>
       )}
 
-      {/* Footer with Download PDF */}
-      <motion.footer 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.7, delay: 0.5 }}
-        className="w-full max-w-4xl flex flex-col items-center mt-8 mb-6"
-      >
-        <motion.button
-          whileHover={{ scale: 1.05, y: -3 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleDownloadPDF}
-          className="flex items-center justify-center gap-3 px-12 py-5 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white font-bold text-xl shadow-2xl hover:shadow-indigo-500/50 transition-all duration-300 relative overflow-hidden group border border-white/10"
-        >
-          <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-blue-500/30 via-indigo-500/30 to-purple-500/30 blur-xl group-hover:opacity-75 transition-opacity opacity-0"></span>
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <span className="relative">Download Resume as PDF</span>
-        </motion.button>
-        <div className="mt-6 text-center">
-          <span className="text-slate-300 text-sm block mb-1">Your professional resume is ready!</span>
-          <span className="text-slate-400 text-xs">Powered by Rojgar Setu AI Portfolio</span>
+      {/* Add watermark at the very bottom of the page */}
+      <div className="w-full flex justify-center relative mt-24">
+        <div style={{position:'fixed',right:'32px',bottom:'24px',zIndex:50,fontWeight:900,color:'#fff',fontSize:'1.1em',letterSpacing:'0.5px',background:'rgba(44,0,80,0.7)',borderRadius:'1.5rem',padding:'8px 18px',boxShadow:'0 2px 12px 0 rgba(80,0,120,0.10)'}}>
+          Powered by Rojgar Setu
         </div>
-      </motion.footer>
+      </div>
     </div>
   );
 };
