@@ -136,7 +136,7 @@ const verifyWithDigio = async (kycData, retries = 3, backoff = 3000) => {
       customer_identifier: email || phone,
       identifier_type: email ? 'email' : 'mobile',
       customer_name: `${firstName} ${lastName}`,
-      template_name: 'DIGILOCKER_AADHAAR_PAN',
+      template_name: 'KYC CLIENT',
       notify_customer: true,
       generate_access_token: true,
     };
