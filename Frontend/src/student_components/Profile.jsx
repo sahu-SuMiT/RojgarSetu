@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { SidebarContext } from './Sidebar';
 import Loader from '../components/Loader';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Move ArraySection outside the main component
 const ArraySection = memo(({ label, field, fields, emptyObj, profileData, isEditing, handleArrayItemChange, handleRemoveArrayItem, handleAddArrayItem, renderSubArray }) => {
