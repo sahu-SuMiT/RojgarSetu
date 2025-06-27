@@ -66,6 +66,8 @@ export function SupportPanel() {
   const [users, setUsers] = useState([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userError, setUserError] = useState(null);
+  const [scheduledMeetings, setScheduledMeetings] = useState([]);
+  const [loadingMeetings, setLoadingMeetings] = useState(false);
 
   const fetchUsers = async () => {
     setIsLoadingUsers(true);
@@ -88,6 +90,30 @@ export function SupportPanel() {
 
   useEffect(() => {
     fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    const fetchScheduledMeetings = async () => {
+      setLoadingMeetings(true);
+      try {
+        const res = await axios.get(`${API_URL}/api/interviews/scheduled`);
+        if (res.data && res.data.success) {
+          setScheduledMeetings(res.data.interviews);
+        } else {
+          setScheduledMeetings([]);
+        }
+      } catch (err) {
+        setScheduledMeetings([]);
+        toast({
+          title: "Error",
+          description: "Failed to fetch scheduled meetings",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingMeetings(false);
+      }
+    };
+    fetchScheduledMeetings();
   }, []);
 
   const supportStats = [
@@ -176,41 +202,6 @@ export function SupportPanel() {
     },
   ];
 
-  const liveChats = [
-    {
-      id: 1,
-      user: "john.doe@email.com",
-      userType: "Student",
-      status: "active",
-      duration: "5 min",
-      issue: "Password reset help",
-    },
-    {
-      id: 2,
-      user: "company@startup.com",
-      userType: "Company",
-      status: "waiting",
-      duration: "2 min",
-      issue: "Profile verification",
-    },
-    {
-      id: 3,
-      user: "college@university.edu",
-      userType: "College",
-      status: "active",
-      duration: "12 min",
-      issue: "Student bulk upload",
-    },
-    {
-      id: 4,
-      user: "student@example.com",
-      userType: "Student",
-      status: "waiting",
-      duration: "1 min",
-      issue: "Application status query",
-    },
-  ];
-
   const filteredTickets = supportTickets.filter((ticket) => {
     const matchesSearch = ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          ticket.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -219,14 +210,6 @@ export function SupportPanel() {
     const matchesPriority = priorityFilter === "all" || ticket.priority === priorityFilter;
     const matchesUserType = userTypeFilter === "all" || ticket.userType === userTypeFilter;
     return matchesSearch && matchesStatus && matchesPriority && matchesUserType;
-  });
-
-  const filteredChats = liveChats.filter((chat) => {
-    const matchesSearch = chat.user.toLowerCase().includes(chatSearchQuery.toLowerCase()) ||
-                         chat.issue.toLowerCase().includes(chatSearchQuery.toLowerCase()) ||
-                         chat.userType.toLowerCase().includes(chatSearchQuery.toLowerCase());
-    const matchesStatus = chatStatusFilter === "all" || chat.status === chatStatusFilter;
-    return matchesSearch && matchesStatus;
   });
 
   const filteredStaff = users.filter((user) => {
@@ -623,6 +606,29 @@ export function SupportPanel() {
                 </TabsContent>
 
                 <TabsContent value="live-chat" className="chat-content">
+                  <div className="scheduled-meetings-section" style={{ marginBottom: 24 }}>
+                    <h3 className="chat-title">Scheduled Meetings</h3>
+                    {loadingMeetings ? (
+                      <div className="empty-state"><p>Loading meetings...</p></div>
+                    ) : scheduledMeetings.length === 0 ? (
+                      <div className="empty-state"><p>No scheduled meetings found.</p></div>
+                    ) : (
+                      scheduledMeetings.map((meeting) => (
+                        <div key={meeting._id} className="chat-item meeting-item" style={{ border: '1px solid #eee', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                          <div><strong>Interviewer:</strong> {meeting.interviewer?.firstName} {meeting.interviewer?.lastName} ({meeting.interviewer?.email})</div>
+                          <div><strong>Interviewee:</strong> {meeting.interviewee?.firstName} {meeting.interviewee?.lastName} ({meeting.interviewee?.email})</div>
+                          <div><strong>Date:</strong> {meeting.date ? new Date(meeting.date).toLocaleString() : 'N/A'}</div>
+                          {meeting.link ? (
+                            <Button asChild style={{ marginTop: 8 }}>
+                              <a href={meeting.link} target="_blank" rel="noopener noreferrer">Join Meeting</a>
+                            </Button>
+                          ) : (
+                            <span style={{ color: '#888', marginTop: 8, display: 'inline-block' }}>No meeting link</span>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
                   <div className="chat-filters">
                     <div className="chat-search">
                       <div className="search-input">
@@ -648,7 +654,8 @@ export function SupportPanel() {
 
                     <div className="chat-info">
                       <p className="result-count">
-                        {filteredChats.length} active chat sessions
+                        {/* {filteredChats.length} active chat sessions */}
+                        0 active chat sessions
                       </p>
                       {(chatSearchQuery || chatStatusFilter !== "all") && (
                         <Button variant="ghost" size="sm" onClick={() => {
@@ -663,7 +670,7 @@ export function SupportPanel() {
 
                   <div className="chat-list">
                     <h3 className="chat-title">Active Chats</h3>
-                    {filteredChats.length === 0 ? (
+                    {/* {filteredChats.length === 0 ? (
                       <div className="empty-state">
                         <div className="empty-content">
                           <MessageSquare className="empty-icon" />
@@ -689,7 +696,13 @@ export function SupportPanel() {
                           </div>
                         </div>
                       ))
-                    )}
+                    )} */}
+                    <div className="empty-state">
+                      <div className="empty-content">
+                        <MessageSquare className="empty-icon" />
+                        <p className="empty-text">No active chats found matching your criteria</p>
+                      </div>
+                    </div>
                   </div>
                 </TabsContent>
 
@@ -906,18 +919,7 @@ export function SupportPanel() {
                     <DialogDescription>Monitor and join active chat sessions</DialogDescription>
                   </DialogHeader>
                   <div className="chat-dashboard">
-                    <p className="chat-count">Active chat sessions: {liveChats.length}</p>
-                    {liveChats.map((chat) => (
-                      <div key={chat.id} className="chat-preview">
-                        <div className="chat-preview-content">
-                          <div className="preview-info">
-                            <p className="preview-user">{chat.user}</p>
-                            <p className="preview-issue">{chat.issue}</p>
-                          </div>
-                          <Button size="sm" onClick={() => handleJoinChat(chat.id)}>Join</Button>
-                        </div>
-                      </div>
-                    ))}
+                    <p className="chat-count">Active chat sessions: 0</p>
                   </div>
                   <DialogFooter>
                     <Button onClick={() => setIsLiveChatOpen(false)}>Close</Button>
