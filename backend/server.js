@@ -125,6 +125,7 @@ app.use('/api/students', require('./routes/students'));
 // New REST endpoints
 app.use('/api/auth', authRoutes); // for authentication-related endpoints (login/register)
 app.use('/api/studentJobs', jobRoutes);
+app.use('/api/kyc', require('./routes/kyc')); 
 app.use('/api/internships', internshipsRoutes);
 app.use('/api/studentInterviews', interviewRoutes);
 app.use('/api/studentApplications', applicationRoutes);
