@@ -35,7 +35,6 @@ const Profile = () => {
         });
         if (response.ok) {
           const data = await response.json();
-          console.log('KYC status data:', data);
           // If iskycVerified is true, set to approved
           if (data.kycStatus === 'verified' || data.iskycVerified) {
             setKycStatus('approved');
@@ -65,10 +64,7 @@ const Profile = () => {
           throw new Error('Failed to fetch profile data');
         }
         const data = await response.json();
-        setProfileData(data.profile || data);
-        console.log('Profile data:', data.profile || data);
-        // Mock KYC status fetch (assuming profile data includes kycStatus)
-        setKycStatus(data.profile?.kycStatus || 'pending');
+        setProfileData(data.profile || data);        // Mock KYC status fetch (assuming profile data includes kycStatus)
       } catch (err) {
         setError(err.message || 'Unknown error');
       } finally {
@@ -164,6 +160,11 @@ const Profile = () => {
   };
 
   const handleMockPayment = async () => {
+    if(kycStatus === 'approved' || kycStatus === 'verified') {
+      alert('KYC is already approved or verified.');
+      return;
+    }
+    if (paymentProcessing) return; // Prevent multiple clicks
     setPaymentProcessing(true);
     // Simulate payment delay
     setTimeout(async () => {
@@ -348,7 +349,7 @@ const Profile = () => {
                   style={{ outline: 'none' }}
                   disabled={kycStatus === 'approved' || kycStatus === 'verified' || kycStatus === 'pending'}
                 >
-                  <ShieldAlert className="w-5 h-5" />
+                  {kycStatus === 'pending' ? <ShieldAlert className="w-5 h-5" /> : "👍"}
                   {kycStatus === 'approved' ? 'KYC Done' : kycStatus === 'verified' ? 'KYC Verified' : kycStatus === 'pending' ? 'Pending' : kycStatus === 'pending approval' ? 'Pending Approval' : 'Complete Your Verification'}
                 </button>
                 {/* Edit/Save/Cancel buttons */}

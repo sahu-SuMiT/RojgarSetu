@@ -8,49 +8,33 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { CheckCircle, XCircle, AlertCircle, Upload, Shield, FileText, Plus, Download, Eye } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, Upload, Shield, FileText, Plus, Download, Eye, History } from "lucide-react";
 import { toast } from "sonner";
+//backend API base URL'
 
-// Define your backend API base URL here
-const API_BASE_URL = 'http://localhost:5000'; // Replace with your actual backend API URL
+const API_BASE_URL = 'http://localhost:5000';
 
-interface Document {
-  id: string;
-  name: string;
+type Document = {
   type: string;
-  status: 'verified' | 'pending' | 'missing' | 'rejected';
-  lastUpdated: string;
-  source: 'digi-kyc' | 'manual';
-  kycId?: string;
-  downloadUrl?: string;
-}
+  status: string;
+  imageUrl?: string;
+  metadata?: Record<string, any>;
+};
 
-interface VerificationTicket {
-  id: string;
-  studentName: string;
-  documentType: string;
-  status: 'pending' | 'approved' | 'rejected';
-  uploadedFile?: File;
-  created: string;
-  description: string;
-}
+type KycData = {
+  verificationId?: string;
+  lastUpdated?: string;
+  [key: string]: any;
+};
 
-interface DigiKycRequest {
-  identifier: string; // email or mobile
-  template_name?: string;
-}
-
-interface StudentKyc {
+type Student = {
   name: string;
   email: string;
-  kycStatus: string;
-  kycData?: {
-    verificationId?: string;
-    status?: string;
-    lastUpdated?: string;
-    [key: string]: any;
-  };
-}
+  kycStatus?: string;
+  kycData?: KycData;
+  documents?: Document[];
+  [key: string]: any;
+};
 
 const EKysDashboard = () => {
   const token = localStorage.getItem("token");
@@ -58,279 +42,52 @@ const EKysDashboard = () => {
     window.location.href = "https://company.rojgarsetu.org/";
   }
 
-
-  const [documents, setDocuments] = useState<Document[]>([
-    {
-      id: "1",
-      name: "Aadhaar Card",
-      type: "Identity Proof",
-      status: "verified",
-      lastUpdated: "2024-01-15",
-      source: "digi-kyc"
-    },
-    {
-      id: "2",
-      name: "10th Marksheet",
-      type: "Educational Certificate",
-      status: "verified",
-      lastUpdated: "2024-01-10",
-      source: "digi-kyc"
-    },
-    {
-      id: "3",
-      name: "12th Marksheet",
-      type: "Educational Certificate",
-      status: "missing",
-      lastUpdated: "N/A",
-      source: "digi-kyc"
-    },
-    {
-      id: "4",
-      name: "Degree Certificate",
-      type: "Educational Certificate",
-      status: "pending",
-      lastUpdated: "2024-01-20",
-      source: "manual"
-    }
-  ]);
-
-  const [tickets, setTickets] = useState<VerificationTicket[]>([]);
+  const [studentDocuments, setStudentDocuments] = useState<Document[]>([]);
+  const [tickets, setTickets] = useState<any[]>([]);
   const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false);
   const [isKycDialogOpen, setIsKycDialogOpen] = useState(false);
+  const [isReinitiateKycDialogOpen, setIsReinitiateKycDialogOpen] = useState(false);
+  const [isKycHistoryDialogOpen, setIsKycHistoryDialogOpen] = useState(false);
+  const [kycHistory, setKycHistory] = useState<any>(null);
   const [newTicket, setNewTicket] = useState({
     documentType: "",
     description: "",
-    uploadedFile: null as File | null
+    uploadedFile: null
   });
   const [kycData, setKycData] = useState({
     identifier: "",
     templateName: ""
   });
+  const [reinitiateKycData, setReinitiateKycData] = useState({
+    identifier: ""
+  });
   const [isProcessing, setIsProcessing] = useState(false);
-  const [students, setStudents] = useState<StudentKyc[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [selectedKycId, setSelectedKycId] = useState<string | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<StudentKyc | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
-  // Approve or Reject KYC Request
-  const handleKycDecision = async (kycId: string, decision: 'approved' | 'rejected', reason?: string) => {
-    setIsProcessing(true);
-    try {
-      console.log(`Handling KYC decision: ${decision} for KYC ID: ${kycId}`);
-      const response = await fetch(`${API_BASE_URL}/api/kyc/decision`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          verificationId: kycId,
-          decision,
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || `Failed to ${decision} KYC request`);
-      }
-
-      // Update student KYC status
-      setStudents(students.map(student =>
-        student.kycData?.verificationId === kycId
-          ? {
-              ...student,
-              kycStatus: data.kycStatus,
-              kycData: data.kycData
-            }
-          : student
-      ));
-
-      toast.success(data.message);
-    } catch (error: any) {
-      console.error(`Error ${decision}ing KYC:`, error);
-      toast.error(error.message || `Failed to ${decision} KYC request`);
-    } finally {
-      setIsProcessing(false);
-      if (decision === 'rejected') {
-        setIsRejectDialogOpen(false);
-        setRejectReason("");
-        setSelectedKycId(null);
-      }
-    }
-  };
-
-  // Open Reject Dialog
-  const openRejectDialog = (kycId: string) => {
-    setSelectedKycId(kycId);
-    setIsRejectDialogOpen(true);
-  };
-
-  // Open View KYC Details Dialog
-  const openViewDialog = (student: StudentKyc) => {
-    setSelectedStudent(student);
-    setIsViewDialogOpen(true);
-  };
-
-  // Initiate Digi KYC
-  const initiateDigiKyc = async () => {
-    if (!kycData.identifier) {
-      toast.error("Please provide email or mobile number.");
-      return;
-    }
-
-    setIsProcessing(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/kyc/verify`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          identifier: kycData.identifier,
-          template_name: kycData.templateName || "default"
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const newDoc: Document = {
-          id: `kyc-${Date.now()}`,
-          name: "KYC Verification",
-          type: "Identity Verification",
-          status: "pending",
-          lastUpdated: new Date().toISOString().split('T')[0],
-          source: "digi-kyc",
-          kycId: data.requestId
-        };
-        
-        setDocuments([newDoc, ...documents]);
-        setIsKycDialogOpen(false);
-        setKycData({ identifier: "", templateName: "" });
-        toast.success("KYC verification initiated successfully!");
-      } else {
-        const errorData = await response.json();
-        toast.error(`KYC initiation failed: ${errorData.error || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error("KYC API Error:", error);
-      toast.error("Error initiating KYC verification. Please try again.");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Check KYC Status
-  const checkKycStatus = async (kycId: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/kyc/status`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+  // Fetch student documents
+  useEffect(() => {
+    const fetchStudentDocuments = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/kyc/student/documents`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setStudentDocuments(data.documents || []);
         }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setDocuments(docs => docs.map(doc => 
-          doc.kycId === kycId 
-            ? { ...doc, status: data.kycStatus === 'verified' ? 'verified' : 'pending' }
-            : doc
-        ));
-        toast.success("KYC status updated!");
+      } catch (error) {
+        console.error('Error fetching student documents:', error);
       }
-    } catch (error) {
-      console.error("Error checking KYC status:", error);
-      toast.error("Error checking KYC status.");
-    }
-  };
-
-  // Download Document
-  const downloadDocument = async (downloadUrl: string, fileName: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/download/${downloadUrl}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-        toast.success("Document downloaded successfully!");
-      }
-    } catch (error) {
-      console.error("Error downloading document:", error);
-      toast.error("Error downloading document.");
-    }
-  };
-
-  const handleCreateTicket = () => {
-    if (!newTicket.documentType || !newTicket.description) {
-      toast.error("Please fill in all required fields.");
-      return;
-    }
-
-    const ticket: VerificationTicket = {
-      id: `VT${Date.now()}`,
-      studentName: "Alex Johnson",
-      documentType: newTicket.documentType,
-      status: "pending",
-      uploadedFile: newTicket.uploadedFile ?? undefined,
-      created: new Date().toISOString().split('T')[0],
-      description: newTicket.description
     };
+    fetchStudentDocuments();
+  }, [token]);
 
-    setTickets([ticket, ...tickets]);
-    setIsCreateTicketOpen(false);
-    setNewTicket({
-      documentType: "",
-      description: "",
-      uploadedFile: null
-    });
-
-    toast.success("Verification ticket created successfully!");
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setNewTicket({...newTicket, uploadedFile: file});
-      toast.success(`File "${file.name}" uploaded successfully!`);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'verified': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'missing': return 'bg-red-100 text-red-800';
-      case 'rejected': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'verified': return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'pending': return <AlertCircle className="h-4 w-4 text-yellow-600" />;
-      case 'missing': return <XCircle className="h-4 w-4 text-red-600" />;
-      case 'rejected': return <XCircle className="h-4 w-4 text-gray-600" />;
-      default: return <AlertCircle className="h-4 w-4 text-gray-600" />;
-    }
-  };
-
-  // Fetch All KYC Details
+  // Fetch all KYC details
   useEffect(() => {
     const fetchAllKycDetails = async () => {
       try {
@@ -348,11 +105,204 @@ const EKysDashboard = () => {
     fetchAllKycDetails();
   }, [token]);
 
-  // Dashboard card counts from students data
+  // Fetch KYC history
+  useEffect(() => {
+    const fetchKycHistory = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/kyc/history`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setKycHistory(data);
+        }
+      } catch (error) {
+        console.error('Error fetching KYC history:', error);
+      }
+    };
+    fetchKycHistory();
+  }, [token]);
+
+  const handleKycDecision = async (kycId, decision, reason) => {
+    setIsProcessing(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/kyc/decision`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          verificationId: kycId,
+          decision,
+          ...(reason && { reason })
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to ${decision} KYC request`);
+      }
+
+      setStudents(students.map(student =>
+        student.kycData?.verificationId === kycId
+          ? { ...student, kycStatus: data.kycStatus, kycData: data.kycData }
+          : student
+      ));
+
+      toast.success(data.message);
+    } catch (error) {
+      console.error(`Error ${decision}ing KYC:`, error);
+      toast.error(error.message || `Failed to ${decision} KYC request`);
+    } finally {
+      setIsProcessing(false);
+      if (decision === 'rejected') {
+        setIsRejectDialogOpen(false);
+        setRejectReason("");
+        setSelectedKycId(null);
+      }
+    }
+  };
+
+  const openRejectDialog = (kycId) => {
+    setSelectedKycId(kycId);
+    setIsRejectDialogOpen(true);
+  };
+
+  const openViewDialog = (student) => {
+    setSelectedStudent(student);
+    setIsViewDialogOpen(true);
+  };
+
+  const initiateDigiKyc = async () => {
+    if (!kycData.identifier) {
+      toast.error("Please provide email or mobile number.");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/kyc/verify`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          identifier: kycData.identifier,
+          template_name: kycData.templateName || "KYC_CLIENT"
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsKycDialogOpen(false);
+        setKycData({ identifier: "", templateName: "" });
+        toast.success("KYC verification initiated successfully!");
+        window.location.href = data.digilockerUrl;
+      } else {
+        const errorData = await response.json();
+        toast.error(`KYC initiation failed: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error("KYC API Error:", error);
+      toast.error("Error initiating KYC verification. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const reinitiateDigiKyc = async () => {
+    if (!reinitiateKycData.identifier) {
+      toast.error("Please provide email or mobile number.");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/kyc/reinitiate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          identifier: reinitiateKycData.identifier
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsReinitiateKycDialogOpen(false);
+        setReinitiateKycData({ identifier: "" });
+        toast.success("KYC re-verification initiated successfully!");
+        window.location.href = data.digilockerUrl;
+      } else {
+        const errorData = await response.json();
+        toast.error(`KYC re-initiation failed: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error("KYC Re-initiation Error:", error);
+      toast.error("Error re-initiating KYC verification. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCreateTicket = () => {
+    if (!newTicket.documentType || !newTicket.description) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    const ticket = {
+      id: `VT${Date.now()}`,
+      studentName: "Alex Johnson",
+      documentType: newTicket.documentType,
+      status: "pending",
+      uploadedFile: newTicket.uploadedFile,
+      created: new Date().toISOString().split('T')[0],
+      description: newTicket.description
+    };
+
+    setTickets([ticket, ...tickets]);
+    setIsCreateTicketOpen(false);
+    setNewTicket({ documentType: "", description: "", uploadedFile: null });
+    toast.success("Verification ticket created successfully!");
+  };
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setNewTicket({ ...newTicket, uploadedFile: file });
+      toast.success(`File "${file.name}" uploaded successfully!`);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'verified': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'missing': return 'bg-red-100 text-red-800';
+      case 'rejected': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'verified': return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'pending': return <AlertCircle className="h-4 w-4 text-yellow-600" />;
+      case 'missing': return <XCircle className="h-4 w-4 text-red-600" />;
+      case 'rejected': return <XCircle className="h-4 w-4 text-gray-600" />;
+      default: return <AlertCircle className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
   const verifiedCount = students.filter(s => s.kycStatus === 'verified').length;
-  const pendingCount = students.filter(s => s.kycStatus === 'pending').length;
+  const pendingCount = students.filter(s => s.kycStatus === 'pending' || s.kycStatus === 'pending approval').length;
   const rejectedCount = students.filter(s => s.kycStatus === 'rejected').length;
-  const missingCount = students.filter(s => !s.kycStatus || s.kycStatus === 'missing').length;
+  const missingCount = students.filter(s => !s.kycStatus || s.kycStatus === 'missing' || s.kycStatus === 'not started').length;
 
   return (
     <AppLayout>
@@ -371,6 +321,20 @@ const EKysDashboard = () => {
               Start KYC
             </Button>
             <Button 
+              onClick={() => setIsReinitiateKycDialogOpen(true)}
+              className="bg-yellow-600 hover:bg-yellow-700 flex items-center gap-2"
+            >
+              <Shield className="h-4 w-4" />
+              Re-initiate KYC
+            </Button>
+            <Button 
+              onClick={() => setIsKycHistoryDialogOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
+            >
+              <History className="h-4 w-4" />
+              View KYC History
+            </Button>
+            <Button 
               onClick={() => setIsCreateTicketOpen(true)}
               className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
             >
@@ -380,7 +344,6 @@ const EKysDashboard = () => {
           </div>
         </div>
 
-        {/* Document Status Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardContent className="pt-6">
@@ -428,7 +391,47 @@ const EKysDashboard = () => {
           </Card>
         </div>
 
-        {/* Students KYC Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Student Documents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {studentDocuments.map((doc, index) => (
+                <div key={index} className="flex flex-col p-4 border rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">{doc.type}</h4>
+                      <p className="text-sm text-gray-500">Status: {doc.status}</p>
+                      {doc.metadata?.kycId && (
+                        <p className="text-sm text-gray-500">KYC ID: {doc.metadata.kycId}</p>
+                      )}
+                      {doc.metadata?.source && (
+                        <p className="text-sm text-gray-500">Source: {doc.metadata.source}</p>
+                      )}
+                      {doc.metadata?.lastUpdated && (
+                        <p className="text-sm text-gray-500">Last Updated: {doc.metadata.lastUpdated}</p>
+                      )}
+                      {/* Display additional metadata fields */}
+                      {Object.entries(doc.metadata || {}).filter(([key]) => !['kycId', 'source', 'lastUpdated'].includes(key)).map(([key, value]) => (
+                        <p key={key} className="text-sm text-gray-500">{key}: {JSON.stringify(value)}</p>
+                      ))}
+                    </div>
+                    {doc.imageUrl && (
+                      <a href={doc.imageUrl} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
+                        </Button>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>All Students KYC Status</CardTitle>
@@ -450,17 +453,15 @@ const EKysDashboard = () => {
                   {students
                     .slice()
                     .sort((a, b) => {
-                      // Custom sort: pending first, then verified, then not started/missing, then rejected
-                      const statusOrder = (status: string | undefined) => {
-                        if (status === 'pending') return 0;
+                      const statusOrder = (status) => {
+                        if (status === 'pending' || status === 'pending approval') return 0;
                         if (status === 'verified') return 1;
-                        if (!status || status === 'missing' || status === '') return 2;
-                        return 3; // rejected or any other
+                        if (!status || status === 'missing' || status === 'not started') return 2;
+                        return 3;
                       };
                       const aOrder = statusOrder(a.kycStatus);
                       const bOrder = statusOrder(b.kycStatus);
-                      if (aOrder !== bOrder) return aOrder - bOrder;
-                      return 0;
+                      return aOrder !== bOrder ? aOrder - bOrder : 0;
                     })
                     .map((student, idx) => (
                       <tr key={idx} className="border-b">
@@ -474,12 +475,12 @@ const EKysDashboard = () => {
                         <td className="px-4 py-2">{student.kycData?.verificationId || '-'}</td>
                         <td className="px-4 py-2">{student.kycData?.lastUpdated || '-'}</td>
                         <td className="px-4 py-2">
-                          {student.kycStatus === 'pending' && student.kycData?.verificationId ? (
+                          {student.kycStatus === 'pending' || student.kycStatus === 'pending approval' && student.kycData?.verificationId ? (
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
                                 className="bg-green-600 hover:bg-green-700"
-                                onClick={() => handleKycDecision(student.kycData?.verificationId!, 'approved')}
+                                onClick={() => handleKycDecision(student.kycData?.verificationId, 'approved', '')}
                                 disabled={isProcessing}
                               >
                                 Approve
@@ -487,7 +488,7 @@ const EKysDashboard = () => {
                               <Button
                                 size="sm"
                                 className="bg-red-600 hover:bg-red-700"
-                                onClick={() => openRejectDialog(student.kycData?.verificationId!)}
+                                onClick={() => openRejectDialog(student.kycData?.verificationId)}
                                 disabled={isProcessing}
                               >
                                 Reject
@@ -512,7 +513,6 @@ const EKysDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Verification Tickets */}
         {tickets.length > 0 && (
           <Card>
             <CardHeader>
@@ -541,7 +541,6 @@ const EKysDashboard = () => {
         )}
       </div>
 
-      {/* Digi KYC Dialog */}
       <Dialog open={isKycDialogOpen} onOpenChange={setIsKycDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -580,7 +579,89 @@ const EKysDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Reject KYC Dialog */}
+      <Dialog open={isReinitiateKycDialogOpen} onOpenChange={setIsReinitiateKycDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Re-initiate Digi KYC Verification</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="reinitiate-identifier">Email or Mobile Number</Label>
+              <Input 
+                id="reinitiate-identifier" 
+                value={reinitiateKycData.identifier}
+                onChange={(e) => setReinitiateKycData({...reinitiateKycData, identifier: e.target.value})}
+                placeholder="Enter email or mobile number" 
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsReinitiateKycDialogOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={reinitiateDigiKyc}
+              disabled={!reinitiateKycData.identifier || isProcessing}
+              className="bg-yellow-600 hover:bg-yellow-700"
+            >
+              {isProcessing ? "Processing..." : "Re-initiate KYC"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isKycHistoryDialogOpen} onOpenChange={setIsKycHistoryDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>KYC Verification History</DialogTitle>
+          </DialogHeader>
+          {kycHistory ? (
+            <div className="grid gap-4 py-4">
+              <div>
+                <Label>KYC Status</Label>
+                <p className="text-sm text-gray-600">{kycHistory.kycStatus}</p>
+              </div>
+              <div>
+                <Label>Verification ID</Label>
+                <p className="text-sm text-gray-600">{kycHistory.kycData?.verificationId || '-'}</p>
+              </div>
+              <div>
+                <Label>Last Updated</Label>
+                <p className="text-sm text-gray-600">{kycHistory.lastUpdated || '-'}</p>
+              </div>
+              <div>
+                <Label>Documents</Label>
+                <ul className="text-sm text-gray-600">
+                  {kycHistory.documents?.map((doc, idx) => (
+                    <li key={idx} className="mb-2">
+                      <p>{doc.type} - {doc.status}</p>
+                      {doc.metadata?.kycId && (
+                        <p className="text-xs">KYC ID: {doc.metadata.kycId}</p>
+                      )}
+                      {doc.metadata?.source && (
+                        <p className="text-xs">Source: {doc.metadata.source}</p>
+                      )}
+                      {doc.metadata?.lastUpdated && (
+                        <p className="text-xs">Last Updated: {doc.metadata.lastUpdated}</p>
+                      )}
+                      {Object.entries(doc.metadata || {}).filter(([key]) => !['kycId', 'source', 'lastUpdated'].includes(key)).map(([key, value]) => (
+                        <p key={key} className="text-xs">{key}: {JSON.stringify(value)}</p>
+                      ))}
+                      {doc.imageUrl && (
+                        <a href={doc.imageUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Download</a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600">No KYC history available.</p>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setIsKycHistoryDialogOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -605,7 +686,7 @@ const EKysDashboard = () => {
               setSelectedKycId(null);
             }}>Cancel</Button>
             <Button
-              onClick={() => selectedKycId && handleKycDecision(selectedKycId, 'reject', rejectReason)}
+              onClick={() => selectedKycId && handleKycDecision(selectedKycId, 'rejected', rejectReason)}
               disabled={!rejectReason || isProcessing}
               className="bg-red-600 hover:bg-red-700"
             >
@@ -615,7 +696,6 @@ const EKysDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* View KYC Details Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -643,6 +723,31 @@ const EKysDashboard = () => {
                 <Label>Last Updated</Label>
                 <p className="text-sm text-gray-600">{selectedStudent.kycData?.lastUpdated || '-'}</p>
               </div>
+              <div>
+                <Label>Documents</Label>
+                <ul className="text-sm text-gray-600">
+                  {selectedStudent.documents?.map((doc, idx) => (
+                    <li key={idx} className="mb-2">
+                      <p>{doc.type} - {doc.status}</p>
+                      {doc.metadata?.kycId && (
+                        <p className="text-xs">KYC ID: {doc.metadata.kycId}</p>
+                      )}
+                      {doc.metadata?.source && (
+                        <p className="text-xs">Source: {doc.metadata.source}</p>
+                      )}
+                      {doc.metadata?.lastUpdated && (
+                        <p className="text-xs">Last Updated: {doc.metadata.lastUpdated}</p>
+                      )}
+                      {Object.entries(doc.metadata || {}).filter(([key]) => !['kycId', 'source', 'lastUpdated'].includes(key)).map(([key, value]) => (
+                        <p key={key} className="text-xs">{key}: {JSON.stringify(value)}</p>
+                      ))}
+                      {doc.imageUrl && (
+                        <a href={doc.imageUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Download</a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           )}
           <DialogFooter>
@@ -654,7 +759,6 @@ const EKysDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Create Verification Ticket Dialog */}
       <Dialog open={isCreateTicketOpen} onOpenChange={setIsCreateTicketOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>

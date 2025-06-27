@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-
 const mongoose = require('mongoose');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
@@ -10,7 +9,7 @@ const multerS3 = require('multer-s3');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const rateLimit = require('express-rate-limit');
-const Student = require('../models/Student'); // Adjust the import path as needed
+const Student = require('../models/Student');
 const User = require('../models/User');
 
 dotenv.config();
@@ -227,7 +226,7 @@ router.post('/decision',  /* restrictToAdmin, */ async (req, res) => {
     const response = await axios.post(
       `${productionUrl}/client/kyc/v2/request/${verificationId}/manage_approval`,
       {
-        status:decision,
+        status: decision,
         ...(reason && { reason }) // Include reason only for rejection
       },
       {
@@ -246,13 +245,13 @@ router.post('/decision',  /* restrictToAdmin, */ async (req, res) => {
       lastUpdated: new Date().toISOString().split('T')[0],
       ...(reason && { rejectionReason: reason }) // Store rejection reason if provided
     };
-    student.iskycVerified = true;
+    student.iskycVerified = decision === 'approved';
 
     await student.save();
 
     res.json({
       success: true,
-      message: `KYC request ${decision === 'approve' ? 'approved' : 'rejected'} successfully`,
+      message: `KYC request ${decision} successfully`,
       kycStatus: student.kycStatus,
       kycData: student.kycData
     });
@@ -264,13 +263,52 @@ router.post('/decision',  /* restrictToAdmin, */ async (req, res) => {
   }
 });
 
+// @route   GET api/kyc/history
+// @desc    Fetch KYC verification history for a student
+// @access  Private
+router.get('/history', async (req, res) => {
+  try {
+    const student = await Student.find({email: req.body.email});
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    const kycHistory = {
+      kycStatus: student.kycStatus || 'not started',
+      kycData: student.kycData || {},
+      documents: student.documents || [],
+      lastUpdated: student.kycData?.lastUpdated || null,
+    };
+
+    res.json(kycHistory);
+  } catch (error) {
+    console.error('Error fetching KYC history:', error.message);
+    res.status(500).json({ error: 'Failed to fetch KYC history' });
+  }
+});
+
+// @route   GET api/student/documents
+// @desc    Fetch student documents
+// @access  Private
+router.get('/student/documents',async (req, res) => {
+  try {
+    const student = await Student.find({});
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+
+    res.json({ documents: student.documents || [] });
+  } catch (error) {
+    console.error('Error fetching documents:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch documents' });
+  }
+});
+
 // @route   POST api/kyc/verify-digio
 // @desc    Verify KYC with Digio API (for standalone use)
 // @access  Private
-router.post('/verify-digio', async (req, res) => {
+router.post('/verify-digio', authenticateToken, async (req, res) => {
   try {
     const kycData = req.body;
-    const user = await Student.findOne({ email: req.body.email });
+    const user = await Student.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -340,12 +378,43 @@ router.get('/status', authenticateToken, async (req, res) => {
     if (user.kycStatus === 'pending' && user.kycData?.verificationId) {
       try {
         const digioStatus = await checkKycStatus(user.kycData.verificationId);
+        
+        // Update KYC status
         user.kycStatus = digioStatus.status === 'completed' ? 'verified' : digioStatus.status || 'pending';
         user.kycData = {
           ...user.kycData,
           status: digioStatus.status,
           lastUpdated: new Date().toISOString().split('T')[0]
         };
+
+        // Process and store documents from Digio response
+        if (digioStatus.documents && Array.isArray(digioStatus.documents)) {
+          const updatedDocuments = digioStatus.documents.map(doc => ({
+            type: doc.doc_type || doc.type || 'unknown',
+            status: doc.status || 'pending',
+            imageUrl: doc.file_url || doc.download_url || '',
+            metadata: {
+              kycId: doc.doc_id || `${doc.doc_type}-${doc.org_id || Date.now()}`,
+              source: 'digi-kyc',
+              lastUpdated: new Date().toISOString().split('T')[0],
+              // Store all other Digio document fields as-is
+              ...Object.fromEntries(
+                Object.entries(doc).filter(([key]) => !['doc_type', 'type', 'status', 'file_url', 'download_url'].includes(key))
+              )
+            }
+          }));
+
+          // Merge with existing documents, updating or adding new ones
+          user.documents = [
+            // Keep existing documents that aren't in the new response
+            ...(user.documents || []).filter(existingDoc => 
+              !updatedDocuments.some(newDoc => newDoc.metadata.kycId === existingDoc.metadata.kycId)
+            ),
+            // Add or update documents from Digio
+            ...updatedDocuments
+          ];
+        }
+
         await user.save();
       } catch (error) {
         console.error(`Failed to check Digio status for user ${user._id}:`, error.message);
@@ -354,12 +423,12 @@ router.get('/status', authenticateToken, async (req, res) => {
 
     res.json({
       kycStatus: user.kycStatus,
-      uhid: user.uhid,
-      kycData: user.kycData
+      kycData: user.kycData,
+      documents: user.documents || []
     });
   } catch (err) {
     console.error('Status route error:', err.message);
-    res.status(500).send('Server Error');
+    res.status(500).json({ error: 'Server Error' });
   }
 });
 
@@ -383,6 +452,23 @@ router.post('/verify', authenticateToken, async (req, res) => {
     });
 
     await newDoc.save();
+
+    // Also store in Student model
+    const student = await Student.findById(req.user.userId);
+    if (student) {
+      student.documents = student.documents || [];
+      student.documents.push({
+        type: 'kyc',
+        status: 'pending',
+        imageUrl: '',
+        metadata: {
+          kycId: response.data.id,
+          source: 'digi-kyc',
+          lastUpdated: new Date().toISOString().split('T')[0]
+        }
+      });
+      await student.save();
+    }
 
     res.json({
       requestId: response.data.id,
@@ -433,6 +519,17 @@ router.get('/digilocker/callback', authenticateToken, async (req, res) => {
       { status: 'verified', lastUpdated: new Date().toISOString().split('T')[0] }
     );
 
+    // Update Student model as well
+    const student = await Student.findById(req.user.userId);
+    if (student) {
+      const docIndex = student.documents.findIndex(doc => doc.type === 'kyc' && doc.status === 'pending');
+      if (docIndex >= 0) {
+        student.documents[docIndex].status = 'verified';
+        student.documents[docIndex].metadata.lastUpdated = new Date().toISOString().split('T')[0];
+        await student.save();
+      }
+    }
+
     res.redirect('/documents');
   } catch (error) {
     console.error('Error exchanging code for tokens:', error.response?.data || error.message);
@@ -459,6 +556,26 @@ router.get('/digilocker/documents', authenticateToken, async (req, res) => {
     }));
 
     await Document.insertMany(documents);
+
+    // Also store in Student model
+    const student = await Student.findById(req.user.userId);
+    if (student) {
+      student.documents = student.documents || [];
+      documents.forEach(doc => {
+        student.documents.push({
+          type: doc.type,
+          status: doc.status,
+          imageUrl: '',
+          metadata: {
+            kycId: doc.kycId,
+            source: doc.source,
+            lastUpdated: doc.lastUpdated
+          }
+        });
+      });
+      await student.save();
+    }
+
     res.json(documents);
   } catch (error) {
     console.error('Error fetching documents:', error.response?.data || error.message);
@@ -492,6 +609,24 @@ router.post('/digilocker/fetch-document', authenticateToken, async (req, res) =>
     });
 
     await newDoc.save();
+
+    // Also store in Student model
+    const student = await Student.findById(req.user.userId);
+    if (student) {
+      student.documents = student.documents || [];
+      student.documents.push({
+        type: docType,
+        status: 'verified',
+        imageUrl: downloadUrl,
+        metadata: {
+          kycId: `${docType}-${orgId}`,
+          source: 'digi-kyc',
+          lastUpdated: new Date().toISOString().split('T')[0]
+        }
+      });
+      await student.save();
+    }
+
     res.json({ ...newDoc.toObject(), downloadUrl });
   } catch (error) {
     console.error('Error fetching document:', error.response?.data || error.message);
@@ -529,8 +664,9 @@ router.post('/tickets', authenticateToken, upload.single('file'), async (req, re
 // Get All Documents for a User
 router.get('/documents', authenticateToken, async (req, res) => {
   try {
-    const documents = await Document.find({ userId: req.user.userId });
-    res.json(documents);
+    const student = await Student.findById(req.user.userId);
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+    res.json(student.documents || []);
   } catch (error) {
     console.error('Error fetching documents:', error);
     res.status(500).json({ error: 'Failed to fetch documents' });
@@ -551,18 +687,21 @@ router.get('/tickets', authenticateToken, async (req, res) => {
 // Download Document from S3
 router.get('/download/:id', authenticateToken, async (req, res) => {
   try {
-    const document = await Document.findOne({ id: req.params.id, userId: req.user.userId });
-    if (!document || !document.downloadUrl) {
+    const student = await Student.findById(req.user.userId);
+    if (!student) return res.status(404).json({ error: 'Student not found' });
+
+    const document = student.documents.find(doc => doc.metadata?.kycId === req.params.id);
+    if (!document || !document.imageUrl) {
       return res.status(404).json({ error: 'Document not found' });
     }
 
     const params = {
       Bucket: process.env.S3_BUCKET_NAME,
-      Key: document.downloadUrl,
+      Key: document.imageUrl,
     };
 
     const { Body } = await s3.getObject(params).promise();
-    res.setHeader('Content-Disposition', `attachment; filename="${document.name}"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${document.type}"`);
     res.send(Body);
   } catch (error) {
     console.error('Error downloading document:', error);
@@ -575,7 +714,7 @@ router.get('/download/:id', authenticateToken, async (req, res) => {
 // @access  Private (Admin only, uncomment restrictToAdmin to enforce)
 router.get('/all-status', /* restrictToAdmin, */ async (req, res) => {
   try {
-    const students = await Student.find({}, 'name email kycStatus kycData');
+    const students = await Student.find({}, 'name email kycStatus kycData documents');
     res.json(students);
   } catch (err) {
     console.error('Error fetching all KYC statuses:', err.message);

@@ -6,6 +6,12 @@ import {
   Send, ChevronRight, ShieldAlert, LayoutDashboard, Menu
 } from "lucide-react";
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const token = localStorage.getItem('token');
+
+
+
 // Safe fetch helper
 async function safeFetch(url, options) {
   const mergedOptions = { credentials: 'include', ...(options || {}) };
@@ -180,6 +186,30 @@ const Dashboard = () => {
   const [interviews, setInterviews] = useState([]);
   const [error, setError] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
+  const [kycStatus, setKycStatus] = useState('pending');
+
+  // fetch kyc status from the backend
+  useEffect(() => {
+    const fetchKycStatus = async () => {
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch(`${API_URL}/api/kyc/status`, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          // If iskycVerified is true, set to approved
+          if (data.kycStatus === 'verified' || data.iskycVerified) {
+            setKycStatus('approved');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching KYC status:', error);
+      }
+    };
+    fetchKycStatus();
+  }, [token]);
 
   const navigate = (path) => {
     window.location.href = path; 
@@ -207,6 +237,30 @@ const Dashboard = () => {
       })
       .catch((err) => setError(err.message || "Failed to load dashboard"))
       .finally(() => setLoading(false));
+  }, []);
+
+  // Fetch KYC status for dashboard badge/button
+  useEffect(() => {
+    const fetchKycStatus = async () => {
+      try {
+        const res = await fetch('/api/kyc/status', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.iskycVerified) {
+            setKycStatus('approved');
+          } else if (data.kycData?.verificationId) {
+            setKycStatus('pending');
+          } else if (data.kycStatus === 'pending' || data.kycStatus === 'pending approval') {
+            setKycStatus('pending approval');
+          } else {
+            setKycStatus(data.kycStatus || 'pending');
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    fetchKycStatus();
   }, []);
 
   const colorMap = {
@@ -303,10 +357,15 @@ const Dashboard = () => {
                     )}
                   </button>
                   {/* Verification status */}
-                  {student.verified ? (
+                  {kycStatus === 'approved' || kycStatus === 'verified' ? (
                     <span className="flex items-center gap-2 px-6 py-3 bg-green-100 text-green-700 rounded-xl font-semibold border border-green-200">
                       <CheckCircle className="w-5 h-5" />
-                      Verified
+                      KYC Done
+                    </span>
+                  ) : kycStatus === 'pending' || kycStatus === 'pending approval' ? (
+                    <span className="flex items-center gap-2 px-6 py-3 bg-yellow-100 text-yellow-700 rounded-xl font-semibold border border-yellow-200">
+                      <ShieldAlert className="w-5 h-5" />
+                      Pending
                     </span>
                   ) : (
                     <button

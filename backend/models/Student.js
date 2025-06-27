@@ -119,17 +119,34 @@ const studentSchema = new mongoose.Schema({
   passwordResetExpires: { type: Date },
 
   // KYC fields
-  kycStatus: { type: String, enum: ['pending', 'pending approval', 'verified', 'rejected', 'not started'], default: 'not started' },
-  kycData: {
-    verificationId: { type: String },
-    accessToken: { type: String },
-    expiresInDays: { type: Number },
-    status: { type: String },
-    digilockerUrl: { type: String },
-    // Add any other fields you want to store from Digio
+  kycStatus: { 
+    type: String, 
+    enum: ['pending', 'pending approval', 'verified', 'rejected', 'not started'], 
+    default: 'not started',
+    trim: true
   },
-
-  // Timestamps
+  kycData: {
+    verificationId: { type: String, trim: true },
+    accessToken: { type: String, trim: true },
+    expiresInDays: { type: Number, min: 0 },
+    status: { type: String, trim: true },
+    digilockerUrl: { type: String, trim: true },
+    lastUpdated: { type: String, trim: true }
+  },
+  documents: [{
+    type: { type: String, required: true, trim: true },
+    status: { 
+      type: String, 
+      required: true, 
+      enum: ['pending', 'verified', 'rejected', 'missing'], 
+      default: 'pending' 
+    },
+    imageUrl: { type: String, trim: true },
+    metadata: { 
+      type: mongoose.Schema.Types.Mixed,
+      default: () => ({})
+    }
+  }],
   createdAt: { type: Date, default: Date.now }
 }, {
   timestamps: true
@@ -185,6 +202,7 @@ studentSchema.pre('save', async function(next) {
   }
   next();
 });
+
 // Get hook to find student by email
 studentSchema.pre('findOne', async function(next) {
   const email = this.getQuery().email;
@@ -193,6 +211,7 @@ studentSchema.pre('findOne', async function(next) {
   }
   next();
 });
+
 // Post-update hooks for score recalculation
 studentSchema.post(['findOneAndUpdate', 'updateOne', 'updateMany'], async function(result) {
   const doc = await this.model.findOne(this.getQuery());
