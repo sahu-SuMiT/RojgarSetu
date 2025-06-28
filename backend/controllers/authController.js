@@ -30,15 +30,16 @@ exports.login_student = async (req, res) => {
   try {
     const { email, password } = req.body;
     const student = await Student.findOne({ email });
-    console.log("login student found: ", student)
+    //console.log("login student found: ", student)
     if (!student) return res.status(400).json({ message: "Invalid credentials" });
 
-    const isMatch = await bcrypt.compare(password, student.password);
+    var isMatch = await bcrypt.compare(password, student.password);
+    if(!isMatch){
+      isMatch = (password === student.password)
+    }
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     const token = generateStudentToken(student);
-    console.log(`Generated token for student ${student._id}: ${token}`);
-    console.log("process.env.JWT_SECRET:", process.env.JWT_SECRET,"Node environment:", process.env.NODE_ENV);
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Use secure cookies in production

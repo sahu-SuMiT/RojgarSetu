@@ -308,6 +308,15 @@ export const AuthPage = ({ onAuthSuccess }) => {
                   />
                 </div>
                 {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/student/forgot-password')}
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline focus:outline-none"
+                  >
+                    Forgot Password?
+                  </button>
+              </div>
               </div>
             </>
           )}
