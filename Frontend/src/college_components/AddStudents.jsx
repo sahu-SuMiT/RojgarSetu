@@ -36,6 +36,7 @@ const AddStudents = () => {
   const [excelUploadError, setExcelUploadError] = useState(null);
   const [skipInserting, setSkipInserting] = useState(false);
   const [showPasswords, setShowPasswords] = useState({});
+  const [successMessage, setSuccessMessage] = useState(null);
   const [students, setStudents] = useState([{
     name: '',
     email: '',
@@ -113,6 +114,12 @@ const AddStudents = () => {
 
   const handleExcelSubmit = async (e, skipDuplicates = false) => {
     if (e) e.preventDefault();
+    
+    // Prevent multiple uploads
+    if (excelUploadLoading) {
+      return;
+    }
+    
     setExcelUploadLoading(true);
     setExcelUploadSuccess(false);
     setExcelUploadError(null);
@@ -141,10 +148,18 @@ const AddStudents = () => {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 30000, // 30 second timeout
       });
-      if (response.data && response.data.message && response.data.message.includes('No new students to insert')) {
-        setExcelUploadError(response.data.message);
-        setExcelUploadSuccess(false);
+      
+      // Handle the new response format with summary
+      if (response.data && response.data.summary) {
+        const summary = response.data.summary;
+        let successMessage = response.data.message;
+        
+        // Use the backend message directly since it now includes skipped students
+        setExcelUploadSuccess(successMessage);
+        setExcelFile(null);
+        setExcelUploadError(null);
       } else if (response.data && response.data.message) {
         setExcelUploadSuccess(response.data.message);
         setExcelFile(null);
@@ -157,16 +172,25 @@ const AddStudents = () => {
     } catch (err) {
       if (err.response?.status === 409 && err.response?.data?.existingStudents) {
         const duplicates = err.response.data.existingStudents
-          .map(s => `<span style='color:#F59E0B'>• Email: <b>${s.email}</b>, Roll: <b>${s.rollNumber}</b></span>`)
+          .map(s => `<span style='color:#F59E0B'>• Email: <b>${s.email}</b>, Roll: <b>${s.rollNumber}</b></span>${s.reason ? ` <span style='color:#dc2626'>(${s.reason})</span>` : ''}`)
           .join('<br/>');
         setExcelUploadError(
-          `<div>Some students already exist:<br/>${duplicates}</div>`
+          `<div>Some students already exist:<br/>${duplicates}<br/><br/>Please remove or update these students and try again.</div>`
+        );
+      } else if (err.message === 'Network Error' || err.code === 'ERR_UPLOAD_FILE_CHANGED') {
+        setExcelUploadError(
+          'Upload failed. The file may have been changed or the network connection was interrupted. Please try uploading the file again.'
+        );
+      } else if (err.code === 'ERR_NETWORK') {
+        setExcelUploadError(
+          'Network error. Please check your internet connection and try again.'
         );
       } else {
         setExcelUploadError(
           err.response?.data?.error ||
           err.response?.data?.message ||
-          'Error uploading Excel sheet'
+          err.message ||
+          'Error uploading Excel sheet. Please try again.'
         );
       }
     } finally {
@@ -188,7 +212,15 @@ const AddStudents = () => {
       }));
 
       const response = await axios.post(`${apiUrl}/api/students/bulk`, studentsWithCollege);
+      
+      // Display success message with details
+      const summary = response.data.summary;
+      let successMessage = response.data.message;
+      
+      // Use the backend message directly since it now includes skipped students
       setSuccess(true);
+      setError(null);
+      setSuccessMessage(successMessage);
       setStudents([{
         name: '',
         email: '',
@@ -203,7 +235,7 @@ const AddStudents = () => {
       if (err.response?.status === 409 && err.response?.data?.existingStudents) {
         // Handle duplicate students error
         const duplicates = err.response.data.existingStudents
-          .map(s => `<span style='color:#F59E0B'>• Email: <b>${s.email}</b>, Roll: <b>${s.rollNumber}</b></span>`)
+          .map(s => `<span style='color:#F59E0B'>• Email: <b>${s.email}</b>, Roll: <b>${s.rollNumber}</b></span>${s.reason ? ` <span style='color:#dc2626'>(${s.reason})</span>` : ''}`)
           .join('<br/>');
         setError(
           `<div>Some students already exist:<br/>${duplicates}<br/><br/>Please remove or update these students and try again.</div>`
@@ -435,9 +467,9 @@ const AddStudents = () => {
                 borderRadius: '8px',
                 marginTop: '1rem',
                 fontWeight: 500
-              }}>
-                {excelUploadSuccess}
-              </div>
+              }}
+              dangerouslySetInnerHTML={{ __html: excelUploadSuccess }}
+              />
             )}
             {excelUploadError && (
               <div style={{ position: 'relative', marginBottom: isDuplicateList ? '2.5rem' : undefined }}>
@@ -787,9 +819,9 @@ const AddStudents = () => {
               padding: '1rem',
               borderRadius: '8px',
               marginTop: '1rem'
-            }}>
-              Students added successfully!
-            </div>
+            }}
+            dangerouslySetInnerHTML={{ __html: successMessage || 'Students added successfully!' }}
+            />
           )}
         </div>
 
