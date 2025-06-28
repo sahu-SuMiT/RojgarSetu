@@ -25,6 +25,23 @@ const apiUrl = import.meta.env.VITE_API_URL;
 const AddStudents = () => {
   const { collegeId } = useParams();
   const navigate = useNavigate();
+  
+  // Add CSS animation for loading spinner
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+  
   const [college, setCollege] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -185,6 +202,11 @@ const AddStudents = () => {
         setExcelUploadError(
           'Network error. Please check your internet connection and try again.'
         );
+      } else if (err.response?.data?.code === 11000) {
+        // MongoDB duplicate key error
+        setExcelUploadError(
+          'A student with this email already exists in the database. Please check your data and try again.'
+        );
       } else {
         setExcelUploadError(
           err.response?.data?.error ||
@@ -239,6 +261,11 @@ const AddStudents = () => {
           .join('<br/>');
         setError(
           `<div>Some students already exist:<br/>${duplicates}<br/><br/>Please remove or update these students and try again.</div>`
+        );
+      } else if (err.response?.data?.code === 11000) {
+        // MongoDB duplicate key error
+        setError(
+          'A student with this email already exists in the database. Please check your data and try again.'
         );
       } else {
         setError(err.response?.data?.error || err.response?.data?.message || 'Error adding students');
@@ -454,10 +481,27 @@ const AddStudents = () => {
                 fontWeight: 600,
                 fontSize: '1rem',
                 cursor: excelUploadLoading || !excelFile ? 'not-allowed' : 'pointer',
-                opacity: excelUploadLoading || !excelFile ? 0.6 : 1
+                opacity: excelUploadLoading || !excelFile ? 0.6 : 1,
+                minWidth: '160px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem'
               }}
             >
-              {excelUploadLoading ? 'Submitting...' : 'Submit Excel Sheet'}
+              {excelUploadLoading ? (
+                <>
+                  <div style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid #ffffff',
+                    borderTop: '2px solid transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                  Submitting...
+                </>
+              ) : 'Submit Excel Sheet'}
             </button>
             {excelUploadSuccess && (
               <div style={{
@@ -503,11 +547,28 @@ const AddStudents = () => {
                       fontSize: '1rem',
                       cursor: excelUploadLoading ? 'not-allowed' : 'pointer',
                       opacity: excelUploadLoading ? 0.7 : 1,
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      minWidth: '200px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem'
                     }}
                     disabled={excelUploadLoading}
                   >
-                    Skip and Insert Non-Duplicates
+                    {excelUploadLoading ? (
+                      <>
+                        <div style={{
+                          width: '14px',
+                          height: '14px',
+                          border: '2px solid #ffffff',
+                          borderTop: '2px solid transparent',
+                          borderRadius: '50%',
+                          animation: 'spin 1s linear infinite'
+                        }} />
+                        Processing...
+                      </>
+                    ) : 'Skip and Insert Non-Duplicates'}
                   </button>
                 )}
               </div>
@@ -789,11 +850,26 @@ const AddStudents = () => {
                   borderRadius: '0.5rem',
                   cursor: loading ? 'not-allowed' : 'pointer',
                   fontWeight: 500,
-                  opacity: loading ? 0.7 : 1
+                  opacity: loading ? 0.7 : 1,
+                  minWidth: '140px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem'
                 }}
               >
                 {loading ? (
-                  <Loader message="Adding students..." />
+                  <>
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid #ffffff',
+                      borderTop: '2px solid transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }} />
+                    Adding...
+                  </>
                 ) : 'Add Students'}
               </button>
             </div>
