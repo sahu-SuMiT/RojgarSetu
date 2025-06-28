@@ -80,7 +80,27 @@ exports.getUserDetails = async (req, res, next) => {
     if (!users || users.length === 0) {
       return res.status(404).json({ message: "No users found" });
     }
-    res.status(200).json(users);
+
+    // Group users by salesId
+    const grouped = {};
+    users.forEach(user => {
+      const salesId = user.salesId || "Unassigned";
+      if (!grouped[salesId]) grouped[salesId] = [];
+      grouped[salesId].push(user);
+    });
+
+    // Add counts for each group
+    const result = {};
+    Object.entries(grouped).forEach(([salesId, groupUsers]) => {
+      result[salesId] = {
+        users: groupUsers,
+        studentCount: groupUsers.filter(u => u.type === "Student").length,
+        collegeCount: groupUsers.filter(u => u.type === "College").length,
+        companyCount: groupUsers.filter(u => u.type === "Company").length,
+      };
+    });
+
+    res.status(200).json(result);
   } catch (error) {
     console.error("Error fetching user details:", error);
     res.status(500).json({ message: "Server error while fetching users" });

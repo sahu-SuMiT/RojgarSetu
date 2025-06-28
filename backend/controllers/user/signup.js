@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
 const User = require("../../models/User");
+const SalesIdCounter = require("../../models/SalesIdCounter");
 
 module.exports = async (req, res) => {
   const errors = validationResult(req);
@@ -9,7 +10,7 @@ module.exports = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { firstName, lastName, email, password} = req.body;
+  const { firstName, lastName, email, password } = req.body;
 
   try {
     let user = await User.findOne({ email });
@@ -18,11 +19,21 @@ module.exports = async (req, res) => {
       return res.status(400).json({ msg: "User already exists" });
     }
 
+    // Get the next salesId
+    const counter = await SalesIdCounter.findByIdAndUpdate(
+      { _id: 'salesId' },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+
+    const salesId = `SL-${String(counter.seq).padStart(4, '0')}`;
+
     user = new User({
       firstName,
       lastName,
       email,
       password,
+      salesId
     });
 
     const salt = await bcrypt.genSalt(10);

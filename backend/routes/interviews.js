@@ -7,6 +7,7 @@ const Student = require('../models/Student')
 const {emailTransport} = require('../config/email');
 const getZoomAccessToken = require('../utils/zoomOAuth')
 const axios = require('axios');
+const interviewController = require('../controllers/interviewController');
 // Get interviews by student
 const zoomConfig = {
   accountId: process.env.ZOOM_ACCOUNT_ID,
@@ -26,6 +27,8 @@ const zoomConfig = {
 // app.post('/api/interviews/:id/cancel') ..... Cancel scheduled interview
 // app.post('/api/interviews/:id/reject') ..... Reject candidate after interview
 // app.delete('/api/interviews/clean-rejected') ..... Clean rejected interviews(need to implement in frontend)
+
+router.get('/scheduled', interviewController.getScheduledInterviews);
 
 router.get('/', async (req, res) => {
   try {
