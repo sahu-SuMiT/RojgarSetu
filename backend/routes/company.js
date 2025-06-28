@@ -181,7 +181,8 @@ router.post('/register/initiate', async (req, res) => {
       adminContact,
       companySize,
       foundedYear,
-      description
+      description,
+      referralCode
     } = req.body;
 
     // Validate required fields
@@ -221,7 +222,8 @@ router.post('/register/initiate', async (req, res) => {
         adminContact:adminContact,
         companySize:companySize,
         foundedYear:foundedYear,
-        description:description
+        description:description,
+        referralCode:referralCode
       }
     });
     console.log('OTP for company registration:', otpData);

@@ -10,7 +10,6 @@ const MongoStore = require('connect-mongo');
 
 // Route modules
 const authRoutes = require('./routes/authRoutes');
-const studentProfileRoutes = require('./routes/studentRoutes'); // NEW: This should handle /api/student/me
 const jobRoutes = require('./routes/jobRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const interviewRoutes = require('./routes/interviewRoutes');
@@ -18,7 +17,6 @@ const feedbackRoutes = require('./routes/feedbackRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const notificationRoutes = require('./routes/notifications');
-const studentRegisterRoutes = require('./routes/studentRegister');
 const userRoutes = require('./routes/user');
 const placementRoutes = require('./routes/placement');
 const companyRoutes = require('./routes/company');
@@ -127,6 +125,7 @@ app.use('/api/students', require('./routes/students'));
 // New REST endpoints
 app.use('/api/auth', authRoutes); // for authentication-related endpoints (login/register)
 app.use('/api/studentJobs', jobRoutes);
+app.use('/api/kyc', require('./routes/kyc')); 
 app.use('/api/internships', internshipsRoutes);
 app.use('/api/studentInterviews', interviewRoutes);
 app.use('/api/studentApplications', applicationRoutes);
@@ -156,47 +155,11 @@ app.use('/api/portfolio', portfolioRoutes);
 // Log available routes for debugging
 console.log('Portfolio routes registered:', portfolioRoutes.stack.map(r => r.route?.path).filter(Boolean));
 
-// Raj Sir part
-app.use('/api/student', studentRegisterRoutes);
 
 // NEW: /api/student/me and /api/student/me/profile-pic endpoints
 //     This route should implement: GET /api/student/me, PUT /api/student/me, POST /api/student/me/profile-pic, etc.
-app.use('/api/student', studentProfileRoutes); // <-- This must be after any /api/student/:something routes
+app.use('/api/student', studentRoutes); // <-- This must be after any /api/student/:something routes
 
-// Special endpoint for college-students email verification (Raj Sir part)
-const StudentRegister = require('./models/StudentRegister');
-app.post('/api/college-students/email', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    console.log('Verifying student:', email);
-
-    const student = await StudentRegister.findOne({ contactEmail: email });
-    if (!student) {
-      console.log('Student not found');
-      return res.status(404).json({ error: 'Student not found' });
-    }
-
-    // Compare hashed password
-    const isMatch = await bcrypt.compare(password, student.password);
-    if (!isMatch) {
-      console.log('Invalid password');
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    console.log('Student verified successfully');
-    const { password: pw, ...studentData } = student.toObject();
-    res.json({
-      user: {
-        id: studentData._id,
-        email: studentData.contactEmail,
-        name: studentData.studentName,
-      }
-    });
-  } catch (error) {
-    console.error('Error verifying student:', error);
-    res.status(500).json({ error: 'Error verifying credentials' });
-  }
-});
 
 // Health check/test route
 app.get('/', (req, res) => {
