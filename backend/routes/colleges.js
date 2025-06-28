@@ -63,7 +63,8 @@ router.post('/register/initiate', async (req, res) => {
       name,
       contactEmail,
       contactPhone,
-      code
+      code,
+      referralCode
     } = req.body;
 
     if (!name || !contactEmail || !contactPhone || !code) {
@@ -95,7 +96,8 @@ router.post('/register/initiate', async (req, res) => {
         name,
         code,
         contactEmail,
-        contactPhone
+        contactPhone,
+        referralCode
       }
     });
 

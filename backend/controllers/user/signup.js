@@ -31,10 +31,10 @@ module.exports = async (req, res) => {
     await user.save();
 
     const payload = {
-      user: {
-        id: user.id,
-        role: user.role,
-      },
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role
     };
 
     jwt.sign(

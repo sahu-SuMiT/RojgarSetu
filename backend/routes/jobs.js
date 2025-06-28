@@ -21,6 +21,7 @@ router.get('/student/:studentId', async (req, res) => {
       'studentId': req.params.studentId 
     })
     .populate('companyId', 'name')
+    .populate('interviewId')
     .sort({ createdAt: -1 });
     res.json(jobs);
   } catch (err) {

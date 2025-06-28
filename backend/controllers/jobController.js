@@ -18,7 +18,8 @@ exports.listJobs = async (req, res) => {
     const jobs = await Job.find(query)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     res.json({
       success: true,

@@ -363,7 +363,7 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
       {/* Dropdown */}
       {isOpen && (
         <div
-          className="absolute right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden"
+          className="absolute right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden notification-dropdown"
           style={{
             position: 'absolute',
             right: 0,
@@ -375,7 +375,7 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
             borderRadius: '8px',
             boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
             border: '1px solid #e5e7eb',
-            zIndex: 50,
+            zIndex: 1500,
             maxHeight: '384px',
             overflow: 'hidden',
             display: 'flex',
@@ -603,7 +603,7 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000
+          zIndex: 2000
         }}>
           <div style={{
             backgroundColor: 'white',
@@ -945,7 +945,7 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-          zIndex: 1000
+          zIndex: 2000
         }}>
           <div style={{
             backgroundColor: 'white',
@@ -1088,7 +1088,7 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000
+          zIndex: 2000
         }}>
           <div style={{
             backgroundColor: 'white',

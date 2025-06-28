@@ -54,7 +54,8 @@ const PlacementAnalysis = () => {
   const sidebarUser = {
     name: company?.name || 'Company Admin',
     role: 'Company Admin',
-    initials: company?.name ? company.name.substring(0, 2).toUpperCase() : 'CA'
+    initials: company?.name ? company.name.substring(0, 2).toUpperCase() : 'CA',
+    profileImage: localStorage.getItem('profileImage') || company?.profileImage || ''
   };
 
   const fetchPlacementData = async () => {
@@ -177,14 +178,16 @@ const PlacementAnalysis = () => {
               onClick={handleDownloadReport}
               style={{
                 padding: '8px 16px',
-                background: '#6366f1',
+                background: '#2563eb',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px'
+                gap: '8px',
+                position: 'relative',
+                zIndex: 1
               }}
             >
               <FaDownload />
@@ -335,7 +338,8 @@ const PlacementAnalysis = () => {
             setSidebarUser({
               initials: updatedCompany.name.substring(0, 2).toUpperCase(),
               name: updatedCompany.name,
-              role: 'Company Admin'
+              role: 'Company Admin',
+              profileImage: localStorage.getItem('profileImage') || updatedCompany?.profileImage || ''
             });
           }}
         />

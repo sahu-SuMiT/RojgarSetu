@@ -12,8 +12,8 @@ const mongoose = require('mongoose');
 router.get('/', async (req, res) => {
   try {
     const roles = await Role.find()
-      .populate('companyId', 'name')
-      .sort({ createdAt: -1 }); 
+      .populate('companyId', 'name logo profileImage')
+      .sort({ createdAt: -1 });
     res.json(roles);
   } catch (err) {
     res.status(500).json({ error: err.message });

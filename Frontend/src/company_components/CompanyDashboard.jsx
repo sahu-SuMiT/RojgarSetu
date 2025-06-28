@@ -23,7 +23,7 @@ const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [company, setCompany] = useState(null);
   const [error, setError] = useState('');
-  const [sidebarUser, setSidebarUser] = useState({ initials: 'CA', name: 'Company', role: 'Company Admin' });
+  const [sidebarUser, setSidebarUser] = useState({ initials: 'CA', name: 'Company', role: 'Company Admin', profileImage: localStorage.getItem('profileImage') || company?.profileImage || '' });
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
@@ -45,7 +45,8 @@ const Dashboard = () => {
         setSidebarUser({
           initials: companyRes.data.name.substring(0, 2).toUpperCase(),
           name: companyRes.data.name,
-          role: 'Company Admin'
+          role: 'Company Admin',
+          profileImage: localStorage.getItem('profileImage') || company?.profileImage || ''
         });
 
         // Fetch applications
@@ -413,7 +414,8 @@ const Dashboard = () => {
             setSidebarUser({
               initials: updatedCompany.name.substring(0, 2).toUpperCase(),
               name: updatedCompany.name,
-              role: 'Company Admin'
+              role: 'Company Admin',
+              profileImage: localStorage.getItem('profileImage') || updatedCompany?.profileImage || ''
             });
           }}
         />
