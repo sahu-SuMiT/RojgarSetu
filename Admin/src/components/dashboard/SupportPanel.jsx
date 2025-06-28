@@ -66,27 +66,28 @@ export function SupportPanel() {
   const [users, setUsers] = useState([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userError, setUserError] = useState(null);
+  const [groupedUsers, setGroupedUsers] = useState({});
   const [scheduledMeetings, setScheduledMeetings] = useState([]);
   const [loadingMeetings, setLoadingMeetings] = useState(false);
 
   const fetchUsers = async () => {
-    setIsLoadingUsers(true);
-    setUserError(null);
-    try {
-      const response = await axios.get(`${API_URL}/api/admin/user`);
-      setUsers(response.data);
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message;
-      setUserError(errorMessage);
-      toast({
-        title: "Error",
-        description: `Failed to fetch staff: ${errorMessage}`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingUsers(false);
-    }
-  };
+  setIsLoadingUsers(true);
+  setUserError(null);
+  try {
+    const response = await axios.get(`${API_URL}/api/admin/user`);
+    setGroupedUsers(response.data);
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || error.message;
+    setUserError(errorMessage);
+    toast({
+      title: "Error",
+      description: `Failed to fetch staff: ${errorMessage}`,
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoadingUsers(false);
+  }
+};
 
   useEffect(() => {
     fetchUsers();
@@ -810,27 +811,31 @@ export function SupportPanel() {
                   <Table className="staff-table">
                     <TableHeader>
                       <TableRow>
+                        <TableHead>Sales ID</TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Joined Date</TableHead>
+                        <TableHead>Students</TableHead>
+                        <TableHead>Colleges</TableHead>
+                        <TableHead>Companies</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {isLoadingUsers ? (
                         <TableRow>
-                          <TableCell colSpan={3} className="empty-state">
+                          <TableCell colSpan={7} className="empty-state">
                             <p>Loading staff...</p>
                           </TableCell>
                         </TableRow>
                       ) : userError ? (
                         <TableRow>
-                          <TableCell colSpan={3} className="empty-state">
+                          <TableCell colSpan={7} className="empty-state">
                             <p className="error-text">Error: {userError}</p>
                           </TableCell>
                         </TableRow>
-                      ) : filteredStaff.length === 0 ? (
+                      ) : Object.keys(groupedUsers).length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={3} className="empty-state">
+                          <TableCell colSpan={7} className="empty-state">
                             <div className="empty-content">
                               <Users className="empty-icon" />
                               <p className="empty-text">No staff found matching your criteria</p>
@@ -838,13 +843,38 @@ export function SupportPanel() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredStaff.map((user) => (
-                          <TableRow key={user._id} className="staff-row">
-                            <TableCell>{user.firstName} {user.lastName}</TableCell>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell>{new Date(user.date).toLocaleString()}</TableCell>
-                          </TableRow>
-                        ))
+                        Object.entries(groupedUsers).map(([salesId, group]) => {
+                          const usersArr = Array.isArray(group.users) ? group.users : [];
+                          // If no users, still show a row for the salesId
+                          if (usersArr.length === 0) {
+                            return (
+                              <TableRow key={salesId}>
+                                <TableCell>{salesId}</TableCell>
+                                <TableCell colSpan={3}>No staff found</TableCell>
+                                <TableCell>{group.studentCount || 0}</TableCell>
+                                <TableCell>{group.collegeCount || 0}</TableCell>
+                                <TableCell>{group.companyCount || 0}</TableCell>
+                              </TableRow>
+                            );
+                          }
+                          return usersArr.map((user, idx) => (
+                            <TableRow key={user._id}>
+                              {idx === 0 && (
+                                <TableCell rowSpan={usersArr.length}>{salesId}</TableCell>
+                              )}
+                              <TableCell>{user.firstName} {user.lastName}</TableCell>
+                              <TableCell>{user.email}</TableCell>
+                              <TableCell>{user.date ? new Date(user.date).toLocaleString() : ""}</TableCell>
+                              {idx === 0 && (
+                                <>
+                                  <TableCell rowSpan={usersArr.length}>{group.studentCount || 0}</TableCell>
+                                  <TableCell rowSpan={usersArr.length}>{group.collegeCount || 0}</TableCell>
+                                  <TableCell rowSpan={usersArr.length}>{group.companyCount || 0}</TableCell>
+                                </>
+                              )}
+                            </TableRow>
+                          ));
+                        })
                       )}
                     </TableBody>
                   </Table>

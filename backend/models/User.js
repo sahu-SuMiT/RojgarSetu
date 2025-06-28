@@ -25,6 +25,11 @@ const UserSchema = new mongoose.Schema({
   date: {
     type: Date,
     default: Date.now
+  },
+  salesId: {
+    type: String,
+    required: true,
+    unique: true
   }
 });
 
