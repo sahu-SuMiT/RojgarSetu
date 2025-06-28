@@ -183,15 +183,15 @@
 .register-form-anim {
   max-height: 0;
   overflow: hidden;
-  opacity: 0;
-  transform: translateY(-10px);
+    opacity: 0;
+    transform: translateY(-10px);
   transition: all 0.5s ease-in-out;
-}
+  }
 .register-form-anim.show {
   max-height: 2000px; /* Large enough to not clip */
-  opacity: 1;
-  transform: translateY(0);
-}
+    opacity: 1;
+    transform: translateY(0);
+  }
 .registration-form h3 {
     margin-bottom: 1rem;
     font-weight: 600;

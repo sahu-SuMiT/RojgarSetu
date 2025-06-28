@@ -373,7 +373,7 @@ const CompanyLogin = () => {
           autoComplete="off"
         />
         {errors.contactPhone && <p className="mt-1 text-sm text-red-600">{errors.contactPhone}</p>}
-      </div>
+                    </div>
 
       <div className="mb-4">
         <label htmlFor="referralCode" className="block text-sm font-medium text-gray-400">
@@ -388,7 +388,7 @@ const CompanyLogin = () => {
           className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm`}
           placeholder="Enter referral code"
         />
-      </div>
+                    </div>
 
       <div>
                 <button
@@ -484,7 +484,7 @@ const CompanyLogin = () => {
           className="flex-1 py-2 px-4 border border-transparent text-sm font-semibold rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
         >
           {registerLoading ? "Creating Account..." : "Create Account"}
-        </button>
+                </button>
               </div>
             </form>
   );

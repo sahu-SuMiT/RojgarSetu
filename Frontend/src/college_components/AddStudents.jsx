@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-// import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx';
 axios.defaults.withCredentials = true;
 import { 
   FaUserGraduate, 
@@ -10,7 +10,10 @@ import {
   FaChartLine,
   FaPlus,
   FaTimes,
-  FaFileExcel
+  FaFileExcel,
+  FaDownload,
+  FaEye,
+  FaEyeSlash
 } from 'react-icons/fa';
 import Sidebar from '../Sidebar';
 import SearchBar from '../SearchBar';
@@ -32,6 +35,7 @@ const AddStudents = () => {
   const [excelUploadSuccess, setExcelUploadSuccess] = useState(false);
   const [excelUploadError, setExcelUploadError] = useState(null);
   const [skipInserting, setSkipInserting] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({});
   const [students, setStudents] = useState([{
     name: '',
     email: '',
@@ -183,21 +187,30 @@ const AddStudents = () => {
         college: collegeId
       }));
 
-      await axios.post(`${apiUrl}/api/students/bulk`, studentsWithCollege);
+      const response = await axios.post(`${apiUrl}/api/students/bulk`, studentsWithCollege);
       setSuccess(true);
       setStudents([{
         name: '',
         email: '',
         rollNumber: '',
         department: '',
-        batch: '',
         joiningYear: '',
         graduationYear: '',
         cgpa: '',
         password: ''
       }]);
     } catch (err) {
-      setError(err.response?.data?.message || 'Error adding students');
+      if (err.response?.status === 409 && err.response?.data?.existingStudents) {
+        // Handle duplicate students error
+        const duplicates = err.response.data.existingStudents
+          .map(s => `<span style='color:#F59E0B'>• Email: <b>${s.email}</b>, Roll: <b>${s.rollNumber}</b></span>`)
+          .join('<br/>');
+        setError(
+          `<div>Some students already exist:<br/>${duplicates}<br/><br/>Please remove or update these students and try again.</div>`
+        );
+      } else {
+        setError(err.response?.data?.error || err.response?.data?.message || 'Error adding students');
+      }
     } finally {
       setLoading(false);
     }
@@ -205,6 +218,73 @@ const AddStudents = () => {
 
   const handleCollegeUpdate = (updatedCollege) => {
     setCollege(updatedCollege);
+  };
+
+  // Header mapping from human-readable to camelCase
+  const headerMapping = {
+    'Full Name': 'name',
+    'Email Address': 'email',
+    'Roll Number': 'rollNumber',
+    'Department': 'department',
+    'Joining Year': 'joiningYear',
+    'Graduation Year': 'graduationYear',
+    'CGPA': 'cgpa',
+    'Password': 'password'
+  };
+
+  const generateExcelTemplate = () => {
+    // Human-readable headers for the template
+    const humanHeaders = [
+      'Full Name',
+      'Email Address', 
+      'Roll Number',
+      'Department',
+      'Joining Year',
+      'Graduation Year',
+      'CGPA',
+      'Password'
+    ];
+
+    // Sample data with human-readable format
+    const sampleData = [
+      'John Doe',
+      'john.doe@example.com',
+      '2023001',
+      'Computer Science',
+      '2023',
+      '2027',
+      '8.5',
+      'password123'
+    ];
+
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet([humanHeaders, sampleData]);
+
+    // Set column widths for better readability
+    const columnWidths = [
+      { wch: 20 }, // Full Name
+      { wch: 25 }, // Email Address
+      { wch: 15 }, // Roll Number
+      { wch: 20 }, // Department
+      { wch: 12 }, // Joining Year
+      { wch: 15 }, // Graduation Year
+      { wch: 8 },  // CGPA
+      { wch: 15 }  // Password
+    ];
+    worksheet['!cols'] = columnWidths;
+
+    // Add the worksheet to the workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Students Template');
+
+    // Generate the Excel file and trigger download
+    const fileName = `students_template_${college?.name || 'college'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
+
+  // Function to convert Excel headers to camelCase
+  const convertHeadersToCamelCase = (headers) => {
+    return headers.map(header => headerMapping[header] || header);
   };
 
   // Helper to check if error is a duplicate list
@@ -251,30 +331,6 @@ const AddStudents = () => {
             Add Students
           </h1>
 
-          {error && (
-            <div style={{
-              background: '#fee2e2',
-              color: '#dc2626',
-              padding: '1rem',
-              borderRadius: '8px',
-              marginBottom: '1rem'
-            }}>
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div style={{
-              background: '#dcfce7',
-              color: '#059669',
-              padding: '1rem',
-              borderRadius: '8px',
-              marginBottom: '1rem'
-            }}>
-              Students added successfully!
-            </div>
-          )}
-
           {/* Excel Upload Section */}
           <div style={{ 
             background: '#f3f4f6',
@@ -297,8 +353,48 @@ const AddStudents = () => {
             </h2>
             <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
               Upload an Excel file with student information. The file should have the following columns:
-              <b>Name, Email, Roll Number, Department, Batch, Joining Year, Graduation Year, CGPA, Password</b>
+              <b>Full Name, Email Address, Roll Number, Department, Joining Year, Graduation Year, CGPA, Password</b>
             </p>
+            
+            {/* Download Template Button */}
+            <div style={{ 
+              display: 'flex', 
+              gap: '1rem', 
+              marginBottom: '1rem',
+              alignItems: 'center'
+            }}>
+              <button
+                type="button"
+                onClick={generateExcelTemplate}
+                style={{
+                  background: '#3b82f6',
+                  color: '#fff',
+                  padding: '0.75rem 1.5rem',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontWeight: 600,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.background = '#2563eb'}
+                onMouseOut={(e) => e.target.style.background = '#3b82f6'}
+              >
+                <FaDownload />
+                Download Template
+              </button>
+              <span style={{ 
+                color: '#6b7280', 
+                fontSize: '0.875rem',
+                fontStyle: 'italic'
+              }}>
+                Download template with proper column headers and sample data
+              </span>
+            </div>
+            
             <input
               type="file"
               accept=".xlsx, .xls"
@@ -393,6 +489,7 @@ const AddStudents = () => {
           }}>
             Add Manually
           </h1>
+          
           <form onSubmit={handleSubmit}>
             {students.map((student, index) => (
               <div key={index} style={{
@@ -520,29 +617,6 @@ const AddStudents = () => {
 
                   <div>
                     <label style={{ display: 'block', marginBottom: '0.5rem', color: '#4b5563' }}>
-                      Batch *
-                    </label>
-                    <select
-                      value={student.batch}
-                      onChange={(e) => handleStudentChange(index, 'batch', e.target.value)}
-                      required
-                      style={{
-                        width: '100%',
-                        padding: '0.5rem',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '4px',
-                        background: '#fff'
-                      }}
-                    >
-                      <option value="">Select Batch</option>
-                      {['1st', '2nd', '3rd', '4th'].map(year => (
-                        <option key={year} value={year}>{year} Year</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#4b5563' }}>
                       Joining Year *
                     </label>
                     <input
@@ -604,6 +678,50 @@ const AddStudents = () => {
                       }}
                     />
                   </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#4b5563' }}>
+                      Password *
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showPasswords[index] ? 'text' : 'password'}
+                        value={student.password}
+                        onChange={(e) => handleStudentChange(index, 'password', e.target.value)}
+                        required
+                        minLength="6"
+                        placeholder="Enter student password"
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem',
+                          paddingRight: '2.5rem',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '4px',
+                          background: '#fff'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPasswords({ ...showPasswords, [index]: !showPasswords[index] })}
+                        style={{
+                          position: 'absolute',
+                          right: '0.5rem',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: '#6b7280',
+                          cursor: 'pointer',
+                          padding: '0.25rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        {showPasswords[index] ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -648,6 +766,31 @@ const AddStudents = () => {
               </button>
             </div>
           </form>
+          
+          {/* Manual Form Error/Success Messages - Now positioned after the form */}
+          {error && (
+            <div style={{
+              background: '#fee2e2',
+              color: '#dc2626',
+              padding: '1rem',
+              borderRadius: '8px',
+              marginTop: '1rem'
+            }}
+            dangerouslySetInnerHTML={{ __html: error }}
+            />
+          )}
+
+          {success && (
+            <div style={{
+              background: '#dcfce7',
+              color: '#059669',
+              padding: '1rem',
+              borderRadius: '8px',
+              marginTop: '1rem'
+            }}>
+              Students added successfully!
+            </div>
+          )}
         </div>
 
         {/* Settings Modal */}
