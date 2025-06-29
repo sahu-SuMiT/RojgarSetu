@@ -88,8 +88,8 @@ const EKysDashboard = () => {
   const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false);
   const [isKycDialogOpen, setIsKycDialogOpen] = useState(false);
   const [isReinitiateKycDialogOpen, setIsReinitiateKycDialogOpen] = useState(false);
-  const [isKycHistoryDialogOpen, setIsKycHistoryDialogOpen] = useState(false);
-  const [kycHistory, setKycHistory] = useState<any>(null);
+  // const [isKycHistoryDialogOpen, setIsKycHistoryDialogOpen] = useState(false);
+  // const [kycHistory, setKycHistory] = useState<any>(null);
   const [newTicket, setNewTicket] = useState({
     documentType: "",
     description: "",
@@ -153,23 +153,23 @@ const EKysDashboard = () => {
   }, [token]);
 
   // Fetch KYC history
-  useEffect(() => {
-    const fetchKycHistory = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/kyc/history`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setKycHistory(data);
-        }
-      } catch (error) {
-        console.error('Error fetching KYC history:', error);
-        toast.error('Failed to fetch KYC history');
-      }
-    };
-    fetchKycHistory();
-  }, [token]);
+  // useEffect(() => {
+  //   const fetchKycHistory = async () => {
+  //     try {
+  //       const response = await fetch(`${API_BASE_URL}/api/kyc/history`, {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
+  //       if (response.ok) {
+  //         const data = await response.json();
+  //         setKycHistory(data);
+  //       }
+  //     } catch (error) {
+  //       console.error('Error fetching KYC history:', error);
+  //       toast.error('Failed to fetch KYC history');
+  //     }
+  //   };
+  //   fetchKycHistory();
+  // }, [token]);
 
   // Filter students based on search query
   const filteredStudentsWithVerifiedDocs = students
@@ -430,13 +430,13 @@ const EKysDashboard = () => {
               <Shield className="h-4 w-4" />
               Re-initiate KYC
             </Button>
-            <Button 
+            {/* <Button 
               onClick={() => setIsKycHistoryDialogOpen(true)}
               className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
             >
               <History className="h-4 w-4" />
               View KYC History
-            </Button>
+            </Button> */}
             <Button 
               onClick={() => setIsCreateTicketOpen(true)}
               className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
@@ -780,7 +780,7 @@ const EKysDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isKycHistoryDialogOpen} onOpenChange={setIsKycHistoryDialogOpen}>
+      {/* <Dialog open={isKycHistoryDialogOpen} onOpenChange={setIsKycHistoryDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>KYC Verification History</DialogTitle>
@@ -888,7 +888,7 @@ const EKysDashboard = () => {
             <Button onClick={() => setIsKycHistoryDialogOpen(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
 
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
