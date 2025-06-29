@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback, memo, useMemo } from 'react';
+import React, { useState,useEffect, useCallback, memo, useMemo } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Target, ShieldAlert, Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { SidebarContext } from './Sidebar';
 import Loader from '../components/Loader';
@@ -316,7 +317,7 @@ const Profile = () => {
         }),
       });
       if(response.status === 400) {
-        alert('Kyc verification already in progress or completed. Please check your KYC status.');
+        toast('Kyc verification already in progress or completed. Please check your KYC status.');
         setIsKycDialogOpen(false);
         return;
       }

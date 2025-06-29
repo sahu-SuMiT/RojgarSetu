@@ -14,6 +14,7 @@ import { toast } from "sonner";
 // Backend API base URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+// Types (unchanged)
 type Document = {
   type: string;
   status: string;
@@ -87,8 +88,8 @@ const EKysDashboard = () => {
   const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false);
   const [isKycDialogOpen, setIsKycDialogOpen] = useState(false);
   const [isReinitiateKycDialogOpen, setIsReinitiateKycDialogOpen] = useState(false);
-  const [isKycHistoryDialogOpen, setIsKycHistoryDialogOpen] = useState(false);
-  const [kycHistory, setKycHistory] = useState<any>(null);
+  // const [isKycHistoryDialogOpen, setIsKycHistoryDialogOpen] = useState(false);
+  // const [kycHistory, setKycHistory] = useState<any>(null);
   const [newTicket, setNewTicket] = useState({
     documentType: "",
     description: "",
@@ -96,10 +97,12 @@ const EKysDashboard = () => {
   });
   const [kycData, setKycData] = useState({
     identifier: "",
+    identifierType: "email",
     templateName: ""
   });
   const [reinitiateKycData, setReinitiateKycData] = useState({
-    identifier: ""
+    identifier: "",
+    identifierType: "email"
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
@@ -110,6 +113,7 @@ const EKysDashboard = () => {
   const [isDocDialogOpen, setIsDocDialogOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [selectedDocIdxMap, setSelectedDocIdxMap] = useState<{[studentId: string]: number}>({});
+  const [searchQuery, setSearchQuery] = useState(""); // New state for search query
 
   // Fetch student documents
   useEffect(() => {
@@ -149,23 +153,40 @@ const EKysDashboard = () => {
   }, [token]);
 
   // Fetch KYC history
-  useEffect(() => {
-    const fetchKycHistory = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/kyc/history`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setKycHistory(data);
-        }
-      } catch (error) {
-        console.error('Error fetching KYC history:', error);
-        toast.error('Failed to fetch KYC history');
-      }
-    };
-    fetchKycHistory();
-  }, [token]);
+  // useEffect(() => {
+  //   const fetchKycHistory = async () => {
+  //     try {
+  //       const response = await fetch(`${API_BASE_URL}/api/kyc/history`, {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
+  //       if (response.ok) {
+  //         const data = await response.json();
+  //         setKycHistory(data);
+  //       }
+  //     } catch (error) {
+  //       console.error('Error fetching KYC history:', error);
+  //       toast.error('Failed to fetch KYC history');
+  //     }
+  //   };
+  //   fetchKycHistory();
+  // }, [token]);
+
+  // Filter students based on search query
+  const filteredStudentsWithVerifiedDocs = students
+    .filter(student => 
+      student.documents.some(doc => doc.status === 'verified') &&
+      (student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+       student.email.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  // Filter dashboard students based on search query
+  const filteredDashboardStudents = dashboardStudents
+    .filter(student =>
+      student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.email.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   const handleKycDecision = async (kycId: string, decision: string, reason?: string) => {
     setIsProcessing(true);
@@ -219,6 +240,10 @@ const EKysDashboard = () => {
   };
 
   const initiateDigiKyc = async () => {
+    if(kycData.identifierType !== "email" && kycData.identifierType !== "phone") {
+      toast.error("Identifier type must be either email or mobile.");
+      return;
+    }
     if (!kycData.identifier) {
       toast.error("Please provide email or mobile number.");
       return;
@@ -234,6 +259,7 @@ const EKysDashboard = () => {
         },
         body: JSON.stringify({
           identifier: kycData.identifier,
+          identifier_type: kycData.identifierType,
           template_name: kycData.templateName || "ADHAAR_PAN_MARKSHEET"
         })
       });
@@ -241,12 +267,13 @@ const EKysDashboard = () => {
       if (response.ok) {
         const data = await response.json();
         setIsKycDialogOpen(false);
-        setKycData({ identifier: "", templateName: "" });
+        setKycData({ identifier: "", identifierType: "email", templateName: "" });
         toast.success("KYC verification initiated successfully!");
         window.location.href = data.digilockerUrl;
       } 
       if (response.status === 400) {
-        toast.error("KYC verification already in progress or completed. Please check your KYC status.");
+        alert("KYC verification already in progress or completed. Please check your KYC status.");
+        setIsKycDialogOpen(false);
       }
       else {
         const errorData = await response.json();
@@ -275,14 +302,15 @@ const EKysDashboard = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          identifier: reinitiateKycData.identifier
+          identifier: reinitiateKycData.identifier,
+          identifier_type: reinitiateKycData.identifierType
         })
       });
 
       if (response.ok) {
         const data = await response.json();
         setIsReinitiateKycDialogOpen(false);
-        setReinitiateKycData({ identifier: "" });
+        setReinitiateKycData({ identifier: "", identifierType: "email" });
         toast.success("KYC re-verification initiated successfully!");
         window.location.href = data.digilockerUrl;
       } else {
@@ -295,6 +323,30 @@ const EKysDashboard = () => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const formatImageSrc = (imageData) => {
+    if (!imageData) return '';
+
+    let base64String = imageData
+      .replace(/preview|^[^,]+,/i, '')
+      .trim();
+
+    if (base64String.includes('base64')) {
+      base64String = base64String.split('base64')[1] || base64String;
+    }
+
+    if (!base64String.startsWith('data:image/jpeg;base64,')) {
+      base64String = `data:image/jpeg;base64,${base64String}`;
+    }
+
+    const base64Data = base64String.split('data:image/jpeg;base64,')[1];
+    if (!base64Data || base64Data.length < 10) {
+      console.error('Invalid base64 data:', imageData);
+      return 'https://via.placeholder.com/150';
+    }
+
+    return base64String;
   };
 
   const handleCreateTicket = () => {
@@ -355,11 +407,6 @@ const EKysDashboard = () => {
   const rejectedCount = dashboardStudents.filter(s => s.kycStatus === 'rejected').length;
   const missingCount = dashboardStudents.filter(s => !s.kycStatus || s.kycStatus === 'missing' || s.kycStatus === 'not started').length;
 
-  // Alphabetically sort students and filter for at least one verified document
-  const studentsWithVerifiedDocs = students
-    .filter(student => student.documents.some(doc => doc.status === 'verified'))
-    .sort((a, b) => a.name.localeCompare(b.name));
-
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -383,13 +430,13 @@ const EKysDashboard = () => {
               <Shield className="h-4 w-4" />
               Re-initiate KYC
             </Button>
-            <Button 
+            {/* <Button 
               onClick={() => setIsKycHistoryDialogOpen(true)}
               className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
             >
               <History className="h-4 w-4" />
               View KYC History
-            </Button>
+            </Button> */}
             <Button 
               onClick={() => setIsCreateTicketOpen(true)}
               className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
@@ -398,6 +445,19 @@ const EKysDashboard = () => {
               Create Verification Ticket
             </Button>
           </div>
+        </div>
+
+        {/* Search Input */}
+        <div className="flex items-center gap-2">
+          <Label htmlFor="search">Search Students</Label>
+          <Input
+            id="search"
+            type="text"
+            placeholder="Search by name or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-md"
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -464,12 +524,12 @@ const EKysDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {studentsWithVerifiedDocs.length === 0 && (
+                  {filteredStudentsWithVerifiedDocs.length === 0 && (
                     <tr>
                       <td colSpan={5} className="px-4 py-2 text-center text-gray-500">No students with verified documents available.</td>
                     </tr>
                   )}
-                  {studentsWithVerifiedDocs.map((student) => {
+                  {filteredStudentsWithVerifiedDocs.map((student) => {
                     const verifiedDocs = student.documents.filter(doc => doc.status === 'verified');
                     const selectedDocIdx = selectedDocIdxMap[student.studentId] ?? 0;
                     const selectedDoc = verifiedDocs[selectedDocIdx] || verifiedDocs[0];
@@ -529,18 +589,18 @@ const EKysDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {dashboardStudents
+                  {filteredDashboardStudents
                     .slice()
                     .sort((a, b) => {
                       const statusOrder = (status: string) => {
-                        if (status === 'pending' || status === 'pending approval'||status==='requested') return 0;
+                        if (status === 'pending' || status === 'pending approval' || status === 'requested') return 0;
                         if (status === 'verified') return 1;
                         if (status === 'approved') return 1;
                         if (!status || status === 'missing' || status === 'not started') return 2;
                         return 3;
                       };
-                      const aOrder = statusOrder(a.kycStatus||'missing');
-                      const bOrder = statusOrder(b.kycStatus||'missing');
+                      const aOrder = statusOrder(a.kycStatus || 'missing');
+                      const bOrder = statusOrder(b.kycStatus || 'missing');
                       return aOrder !== bOrder ? aOrder - bOrder : 0;
                     })
                     .map((student, idx) => (
@@ -548,7 +608,7 @@ const EKysDashboard = () => {
                         <td className="px-4 py-2">{student.name}</td>
                         <td className="px-4 py-2">{student.email}</td>
                         <td className="px-4 py-2">
-                          <Badge className={getStatusColor(student.kycStatus||'missing')}>
+                          <Badge className={getStatusColor(student.kycStatus || 'missing')}>
                             {student.kycStatus || 'missing'}
                           </Badge>
                         </td>
@@ -560,7 +620,7 @@ const EKysDashboard = () => {
                               <Button
                                 size="sm"
                                 className="bg-green-600 hover:bg-green-700"
-                                onClick={() => student.kycData?.verificationId&&handleKycDecision(student.kycData?.verificationId, 'approved')}
+                                onClick={() => student.kycData?.verificationId && handleKycDecision(student.kycData?.verificationId, 'approved')}
                                 disabled={isProcessing}
                               >
                                 Approve
@@ -568,7 +628,7 @@ const EKysDashboard = () => {
                               <Button
                                 size="sm"
                                 className="bg-red-600 hover:bg-red-700"
-                                onClick={() => openRejectDialog(student.kycData?.verificationId)}
+                                onClick={() => student.kycData?.verificationId && openRejectDialog(student.kycData.verificationId)}
                                 disabled={isProcessing}
                               >
                                 Reject
@@ -628,27 +688,43 @@ const EKysDashboard = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="identifier">Email or Mobile Number</Label>
-              <Input 
-                id="identifier" 
+              <Label htmlFor="identifier-type">Identifier Type</Label>
+              <Select
+                value={kycData.identifierType || "email"}
+                onValueChange={val => setKycData({ ...kycData, identifierType: val, identifier: "" })}
+              >
+                <SelectTrigger id="identifier-type">
+                  <SelectValue placeholder="Select identifier type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="phone">Phone</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="identifier">{kycData.identifierType === "phone" ? "Mobile Number" : "Email"}</Label>
+              <Input
+                id="identifier"
+                type={kycData.identifierType === "phone" ? "tel" : "email"}
                 value={kycData.identifier}
-                onChange={(e) => setKycData({...kycData, identifier: e.target.value})}
-                placeholder="Enter email or mobile number" 
+                onChange={e => setKycData({ ...kycData, identifier: e.target.value })}
+                placeholder={kycData.identifierType === "phone" ? "Enter mobile number" : "Enter email"}
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="template">Template Name (Optional)</Label>
-              <Input 
-                id="template" 
+              <Input
+                id="template"
                 value={kycData.templateName}
-                onChange={(e) => setKycData({...kycData, templateName: e.target.value})}
-                placeholder="Enter template name or leave empty for default" 
+                onChange={e => setKycData({ ...kycData, templateName: e.target.value })}
+                placeholder="Enter template name or leave empty for default"
               />
             </div>
           </div>
           <DialogFooter>
             <Button onClick={() => setIsKycDialogOpen(false)}>Cancel</Button>
-            <Button 
+            <Button
               onClick={initiateDigiKyc}
               disabled={!kycData.identifier || isProcessing}
               className="bg-green-600 hover:bg-green-700"
@@ -666,18 +742,34 @@ const EKysDashboard = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="reinitiate-identifier">Email or Mobile Number</Label>
-              <Input 
-                id="reinitiate-identifier" 
+              <Label htmlFor="reinitiate-identifier-type">Identifier Type</Label>
+              <Select
+                value={reinitiateKycData.identifierType || "email"}
+                onValueChange={val => setReinitiateKycData({ ...reinitiateKycData, identifierType: val, identifier: "" })}
+              >
+                <SelectTrigger id="reinitiate-identifier-type">
+                  <SelectValue placeholder="Select identifier type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="phone">Phone</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="reinitiate-identifier">{reinitiateKycData.identifierType === "phone" ? "Mobile Number" : "Email"}</Label>
+              <Input
+                id="reinitiate-identifier"
+                type={reinitiateKycData.identifierType === "phone" ? "tel" : "email"}
                 value={reinitiateKycData.identifier}
-                onChange={(e) => setReinitiateKycData({...reinitiateKycData, identifier: e.target.value})}
-                placeholder="Enter email or mobile number" 
+                onChange={e => setReinitiateKycData({ ...reinitiateKycData, identifier: e.target.value })}
+                placeholder={reinitiateKycData.identifierType === "phone" ? "Enter mobile number" : "Enter email"}
               />
             </div>
           </div>
           <DialogFooter>
             <Button onClick={() => setIsReinitiateKycDialogOpen(false)}>Cancel</Button>
-            <Button 
+            <Button
               onClick={reinitiateDigiKyc}
               disabled={!reinitiateKycData.identifier || isProcessing}
               className="bg-yellow-600 hover:bg-yellow-700"
@@ -688,7 +780,7 @@ const EKysDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isKycHistoryDialogOpen} onOpenChange={setIsKycHistoryDialogOpen}>
+      {/* <Dialog open={isKycHistoryDialogOpen} onOpenChange={setIsKycHistoryDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>KYC Verification History</DialogTitle>
@@ -779,7 +871,7 @@ const EKysDashboard = () => {
                       )}
                       {doc.details.image && (
                         <img
-                          src={doc.details.image}
+                          src={formatImageSrc(doc.details.image)}
                           alt={`${doc.type} preview`}
                           className="w-24 h-24 object-cover rounded mt-2"
                         />
@@ -796,7 +888,7 @@ const EKysDashboard = () => {
             <Button onClick={() => setIsKycHistoryDialogOpen(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
 
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
@@ -833,7 +925,7 @@ const EKysDashboard = () => {
       </Dialog>
 
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-50% sm:max-h-[800px] overflow-scroll">
           <DialogHeader>
             <DialogTitle>KYC Details</DialogTitle>
           </DialogHeader>
@@ -863,8 +955,18 @@ const EKysDashboard = () => {
                 <Label>Documents</Label>
                 <ul className="text-sm text-gray-600">
                   {selectedStudent.documents?.map((doc, idx) => (
-                    <li key={idx} className="mb-2">
-                      <p>{doc.type} - {doc.status}</p>
+                    <li key={idx} className="mb-2 ">
+                      <div className=" rounded-lg hover:bg-yellow  shadow-lg  mb-5 p-2">
+                      <p className="font-bold">{doc.type} - {doc.status}</p>
+                      {doc.details.image && (
+                         <div className="flex-shrink-0 flex px-2 items-center w-full h-full sm:w-40">
+                        <img
+                          src={formatImageSrc(doc.details.image)}
+                          alt={`${doc.type} preview`}
+                          className="w-24 h-24 object-cover rounded mt-2"
+                        />
+                        </div>
+                      )}
                       {doc.details.id_number && (
                         <p className="text-xs">ID Number: {doc.details.id_number}</p>
                       )}
@@ -929,14 +1031,9 @@ const EKysDashboard = () => {
                           </ul>
                         </div>
                       )}
-                      {doc.details.image && (
-                        <img
-                          src={doc.details.image}
-                          alt={`${doc.type} preview`}
-                          className="w-24 h-24 object-cover rounded mt-2"
-                        />
-                      )}
-                    </li>
+                      
+                      </div>
+                    </li> 
                   ))}
                 </ul>
               </div>
@@ -1022,104 +1119,107 @@ const EKysDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Document Details Dialog */}
       <Dialog open={isDocDialogOpen} onOpenChange={setIsDocDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-70% sm:max-h-[800px] overflow-scroll">
+          <DialogHeader className="">
             <DialogTitle>Document Details</DialogTitle>
           </DialogHeader>
           {selectedDoc && (
-            <div className="grid gap-4 py-4">
-              <div>
-                <Label>Type</Label>
-                <p className="text-sm text-gray-600">{selectedDoc.type}</p>
+            <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-8 transition-all duration-300">
+              <div className="flex-1 min-w-0">
+                <div className="mb-4">
+                  <Label className="text-xs text-gray-500">Type</Label>
+                  <p className="text-base font-semibold text-gray-800">{selectedDoc.type}</p>
+                </div>
+                <div className="mb-4">
+                  <Label className="text-xs text-gray-500">Status</Label>
+                  <p className="text-base text-gray-700">{selectedDoc.status}</p>
+                </div>
+                {selectedDoc.details.id_number && (
+                  <div className="mb-4">
+                    <Label className="text-xs text-gray-500">ID Number</Label>
+                    <p className="text-base text-gray-700">{selectedDoc.details.id_number}</p>
+                  </div>
+                )}
+                {selectedDoc.details.name && (
+                  <div className="mb-4">
+                    <Label className="text-xs text-gray-500">Name</Label>
+                    <p className="text-base text-gray-700">{selectedDoc.details.name}</p>
+                  </div>
+                )}
+                {selectedDoc.details.document_type && (
+                  <div className="mb-4">
+                    <Label className="text-xs text-gray-500">Document Type</Label>
+                    <p className="text-base text-gray-700">{selectedDoc.details.document_type}</p>
+                  </div>
+                )}
+                {selectedDoc.details.gender && (
+                  <div className="mb-4">
+                    <Label className="text-xs text-gray-500">Gender</Label>
+                    <p className="text-base text-gray-700">{selectedDoc.details.gender}</p>
+                  </div>
+                )}
+                {selectedDoc.details.extra_info && (
+                  <div className="mb-4">
+                    <Label className="text-xs text-gray-500">Extra Info</Label>
+                    <ul className="text-sm text-gray-600 ml-4 list-disc">
+                      {Array.isArray(selectedDoc.details.extra_info.performance_data) && (
+                        <li>
+                          <span className="font-medium">Performance Data:</span>
+                          <ul className="ml-4 list-circle">
+                            {selectedDoc.details.extra_info.performance_data.map((subject, idx) => (
+                              <li key={idx}>
+                                {subject.name}: {subject.marksTotal} (Grade: {subject.grade})
+                              </li>
+                            ))}
+                          </ul>
+                        </li>
+                      )}
+                      {selectedDoc.details.extra_info.care_of && (
+                        <li>Care Of: {selectedDoc.details.extra_info.care_of}</li>
+                      )}
+                      {selectedDoc.details.extra_info.updateDate && (
+                        <li>Update Date: {selectedDoc.details.extra_info.updateDate}</li>
+                      )}
+                      {selectedDoc.details.extra_info.motherName && (
+                        <li>Mother Name: {selectedDoc.details.extra_info.motherName}</li>
+                      )}
+                      {selectedDoc.details.extra_info.resultDate && (
+                        <li>Result Date: {selectedDoc.details.extra_info.resultDate}</li>
+                      )}
+                      {selectedDoc.details.extra_info.result && (
+                        <li>Result: {selectedDoc.details.extra_info.result}</li>
+                      )}
+                      {selectedDoc.details.extra_info.issuing_authority && (
+                        <li>Issuing Authority: {selectedDoc.details.extra_info.issuing_authority}</li>
+                      )}
+                      {selectedDoc.details.extra_info.marksTotal && (
+                        <li>Total Marks: {selectedDoc.details.extra_info.marksTotal}</li>
+                      )}
+                      {selectedDoc.details.extra_info.examinationYear && (
+                        <li>Examination Year: {selectedDoc.details.extra_info.examinationYear}</li>
+                      )}
+                      {selectedDoc.details.extra_info.schoolName && (
+                        <li>School Name: {selectedDoc.details.extra_info.schoolName}</li>
+                      )}
+                      {selectedDoc.details.extra_info.status && (
+                        <li>Status: {selectedDoc.details.extra_info.status}</li>
+                      )}
+                      {selectedDoc.details.extra_info.schoolCode && (
+                        <li>School Code: {selectedDoc.details.extra_info.schoolCode}</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
               </div>
-              <div>
-                <Label>Status</Label>
-                <p className="text-sm text-gray-600">{selectedDoc.status}</p>
-              </div>
-              {selectedDoc.details.id_number && (
-                <div>
-                  <Label>ID Number</Label>
-                  <p className="text-sm text-gray-600">{selectedDoc.details.id_number}</p>
-                </div>
-              )}
-              {selectedDoc.details.name && (
-                <div>
-                  <Label>Name</Label>
-                  <p className="text-sm text-gray-600">{selectedDoc.details.name}</p>
-                </div>
-              )}
-              {selectedDoc.details.document_type && (
-                <div>
-                  <Label>Document Type</Label>
-                  <p className="text-sm text-gray-600">{selectedDoc.details.document_type}</p>
-                </div>
-              )}
-              {selectedDoc.details.gender && (
-                <div>
-                  <Label>Gender</Label>
-                  <p className="text-sm text-gray-600">{selectedDoc.details.gender}</p>
-                </div>
-              )}
-              {selectedDoc.details.extra_info && (
-                <div>
-                  <Label>Extra Info</Label>
-                  <ul className="text-sm text-gray-600 ml-4 list-disc">
-                    {Array.isArray(selectedDoc.details.extra_info.performance_data) && (
-                      <li>
-                        Performance Data:
-                        <ul className="ml-4 list-circle">
-                          {selectedDoc.details.extra_info.performance_data.map((subject, idx) => (
-                            <li key={idx}>
-                              {subject.name}: {subject.marksTotal} (Grade: {subject.grade})
-                            </li>
-                          ))}
-                        </ul>
-                      </li>
-                    )}
-                    {selectedDoc.details.extra_info.care_of && (
-                      <li>Care Of: {selectedDoc.details.extra_info.care_of}</li>
-                    )}
-                    {selectedDoc.details.extra_info.updateDate && (
-                      <li>Update Date: {selectedDoc.details.extra_info.updateDate}</li>
-                    )}
-                    {selectedDoc.details.extra_info.motherName && (
-                      <li>Mother Name: {selectedDoc.details.extra_info.motherName}</li>
-                    )}
-                    {selectedDoc.details.extra_info.resultDate && (
-                      <li>Result Date: {selectedDoc.details.extra_info.resultDate}</li>
-                    )}
-                    {selectedDoc.details.extra_info.result && (
-                      <li>Result: {selectedDoc.details.extra_info.result}</li>
-                    )}
-                    {selectedDoc.details.extra_info.issuing_authority && (
-                      <li>Issuing Authority: {selectedDoc.details.extra_info.issuing_authority}</li>
-                    )}
-                    {selectedDoc.details.extra_info.marksTotal && (
-                      <li>Total Marks: {selectedDoc.details.extra_info.marksTotal}</li>
-                    )}
-                    {selectedDoc.details.extra_info.examinationYear && (
-                      <li>Examination Year: {selectedDoc.details.extra_info.examinationYear}</li>
-                    )}
-                    {selectedDoc.details.extra_info.schoolName && (
-                      <li>School Name: {selectedDoc.details.extra_info.schoolName}</li>
-                    )}
-                    {selectedDoc.details.extra_info.status && (
-                      <li>Status: {selectedDoc.details.extra_info.status}</li>
-                    )}
-                    {selectedDoc.details.extra_info.schoolCode && (
-                      <li>School Code: {selectedDoc.details.extra_info.schoolCode}</li>
-                    )}
-                  </ul>
-                </div>
-              )}
               {selectedDoc.details.image && (
-                <img
-                  src={selectedDoc.details.image}
-                  alt={`${selectedDoc.type} preview`}
-                  className="w-24 h-24 object-cover rounded mt-2"
-                />
+                <div className="flex-shrink-0 flex justify-center items-center w-full sm:w-40">
+                  <img
+                    src={formatImageSrc(selectedDoc.details.image)}
+                    alt={`${selectedDoc.type} preview`}
+                    className="w-full h-full sm:w-full sm:h-full border shadow"
+                  />
+                </div>
               )}
             </div>
           )}
