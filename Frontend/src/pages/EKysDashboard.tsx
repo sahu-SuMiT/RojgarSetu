@@ -8,17 +8,56 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { CheckCircle, XCircle, AlertCircle, Upload, Shield, FileText, Plus, Download, Eye, History } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, Upload, Shield, FileText, Plus, Eye, History } from "lucide-react";
 import { toast } from "sonner";
-//backend API base URL'
 
-const API_BASE_URL = 'http://localhost:5000';
+// Backend API base URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 type Document = {
   type: string;
   status: string;
-  imageUrl?: string;
-  metadata?: Record<string, any>;
+  details: {
+    id_number?: string;
+    document_type?: string;
+    gender?: string;
+    image?: string;
+    name?: string;
+    extra_info?: {
+      performance_data?: Array<{
+        marksMax?: string;
+        marksPractical?: string;
+        code?: string;
+        marksMaxTheory?: string;
+        gpMax?: string;
+        grade?: string;
+        name?: string;
+        gp?: string;
+        marksTotal?: string;
+        marksTheory?: string;
+        marksMaxPractical?: string;
+      }>;
+      care_of?: string;
+      updateDate?: string;
+      motherName?: string;
+      resultDate?: string;
+      result?: string;
+      issuing_authority?: string;
+      marksTotal?: string;
+      examinationYear?: string;
+      schoolName?: string;
+      status?: string;
+      schoolCode?: string;
+    };
+    [key: string]: any;
+  };
+};
+
+type Student = {
+  studentId: string;
+  name: string;
+  email: string;
+  documents: Document[];
 };
 
 type KycData = {
@@ -27,7 +66,7 @@ type KycData = {
   [key: string]: any;
 };
 
-type Student = {
+type DashboardStudent = {
   name: string;
   email: string;
   kycStatus?: string;
@@ -42,7 +81,8 @@ const EKysDashboard = () => {
     window.location.href = "https://company.rojgarsetu.org/";
   }
 
-  const [studentDocuments, setStudentDocuments] = useState<Document[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [dashboardStudents, setDashboardStudents] = useState<DashboardStudent[]>([]);
   const [tickets, setTickets] = useState<any[]>([]);
   const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false);
   const [isKycDialogOpen, setIsKycDialogOpen] = useState(false);
@@ -52,7 +92,7 @@ const EKysDashboard = () => {
   const [newTicket, setNewTicket] = useState({
     documentType: "",
     description: "",
-    uploadedFile: null
+    uploadedFile: null as File | null
   });
   const [kycData, setKycData] = useState({
     identifier: "",
@@ -62,30 +102,32 @@ const EKysDashboard = () => {
     identifier: ""
   });
   const [isProcessing, setIsProcessing] = useState(false);
-  const [students, setStudents] = useState<Student[]>([]);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [selectedKycId, setSelectedKycId] = useState<string | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<DashboardStudent | null>(null);
+  const [isDocDialogOpen, setIsDocDialogOpen] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
+  const [selectedDocIdxMap, setSelectedDocIdxMap] = useState<{[studentId: string]: number}>({});
 
   // Fetch student documents
   useEffect(() => {
     const fetchStudentDocuments = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/kyc/student/documents`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setStudentDocuments(data.documents || []);
+        const response = await fetch(`${API_BASE_URL}/api/kyc/student/documents`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch student documents');
         }
+        const data = await response.json();
+        setStudents(data.students || []);
       } catch (error) {
         console.error('Error fetching student documents:', error);
+        toast.error('Failed to fetch student documents');
       }
     };
     fetchStudentDocuments();
-  }, [token]);
+  }, []);
 
   // Fetch all KYC details
   useEffect(() => {
@@ -96,10 +138,11 @@ const EKysDashboard = () => {
         });
         if (response.ok) {
           const students = await response.json();
-          setStudents(students);
+          setDashboardStudents(students);
         }
       } catch (error) {
         console.error('Error fetching all KYC details:', error);
+        toast.error('Failed to fetch KYC details');
       }
     };
     fetchAllKycDetails();
@@ -118,12 +161,13 @@ const EKysDashboard = () => {
         }
       } catch (error) {
         console.error('Error fetching KYC history:', error);
+        toast.error('Failed to fetch KYC history');
       }
     };
     fetchKycHistory();
   }, [token]);
 
-  const handleKycDecision = async (kycId, decision, reason) => {
+  const handleKycDecision = async (kycId: string, decision: string, reason?: string) => {
     setIsProcessing(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/kyc/decision`, {
@@ -144,14 +188,14 @@ const EKysDashboard = () => {
         throw new Error(data.error || `Failed to ${decision} KYC request`);
       }
 
-      setStudents(students.map(student =>
+      setDashboardStudents(dashboardStudents.map(student =>
         student.kycData?.verificationId === kycId
           ? { ...student, kycStatus: data.kycStatus, kycData: data.kycData }
           : student
       ));
 
       toast.success(data.message);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error ${decision}ing KYC:`, error);
       toast.error(error.message || `Failed to ${decision} KYC request`);
     } finally {
@@ -164,12 +208,12 @@ const EKysDashboard = () => {
     }
   };
 
-  const openRejectDialog = (kycId) => {
+  const openRejectDialog = (kycId: string) => {
     setSelectedKycId(kycId);
     setIsRejectDialogOpen(true);
   };
 
-  const openViewDialog = (student) => {
+  const openViewDialog = (student: DashboardStudent) => {
     setSelectedStudent(student);
     setIsViewDialogOpen(true);
   };
@@ -182,7 +226,7 @@ const EKysDashboard = () => {
 
     setIsProcessing(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/kyc/verify`, {
+      const response = await fetch(`${API_BASE_URL}/api/kyc/initiate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -190,7 +234,7 @@ const EKysDashboard = () => {
         },
         body: JSON.stringify({
           identifier: kycData.identifier,
-          template_name: kycData.templateName || "KYC_CLIENT"
+          template_name: kycData.templateName || "ADHAAR_PAN_MARKSHEET"
         })
       });
 
@@ -200,11 +244,15 @@ const EKysDashboard = () => {
         setKycData({ identifier: "", templateName: "" });
         toast.success("KYC verification initiated successfully!");
         window.location.href = data.digilockerUrl;
-      } else {
+      } 
+      if (response.status === 400) {
+        toast.error("KYC verification already in progress or completed. Please check your KYC status.");
+      }
+      else {
         const errorData = await response.json();
         toast.error(`KYC initiation failed: ${errorData.error || 'Unknown error'}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("KYC API Error:", error);
       toast.error("Error initiating KYC verification. Please try again.");
     } finally {
@@ -241,7 +289,7 @@ const EKysDashboard = () => {
         const errorData = await response.json();
         toast.error(`KYC re-initiation failed: ${errorData.error || 'Unknown error'}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("KYC Re-initiation Error:", error);
       toast.error("Error re-initiating KYC verification. Please try again.");
     } finally {
@@ -271,7 +319,7 @@ const EKysDashboard = () => {
     toast.success("Verification ticket created successfully!");
   };
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setNewTicket({ ...newTicket, uploadedFile: file });
@@ -279,9 +327,10 @@ const EKysDashboard = () => {
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'verified': return 'bg-green-100 text-green-800';
+      case 'approved': return 'bg-green-100 text-green-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       case 'missing': return 'bg-red-100 text-red-800';
       case 'rejected': return 'bg-gray-100 text-gray-800';
@@ -289,9 +338,10 @@ const EKysDashboard = () => {
     }
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'verified': return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'approved': return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'pending': return <AlertCircle className="h-4 w-4 text-yellow-600" />;
       case 'missing': return <XCircle className="h-4 w-4 text-red-600" />;
       case 'rejected': return <XCircle className="h-4 w-4 text-gray-600" />;
@@ -299,10 +349,16 @@ const EKysDashboard = () => {
     }
   };
 
-  const verifiedCount = students.filter(s => s.kycStatus === 'verified').length;
-  const pendingCount = students.filter(s => s.kycStatus === 'pending' || s.kycStatus === 'pending approval').length;
-  const rejectedCount = students.filter(s => s.kycStatus === 'rejected').length;
-  const missingCount = students.filter(s => !s.kycStatus || s.kycStatus === 'missing' || s.kycStatus === 'not started').length;
+  const verifiedCount = dashboardStudents.filter(s => s.kycStatus === 'verified').length;
+  const approvedCount = dashboardStudents.filter(s => s.kycStatus === 'approved').length;
+  const pendingCount = dashboardStudents.filter(s => s.kycStatus === 'pending' || s.kycStatus === 'pending approval').length;
+  const rejectedCount = dashboardStudents.filter(s => s.kycStatus === 'rejected').length;
+  const missingCount = dashboardStudents.filter(s => !s.kycStatus || s.kycStatus === 'missing' || s.kycStatus === 'not started').length;
+
+  // Alphabetically sort students and filter for at least one verified document
+  const studentsWithVerifiedDocs = students
+    .filter(student => student.documents.some(doc => doc.status === 'verified'))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <AppLayout>
@@ -350,7 +406,7 @@ const EKysDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-500">Verified KYC</p>
-                  <h3 className="text-2xl font-bold mt-1">{verifiedCount}</h3>
+                  <h3 className="text-2xl font-bold mt-1">{verifiedCount + approvedCount}</h3>
                 </div>
                 <CheckCircle className="h-8 w-8 text-green-500" />
               </div>
@@ -396,38 +452,61 @@ const EKysDashboard = () => {
             <CardTitle>Student Documents</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {studentDocuments.map((doc, index) => (
-                <div key={index} className="flex flex-col p-4 border rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">{doc.type}</h4>
-                      <p className="text-sm text-gray-500">Status: {doc.status}</p>
-                      {doc.metadata?.kycId && (
-                        <p className="text-sm text-gray-500">KYC ID: {doc.metadata.kycId}</p>
-                      )}
-                      {doc.metadata?.source && (
-                        <p className="text-sm text-gray-500">Source: {doc.metadata.source}</p>
-                      )}
-                      {doc.metadata?.lastUpdated && (
-                        <p className="text-sm text-gray-500">Last Updated: {doc.metadata.lastUpdated}</p>
-                      )}
-                      {/* Display additional metadata fields */}
-                      {Object.entries(doc.metadata || {}).filter(([key]) => !['kycId', 'source', 'lastUpdated'].includes(key)).map(([key, value]) => (
-                        <p key={key} className="text-sm text-gray-500">{key}: {JSON.stringify(value)}</p>
-                      ))}
-                    </div>
-                    {doc.imageUrl && (
-                      <a href={doc.imageUrl} target="_blank" rel="noopener noreferrer">
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                          <Download className="h-4 w-4 mr-1" />
-                          Download
-                        </Button>
-                      </a>
-                    )}
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Document</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {studentsWithVerifiedDocs.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-2 text-center text-gray-500">No students with verified documents available.</td>
+                    </tr>
+                  )}
+                  {studentsWithVerifiedDocs.map((student) => {
+                    const verifiedDocs = student.documents.filter(doc => doc.status === 'verified');
+                    const selectedDocIdx = selectedDocIdxMap[student.studentId] ?? 0;
+                    const selectedDoc = verifiedDocs[selectedDocIdx] || verifiedDocs[0];
+                    return (
+                      <tr key={student.studentId} className="border-b">
+                        <td className="px-4 py-2">{student.name}</td>
+                        <td className="px-4 py-2">{student.email}</td>
+                        <td className="px-4 py-2">
+                          <Select
+                            value={String(selectedDocIdx)}
+                            onValueChange={val => setSelectedDocIdxMap(prev => ({ ...prev, [student.studentId]: Number(val) }))}
+                          >
+                            <SelectTrigger className="w-40">
+                              <SelectValue placeholder="Select document" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {verifiedDocs.map((doc, dIdx) => (
+                                <SelectItem key={dIdx} value={String(dIdx)}>{doc.type}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="px-4 py-2">{selectedDoc.status}</td>
+                        <td className="px-4 py-2">
+                          <Button
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700"
+                            onClick={() => { setSelectedDoc(selectedDoc); setIsDocDialogOpen(true); }}
+                          >
+                            View
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
@@ -450,17 +529,18 @@ const EKysDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {students
+                  {dashboardStudents
                     .slice()
                     .sort((a, b) => {
-                      const statusOrder = (status) => {
-                        if (status === 'pending' || status === 'pending approval') return 0;
+                      const statusOrder = (status: string) => {
+                        if (status === 'pending' || status === 'pending approval'||status==='requested') return 0;
                         if (status === 'verified') return 1;
+                        if (status === 'approved') return 1;
                         if (!status || status === 'missing' || status === 'not started') return 2;
                         return 3;
                       };
-                      const aOrder = statusOrder(a.kycStatus);
-                      const bOrder = statusOrder(b.kycStatus);
+                      const aOrder = statusOrder(a.kycStatus||'missing');
+                      const bOrder = statusOrder(b.kycStatus||'missing');
                       return aOrder !== bOrder ? aOrder - bOrder : 0;
                     })
                     .map((student, idx) => (
@@ -468,19 +548,19 @@ const EKysDashboard = () => {
                         <td className="px-4 py-2">{student.name}</td>
                         <td className="px-4 py-2">{student.email}</td>
                         <td className="px-4 py-2">
-                          <Badge className={getStatusColor(student.kycStatus)}>
+                          <Badge className={getStatusColor(student.kycStatus||'missing')}>
                             {student.kycStatus || 'missing'}
                           </Badge>
                         </td>
                         <td className="px-4 py-2">{student.kycData?.verificationId || '-'}</td>
                         <td className="px-4 py-2">{student.kycData?.lastUpdated || '-'}</td>
                         <td className="px-4 py-2">
-                          {student.kycStatus === 'pending' || student.kycStatus === 'pending approval' && student.kycData?.verificationId ? (
+                          {student.kycStatus === 'pending' || student.kycStatus === 'pending approval' ? (
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
                                 className="bg-green-600 hover:bg-green-700"
-                                onClick={() => handleKycDecision(student.kycData?.verificationId, 'approved', '')}
+                                onClick={() => student.kycData?.verificationId&&handleKycDecision(student.kycData?.verificationId, 'approved')}
                                 disabled={isProcessing}
                               >
                                 Approve
@@ -630,23 +710,79 @@ const EKysDashboard = () => {
               <div>
                 <Label>Documents</Label>
                 <ul className="text-sm text-gray-600">
-                  {kycHistory.documents?.map((doc, idx) => (
+                  {kycHistory.documents?.map((doc: Document, idx: number) => (
                     <li key={idx} className="mb-2">
                       <p>{doc.type} - {doc.status}</p>
-                      {doc.metadata?.kycId && (
-                        <p className="text-xs">KYC ID: {doc.metadata.kycId}</p>
+                      {doc.details.id_number && (
+                        <p className="text-xs">ID Number: {doc.details.id_number}</p>
                       )}
-                      {doc.metadata?.source && (
-                        <p className="text-xs">Source: {doc.metadata.source}</p>
+                      {doc.details.name && (
+                        <p className="text-xs">Name: {doc.details.name}</p>
                       )}
-                      {doc.metadata?.lastUpdated && (
-                        <p className="text-xs">Last Updated: {doc.metadata.lastUpdated}</p>
+                      {doc.details.document_type && (
+                        <p className="text-xs">Document Type: {doc.details.document_type}</p>
                       )}
-                      {Object.entries(doc.metadata || {}).filter(([key]) => !['kycId', 'source', 'lastUpdated'].includes(key)).map(([key, value]) => (
-                        <p key={key} className="text-xs">{key}: {JSON.stringify(value)}</p>
-                      ))}
-                      {doc.imageUrl && (
-                        <a href={doc.imageUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Download</a>
+                      {doc.details.gender && (
+                        <p className="text-xs">Gender: {doc.details.gender}</p>
+                      )}
+                      {doc.details.extra_info && (
+                        <div className="text-xs">
+                          <p>Extra Info:</p>
+                          <ul className="ml-4 list-disc">
+                            {Array.isArray(doc.details.extra_info.performance_data) && (
+                              <li>
+                                Performance Data:
+                                <ul className="ml-4 list-circle">
+                                  {doc.details.extra_info.performance_data.map((subject, idx) => (
+                                    <li key={idx}>
+                                      {subject.name}: {subject.marksTotal} (Grade: {subject.grade})
+                                    </li>
+                                  ))}
+                                </ul>
+                              </li>
+                            )}
+                            {doc.details.extra_info.care_of && (
+                              <li>Care Of: {doc.details.extra_info.care_of}</li>
+                            )}
+                            {doc.details.extra_info.updateDate && (
+                              <li>Update Date: {doc.details.extra_info.updateDate}</li>
+                            )}
+                            {doc.details.extra_info.motherName && (
+                              <li>Mother Name: {doc.details.extra_info.motherName}</li>
+                            )}
+                            {doc.details.extra_info.resultDate && (
+                              <li>Result Date: {doc.details.extra_info.resultDate}</li>
+                            )}
+                            {doc.details.extra_info.result && (
+                              <li>Result: {doc.details.extra_info.result}</li>
+                            )}
+                            {doc.details.extra_info.issuing_authority && (
+                              <li>Issuing Authority: {doc.details.extra_info.issuing_authority}</li>
+                            )}
+                            {doc.details.extra_info.marksTotal && (
+                              <li>Total Marks: {doc.details.extra_info.marksTotal}</li>
+                            )}
+                            {doc.details.extra_info.examinationYear && (
+                              <li>Examination Year: {doc.details.extra_info.examinationYear}</li>
+                            )}
+                            {doc.details.extra_info.schoolName && (
+                              <li>School Name: {doc.details.extra_info.schoolName}</li>
+                            )}
+                            {doc.details.extra_info.status && (
+                              <li>Status: {doc.details.extra_info.status}</li>
+                            )}
+                            {doc.details.extra_info.schoolCode && (
+                              <li>School Code: {doc.details.extra_info.schoolCode}</li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                      {doc.details.image && (
+                        <img
+                          src={doc.details.image}
+                          alt={`${doc.type} preview`}
+                          className="w-24 h-24 object-cover rounded mt-2"
+                        />
                       )}
                     </li>
                   ))}
@@ -729,20 +865,76 @@ const EKysDashboard = () => {
                   {selectedStudent.documents?.map((doc, idx) => (
                     <li key={idx} className="mb-2">
                       <p>{doc.type} - {doc.status}</p>
-                      {doc.metadata?.kycId && (
-                        <p className="text-xs">KYC ID: {doc.metadata.kycId}</p>
+                      {doc.details.id_number && (
+                        <p className="text-xs">ID Number: {doc.details.id_number}</p>
                       )}
-                      {doc.metadata?.source && (
-                        <p className="text-xs">Source: {doc.metadata.source}</p>
+                      {doc.details.name && (
+                        <p className="text-xs">Name: {doc.details.name}</p>
                       )}
-                      {doc.metadata?.lastUpdated && (
-                        <p className="text-xs">Last Updated: {doc.metadata.lastUpdated}</p>
+                      {doc.details.document_type && (
+                        <p className="text-xs">Document Type: {doc.details.document_type}</p>
                       )}
-                      {Object.entries(doc.metadata || {}).filter(([key]) => !['kycId', 'source', 'lastUpdated'].includes(key)).map(([key, value]) => (
-                        <p key={key} className="text-xs">{key}: {JSON.stringify(value)}</p>
-                      ))}
-                      {doc.imageUrl && (
-                        <a href={doc.imageUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Download</a>
+                      {doc.details.gender && (
+                        <p className="text-xs">Gender: {doc.details.gender}</p>
+                      )}
+                      {doc.details.extra_info && (
+                        <div className="text-xs">
+                          <p>Extra Info:</p>
+                          <ul className="ml-4 list-disc">
+                            {Array.isArray(doc.details.extra_info.performance_data) && (
+                              <li>
+                                Performance Data:
+                                <ul className="ml-4 list-circle">
+                                  {doc.details.extra_info.performance_data.map((subject, idx) => (
+                                    <li key={idx}>
+                                      {subject.name}: {subject.marksTotal} (Grade: {subject.grade})
+                                    </li>
+                                  ))}
+                                </ul>
+                              </li>
+                            )}
+                            {doc.details.extra_info.care_of && (
+                              <li>Care Of: {doc.details.extra_info.care_of}</li>
+                            )}
+                            {doc.details.extra_info.updateDate && (
+                              <li>Update Date: {doc.details.extra_info.updateDate}</li>
+                            )}
+                            {doc.details.extra_info.motherName && (
+                              <li>Mother Name: {doc.details.extra_info.motherName}</li>
+                            )}
+                            {doc.details.extra_info.resultDate && (
+                              <li>Result Date: {doc.details.extra_info.resultDate}</li>
+                            )}
+                            {doc.details.extra_info.result && (
+                              <li>Result: {doc.details.extra_info.result}</li>
+                            )}
+                            {doc.details.extra_info.issuing_authority && (
+                              <li>Issuing Authority: {doc.details.extra_info.issuing_authority}</li>
+                            )}
+                            {doc.details.extra_info.marksTotal && (
+                              <li>Total Marks: {doc.details.extra_info.marksTotal}</li>
+                            )}
+                            {doc.details.extra_info.examinationYear && (
+                              <li>Examination Year: {doc.details.extra_info.examinationYear}</li>
+                            )}
+                            {doc.details.extra_info.schoolName && (
+                              <li>School Name: {doc.details.extra_info.schoolName}</li>
+                            )}
+                            {doc.details.extra_info.status && (
+                              <li>Status: {doc.details.extra_info.status}</li>
+                            )}
+                            {doc.details.extra_info.schoolCode && (
+                              <li>School Code: {doc.details.extra_info.schoolCode}</li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                      {doc.details.image && (
+                        <img
+                          src={doc.details.image}
+                          alt={`${doc.type} preview`}
+                          className="w-24 h-24 object-cover rounded mt-2"
+                        />
                       )}
                     </li>
                   ))}
@@ -826,6 +1018,113 @@ const EKysDashboard = () => {
             >
               Create Ticket
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Details Dialog */}
+      <Dialog open={isDocDialogOpen} onOpenChange={setIsDocDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Document Details</DialogTitle>
+          </DialogHeader>
+          {selectedDoc && (
+            <div className="grid gap-4 py-4">
+              <div>
+                <Label>Type</Label>
+                <p className="text-sm text-gray-600">{selectedDoc.type}</p>
+              </div>
+              <div>
+                <Label>Status</Label>
+                <p className="text-sm text-gray-600">{selectedDoc.status}</p>
+              </div>
+              {selectedDoc.details.id_number && (
+                <div>
+                  <Label>ID Number</Label>
+                  <p className="text-sm text-gray-600">{selectedDoc.details.id_number}</p>
+                </div>
+              )}
+              {selectedDoc.details.name && (
+                <div>
+                  <Label>Name</Label>
+                  <p className="text-sm text-gray-600">{selectedDoc.details.name}</p>
+                </div>
+              )}
+              {selectedDoc.details.document_type && (
+                <div>
+                  <Label>Document Type</Label>
+                  <p className="text-sm text-gray-600">{selectedDoc.details.document_type}</p>
+                </div>
+              )}
+              {selectedDoc.details.gender && (
+                <div>
+                  <Label>Gender</Label>
+                  <p className="text-sm text-gray-600">{selectedDoc.details.gender}</p>
+                </div>
+              )}
+              {selectedDoc.details.extra_info && (
+                <div>
+                  <Label>Extra Info</Label>
+                  <ul className="text-sm text-gray-600 ml-4 list-disc">
+                    {Array.isArray(selectedDoc.details.extra_info.performance_data) && (
+                      <li>
+                        Performance Data:
+                        <ul className="ml-4 list-circle">
+                          {selectedDoc.details.extra_info.performance_data.map((subject, idx) => (
+                            <li key={idx}>
+                              {subject.name}: {subject.marksTotal} (Grade: {subject.grade})
+                            </li>
+                          ))}
+                        </ul>
+                      </li>
+                    )}
+                    {selectedDoc.details.extra_info.care_of && (
+                      <li>Care Of: {selectedDoc.details.extra_info.care_of}</li>
+                    )}
+                    {selectedDoc.details.extra_info.updateDate && (
+                      <li>Update Date: {selectedDoc.details.extra_info.updateDate}</li>
+                    )}
+                    {selectedDoc.details.extra_info.motherName && (
+                      <li>Mother Name: {selectedDoc.details.extra_info.motherName}</li>
+                    )}
+                    {selectedDoc.details.extra_info.resultDate && (
+                      <li>Result Date: {selectedDoc.details.extra_info.resultDate}</li>
+                    )}
+                    {selectedDoc.details.extra_info.result && (
+                      <li>Result: {selectedDoc.details.extra_info.result}</li>
+                    )}
+                    {selectedDoc.details.extra_info.issuing_authority && (
+                      <li>Issuing Authority: {selectedDoc.details.extra_info.issuing_authority}</li>
+                    )}
+                    {selectedDoc.details.extra_info.marksTotal && (
+                      <li>Total Marks: {selectedDoc.details.extra_info.marksTotal}</li>
+                    )}
+                    {selectedDoc.details.extra_info.examinationYear && (
+                      <li>Examination Year: {selectedDoc.details.extra_info.examinationYear}</li>
+                    )}
+                    {selectedDoc.details.extra_info.schoolName && (
+                      <li>School Name: {selectedDoc.details.extra_info.schoolName}</li>
+                    )}
+                    {selectedDoc.details.extra_info.status && (
+                      <li>Status: {selectedDoc.details.extra_info.status}</li>
+                    )}
+                    {selectedDoc.details.extra_info.schoolCode && (
+                      <li>School Code: {selectedDoc.details.extra_info.schoolCode}</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+              {selectedDoc.details.image && (
+                <img
+                  src={selectedDoc.details.image}
+                  alt={`${selectedDoc.type} preview`}
+                  className="w-24 h-24 object-cover rounded mt-2"
+                />
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setIsDocDialogOpen(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

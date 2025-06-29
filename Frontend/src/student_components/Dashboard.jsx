@@ -191,7 +191,7 @@ const Dashboard = () => {
   const [interviews, setInterviews] = useState([]);
   const [error, setError] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
-  const [kycStatus, setKycStatus] = useState('pending');
+  const [kycStatus, setKycStatus] = useState('not started');
 
   // fetch kyc status from the backend
   useEffect(() => {
@@ -205,8 +205,13 @@ const Dashboard = () => {
         if (response.ok) {
           const data = await response.json();
           // If iskycVerified is true, set to approved
-          if (data.kycStatus === 'verified' || data.iskycVerified) {
+          if (data.kycStatus === 'verified' || data.iskycVerified|| data.kycStatus === 'approved') {
             setKycStatus('approved');
+          }
+          if (data.kycStatus === 'pending' || data.kycStatus === 'pending approval'|| data.kycStatus === 'requested') {
+            setKycStatus('pending');
+          } else {
+            setKycStatus(data.kycStatus || 'not started');
           }
         }
       } catch (error) {
