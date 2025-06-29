@@ -120,7 +120,7 @@ const generateVerificationId = () => {
 };
 
 const verifyWithDigio = async (kycData, retries = 3, backoff = 3000) => {
-  const { email, phone, firstName, lastName, verificationId } = kycData;
+  const { email, phone, firstName, lastName, verificationId,template_name } = kycData;
   const productionUrl = process.env.DIGIO_PRODUCTION_URL || 'https://api.digio.in';
   const clientId = process.env.DIGIO_CLIENT_ID;
   const clientSecret = process.env.DIGIO_CLIENT_SECRET;
@@ -136,7 +136,7 @@ const verifyWithDigio = async (kycData, retries = 3, backoff = 3000) => {
       customer_identifier: email || phone,
       identifier_type: email ? 'email' : 'mobile',
       customer_name: `${firstName} ${lastName}`,
-      template_name: kycData.template_name||'KYC_CLIENT',
+      template_name: template_name||'KYC_CLIENT',
       notify_customer: true,
       generate_access_token: true,
     };
@@ -686,21 +686,38 @@ router.get('/download/:id', authenticateToken, async (req, res) => {
 
 //@route  POST api/kyc/initiate  by sales
 // @desc   Initiate KYC verification process
-router.post('/initiate', authenticateToken, async (req, res) => {
-  const { email, phone} = req.body;
+router.post('/initiate', async (req, res) => {
+  const { identifier,identifier_type,template_name} = req.body;
 
-  if (!email && !phone) {
-    return res.status(400).json({ error: 'Either email or phone is required' });
+  if (!identifier || !identifier_type) {
+    return res.status(400).json({ error: 'Identifier and identifier_type are required'
+    });
   }
+  const email = identifier_type === 'email' ? identifier : null;
+  const phone = identifier_type === 'phone' ? identifier : null;
 
   try {
     const kycData = {
-      email,
-      phone,
+      email:email,
+      phone:phone,
+      template_name: template_name
     };
+    if (!kycData.email && !kycData.phone) {
+      return res.status(400).json({ error: 'Either email or phone is required'
+      });
+    }
+    console.log('KYC Data:', kycData,email, phone);
+   const verificationId = await Student.find({'email':email}||{'phone': phone}, 'kycData.verificationId');
+    console.log('Verification ID:', verificationId.kycData?.verificationId);
+    if (verificationId) {
+      return res.status(400).json({
+        success: false,
+        message: 'KYC verification already in progress or completed. Please check KYC status.'
+      });
+    }
 
     const digioResult = await verifyWithDigio(kycData);
-    const student = await Student.findOne({ email: kycData.email, phone: kycData.phone });
+    const student = await Student.findOne({ 'email': kycData.email}||{'phone': kycData.phone });
 
     if (!student) {
       return res.status(404).json({ error: 'Student not found' });
@@ -730,6 +747,64 @@ router.post('/initiate', authenticateToken, async (req, res) => {
   }
 });
 
+//@route  POST api/kyc/reinitiate  by sales
+// @desc   Reinitiate KYC verification process
+router.post('/reinitiate', async (req, res) => {
+  const { identifier,identifier_type} = req.body;
+
+  if (!identifier || !identifier_type) {
+    return res.status(400).json({ error: 'Identifier and identifier_type are required' });
+  }
+  const email = identifier_type === 'email' ? identifier : null;
+  const phone = identifier_type === 'phone' ? identifier : null;
+
+  try {
+    const kycData = {
+      email,
+      phone,
+      template_name:'ADHAAR_PAN_MARKSHEET'
+    };
+    console.log('KYC Data:', kycData);
+    const verificationId = await Student.findOne({'email':email} ||{'phone': phone}, 'kycData.verificationId');
+    console.log('Verification ID:', verificationId.kycData?.verificationId);
+    if (!verificationId) {
+      return res.status(400).json({
+        success: false,
+        message: 'KYC verification not found. Please initiate KYC first.'
+      });
+    }
+
+    const student = await Student.findOne({ 'email': kycData.email}||{'phone': kycData.phone });
+
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+    const digioResult = await verifyWithDigio(kycData, 3, 3000);
+    
+
+    student.kycData = {
+      ...kycData,
+      verificationId: digioResult.verificationId,
+      accessToken: digioResult.accessToken,
+      expiresInDays: digioResult.expiresInDays,
+      status: 'pending',
+      digilockerUrl: digioResult.digilockerUrl
+    };
+    student.kycStatus = 'pending';
+    student.iskycVerified = false;
+
+    await student.save();
+
+    res.json({
+      success: true,
+      message: 'KYC verification reinitiated successfully',
+      kycData: student.kycData
+    });
+  } catch (error) {
+    console.error('Error reinitiating KYC:', error.message);
+    res.status(500).json({ error: 'Failed to reinitiate KYC verification' });
+  }
+});
 
 
 
