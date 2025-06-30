@@ -1,7 +1,6 @@
-import React, { useState,useEffect, useCallback, memo, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, memo, useMemo } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Target, ShieldAlert, Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
-import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { SidebarContext } from './Sidebar';
 import Loader from '../components/Loader';
@@ -58,45 +57,6 @@ const ArraySection = memo(({ label, field, fields, emptyObj, profileData, isEdit
   );
 });
 
-// All useMemo hooks must be at the top level, before the Profile component function
-const PROJECT_FIELDS = [
-  { key: "title", label: "Title" },
-  { key: "description", label: "Description" },
-  { key: "technologies", label: "Technologies (comma separated)" },
-  { key: "startDate", label: "Start Date", type: "date" },
-  { key: "endDate", label: "End Date", type: "date" },
-  { key: "link", label: "Link" }
-];
-const ACHIEVEMENT_FIELDS = [
-  { key: "title", label: "Title" },
-  { key: "description", label: "Description" },
-  { key: "date", label: "Date", type: "date" },
-  { key: "issuer", label: "Issuer" }
-];
-const CERTIFICATION_FIELDS = [
-  { key: "name", label: "Name" },
-  { key: "issuer", label: "Issuer" },
-  { key: "date", label: "Date", type: "date" },
-  { key: "link", label: "Link" }
-];
-const EXTRACURRICULAR_FIELDS = [
-  { key: "activity", label: "Activity" },
-  { key: "role", label: "Role" },
-  { key: "achievement", label: "Achievement" }
-];
-const RESEARCH_FIELDS = [
-  { key: "title", label: "Title" },
-  { key: "role", label: "Role" },
-  { key: "year", label: "Year", type: "number" },
-  { key: "description", label: "Description" }
-];
-const HACKATHON_FIELDS = [
-  { key: "name", label: "Name" },
-  { key: "year", label: "Year", type: "number" },
-  { key: "achievement", label: "Achievement" },
-  { key: "description", label: "Description" }
-];
-
 const Profile = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -109,12 +69,6 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [profilePicFile, setProfilePicFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
-  const [kycStatus, setKycStatus] = useState('not started'); // New state for KYC status
-  const [isKycDialogOpen, setIsKycDialogOpen] = useState(false);
-  const [kycStep, setKycStep] = useState(0); // 0: intro, 1: payment, 2: confirm, 3: done
-  const [paymentProcessing, setPaymentProcessing] = useState(false);
-  const [kycIdentifierType, setKycIdentifierType] = useState('phone');
-  const [kycIdentifierValue, setKycIdentifierValue] = useState('');
 
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
@@ -123,34 +77,6 @@ const Profile = () => {
     if (!token) {
       window.location.href = '/student-login';
     }
-  }, [token]);
-
-  // fetch kyc status from the backend
-  useEffect(() => {
-    const fetchKycStatus = async () => {
-      const token = localStorage.getItem('token');
-      try {
-        const response = await fetch(`${API_URL}/api/kyc/status`, {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          console.log('KYC Status:', data.kycStatus);
-          console.log('verification id:', data.kycData.verificationId);
-          // If iskycVerified is true, set to approved
-          if (data.kycStatus === 'verified' || data.iskycVerified|| data.kycStatus === 'approved') {
-            setKycStatus('approved');
-          }
-          if (data.kycStatus === 'pending' || data.kycStatus === 'pending approval'|| data.kycStatus === 'requested') {
-            setKycStatus('pending');
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching KYC status:', error);
-      }
-    };
-    fetchKycStatus();
   }, [token]);
 
   useEffect(() => {
@@ -238,6 +164,7 @@ const Profile = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
+          credientials: "include",
           body: formData,
         });
         if (picRes.ok) {
@@ -254,102 +181,12 @@ const Profile = () => {
     }
   };
 
-  const handleVerification = async () => {
-    try {
-      if (kycStatus === 'verified' || kycStatus === 'approved') {
-        alert('KYC is already verified.');
-        return;
-      }
-      setIsKycDialogOpen(true);
-      setKycStep(0);
-    } catch (error) {
-      console.error('KYC verification error:', error);
-      alert('Failed to initiate KYC verification');
-    }
+  const handleVerification = () => {
+    setLoading(true);
+    navigate('/profile?tab=verification');
   };
 
-  const handleKycNext = () => {
-    if (kycStep === 1) {
-      // Set default value for identifier when moving to step 2
-      setKycIdentifierValue(kycIdentifierType === 'phone' ? (profileData.phone || '') : (profileData.email || ''));
-    }
-    setKycStep((prev) => prev + 1);
-  };
-
-  const handleKycBack = () => {
-    setKycStep((prev) => prev - 1);
-  };
-
-  const handleKycClose = () => {
-    setIsKycDialogOpen(false);
-    setKycStep(0);
-    setPaymentProcessing(false);
-  };
-
-  const handleMockPayment = async () => {
-    if(kycStatus === 'approved' || kycStatus === 'verified') {
-      alert('KYC is already approved or verified.');
-      return;
-    }
-    if (paymentProcessing) return; // Prevent multiple clicks
-    setPaymentProcessing(true);
-    // Simulate payment delay
-    setTimeout(() => {
-      setPaymentProcessing(false);
-      setKycStep(2); // Move to confirm step
-    }, 2000); // 2 seconds mock payment
-  };
-
-  const handleKycConfirm = async () => {
-    try {
-      const identifier = kycIdentifierType === 'phone' ? { phone: kycIdentifierValue } : { email: kycIdentifierValue };
-      const response = await fetch(`${API_URL}/api/kyc/verify-digio`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          ...identifier,
-          firstName: profileData.firstName,
-          lastName: profileData.lastName,
-          template_name: 'ADHAAR_PAN_MARKSHEET',
-        }),
-      });
-      if(response.status === 400) {
-        toast('Kyc verification already in progress or completed. Please check your KYC status.');
-        setIsKycDialogOpen(false);
-        return;
-      }
-      if (response.status === 401 || response.status === 403) {
-        window.location.href = '/student-login';
-        return;
-      }
-      if (!response.ok) {
-        throw new Error('Failed to initiate KYC verification');
-      }
-      const data = await response.json();
-      setKycStep(3); // Done step
-      if (data.digilockerUrl) {
-        setTimeout(() => {
-          window.location.href = data.digilockerUrl;
-        }, 1500);
-      }
-    } catch (error) {
-      console.error('KYC verification error:', error);
-      alert('Failed to initiate KYC verification');
-      setIsKycDialogOpen(false);
-    }
-  };
-
-  if (loading) {
-    return <div className="p-10 text-center text-lg">Loading...</div>;
-  }
-
-  if (!profileData) {
-    return <div className="p-10 text-center text-gray-500">No profile data found.</div>;
-  }
-
+  // Get profile pic URL for <img> tag
   const getProfilePicUrl = () => {
     if (previewUrl) return previewUrl;
     if (profileData)
@@ -373,12 +210,51 @@ const Profile = () => {
         ))
       : <span className="italic text-gray-400">None</span>;
 
+  // Field definitions for dynamic array editing
+  const PROJECT_FIELDS = useMemo(() => [
+    { key: "title", label: "Title" },
+    { key: "description", label: "Description" },
+    { key: "technologies", label: "Technologies (comma separated)" },
+    { key: "startDate", label: "Start Date", type: "date" },
+    { key: "endDate", label: "End Date", type: "date" },
+    { key: "link", label: "Link" }
+  ], []);
+  const ACHIEVEMENT_FIELDS = useMemo(() => [
+    { key: "title", label: "Title" },
+    { key: "description", label: "Description" },
+    { key: "date", label: "Date", type: "date" },
+    { key: "issuer", label: "Issuer" }
+  ], []);
+  const CERTIFICATION_FIELDS = useMemo(() => [
+    { key: "name", label: "Name" },
+    { key: "issuer", label: "Issuer" },
+    { key: "date", label: "Date", type: "date" },
+    { key: "link", label: "Link" }
+  ], []);
+  const EXTRACURRICULAR_FIELDS = useMemo(() => [
+    { key: "activity", label: "Activity" },
+    { key: "role", label: "Role" },
+    { key: "achievement", label: "Achievement" }
+  ], []);
+  const RESEARCH_FIELDS = useMemo(() => [
+    { key: "title", label: "Title" },
+    { key: "role", label: "Role" },
+    { key: "year", label: "Year", type: "number" },
+    { key: "description", label: "Description" }
+  ], []);
+  const HACKATHON_FIELDS = useMemo(() => [
+    { key: "name", label: "Name" },
+    { key: "year", label: "Year", type: "number" },
+    { key: "achievement", label: "Achievement" },
+    { key: "description", label: "Description" }
+  ], []);
+
   return (
     <SidebarContext.Provider value={{ isCollapsed }}>
     <div className="flex min-h-screen">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
         <div className={`flex-1 flex flex-col relative min-w-0 transition-all duration-300 ease-in-out ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-          {/* Mobile Header */}
+        {/* Mobile Header */}
         <div className="lg:hidden p-4 bg-white shadow flex items-center">
           <button onClick={() => setSidebarOpen(true)}>
             <Menu size={24} />
@@ -392,18 +268,7 @@ const Profile = () => {
                 <User className="text-gray-600" size={20} />
                 <h1 className="text-lg font-medium text-gray-900">Complete Profile</h1>
               </div>
-              <div className="flex space-x-2 items-center">
-                {/* KYC Button at the top */}
-                <button
-                  onClick={handleVerification}
-                  className="flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-xl font-semibold border border-yellow-200 hover:bg-yellow-200 transition-colors text-base shadow mr-2"
-                  style={{ outline: 'none' }}
-                  disabled={kycStatus === 'approved' || kycStatus === 'verified' || kycStatus === 'pending'}
-                >
-                  {kycStatus === 'pending' ? <ShieldAlert className="w-5 h-5" /> : "👍"}
-                  {kycStatus === 'approved' ? 'KYC Done' : kycStatus === 'verified' ? 'KYC Verified' : kycStatus === 'pending' ? 'Pending' : kycStatus === 'pending approval' ? 'Pending Approval' : 'Complete Your Verification'}
-                </button>
-                {/* Edit/Save/Cancel buttons */}
+              <div className="flex space-x-2">
                 {isEditing ? (
                   <>
                     <button onClick={handleCancel} className="bg-gray-500 text-white px-4 py-2 rounded-lg">Cancel</button>
@@ -444,7 +309,7 @@ const Profile = () => {
                         <img
                           src={getProfilePicUrl()}
                           alt="Profile"
-                              className="w-full h-full object-cover rounded-full"
+                          className="w-full h-full object-cover rounded-full"
                         />
                       ) : (
                         <span className="text-white font-bold text-3xl">
@@ -518,7 +383,7 @@ const Profile = () => {
               </div>
             </div>
 
-                {/* Career Objective */}
+            {/* Career Objective */}
             <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8 shadow-sm hover:shadow-md transition-shadow duration-200">
               <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                 <Target className="mr-2 text-red-600" size={20} />
@@ -538,7 +403,7 @@ const Profile = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Personal Information */}
+              {/* Personal Information */}
               <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                 <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                   <User className="mr-2 text-blue-600" size={20} />
@@ -571,7 +436,7 @@ const Profile = () => {
                   ))}
                 </div>
               </div>
-                  {/* Academic Information */}
+              {/* Academic Information */}
               <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                 <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                   <Calendar className="mr-2 text-green-600" size={20} />
@@ -613,7 +478,7 @@ const Profile = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-                  {/* Skills & Tech */}
+              {/* Skills & Tech */}
               <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Skills & Technologies</h3>
                 <div className="space-y-2">
@@ -660,7 +525,7 @@ const Profile = () => {
                 </div>
               </div>
 
-                  {/* Resume & Portfolio */}
+              {/* Resume & Portfolio */}
               <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Resume & Portfolio</h3>
                 <div className="space-y-2">
@@ -708,7 +573,7 @@ const Profile = () => {
               </div>
             </div>
 
-                {/* Projects, Achievements, Certifications, Extracurricular, Research, Hackathons */}
+            {/* Projects, Achievements, Certifications, Extracurricular, Research, Hackathons */}
             <ArraySection
               label="Projects"
               field="projects"
@@ -774,83 +639,28 @@ const Profile = () => {
               field="hackathons"
               fields={HACKATHON_FIELDS}
               emptyObj={{ name: "", year: "", achievement: "", description: "" }}
-               profileData={profileData}
+                  profileData={profileData}
                   isEditing={isEditing}
                   handleArrayItemChange={handleArrayItemChange}
                   handleRemoveArrayItem={handleRemoveArrayItem}
                   handleAddArrayItem={handleAddArrayItem}
                   renderSubArray={renderSubArray}
             />
-        
-    
 
-      {/* KYC Verification Dialog */}
-      {isKycDialogOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-transpaernt bg-opacity-40 z-50">
-          <div className="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full">
-            {kycStep === 0 && (
-              <>
-                <h2 className="text-xl font-bold mb-4">KYC Verification</h2>
-                <p className="mb-4">To complete your profile, you need to verify your identity (KYC) using DigiLocker. This process requires a one-time verification fee.</p>
-                <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors mb-2" onClick={handleKycNext}>Start KYC</button>
-                <button className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors" onClick={handleKycClose}>Cancel</button>
-              </>
-            )}
-            {kycStep === 1 && (
-              <>
-                <h2 className="text-xl font-bold mb-4">Pay KYC Verification Fee</h2>
-                <p className="mb-4">To start your KYC verification, please pay the verification fee.</p>
-                <div className="mb-4 flex items-center justify-between">
-                  <span className="font-semibold">Amount:</span>
-                  <span className="text-green-700 font-bold">₹100</span>
-                </div>
-                <button className="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors" onClick={handleMockPayment} disabled={paymentProcessing}>{paymentProcessing ? 'Processing Payment...' : 'Pay & Continue'}</button>
-                <button className="w-full mt-2 bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors" onClick={handleKycBack} disabled={paymentProcessing}>Back</button>
-              </>
-            )}
-            {kycStep === 2 && (
-              <>
-                <h2 className="text-xl font-bold mb-4">Confirm KYC Initiation</h2>
-                <p className="mb-4">Payment successful! Please select an identifier and provide its value to initiate your DigiLocker KYC verification.</p>
-                <div className="mb-4">
-                  <label className="block mb-1 font-medium">Select Identifier</label>
-                  <select
-                    className="w-full border rounded p-2 mb-2"
-                    value={kycIdentifierType}
-                    onChange={e => {
-                      setKycIdentifierType(e.target.value);
-                      setKycIdentifierValue(e.target.value === 'phone' ? (profileData.phone || '') : (profileData.email || ''));
-                    }}
-                  >
-                    <option value="phone">Phone</option>
-                    <option value="email">Email</option>
-                  </select>
-                  <label className="block mb-1 font-medium">{kycIdentifierType === 'phone' ? 'Phone Number' : 'Email Address'}</label>
-                  <input
-                    className="w-full border rounded p-2"
-                    type={kycIdentifierType === 'phone' ? 'tel' : 'email'}
-                    value={kycIdentifierValue}
-                    onChange={e => setKycIdentifierValue(e.target.value)}
-                    placeholder={kycIdentifierType === 'phone' ? 'Enter phone number' : 'Enter email address'}
-                  />
-                </div>
-                <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors mb-2" onClick={handleKycConfirm}>Initiate KYC</button>
-                <button className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors" onClick={handleKycClose}>Cancel</button>
-              </>
-            )}
-            {kycStep === 3 && (
-              <>
-                <h2 className="text-xl font-bold mb-4">KYC Initiated</h2>
-                <p className="mb-4">Your KYC verification has been initiated. Please complete the process in the DigiLocker window. You will be redirected if required.</p>
-                <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors" onClick={handleKycClose}>Close</button>
-              </>
+            {/* Complete Verification Button */}
+            <div className="flex justify-center mt-12 mb-4">
+              <button
+                onClick={handleVerification}
+                className="flex items-center gap-2 px-6 py-3 bg-yellow-100 text-yellow-800 rounded-xl font-semibold border border-yellow-200 hover:bg-yellow-200 transition-colors text-lg shadow"
+                style={{ outline: 'none' }}
+              >
+                <ShieldAlert className="w-6 h-6" />
+                Complete Your Verification
+              </button>
+            </div>
+              </div>
             )}
           </div>
-        </div>
-      )}
-      </div>
-            )}
-    </div>
         </div>
       </div>
     </SidebarContext.Provider>
