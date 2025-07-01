@@ -6,14 +6,13 @@ const RegistrationOtp = require('../models/RegistrationOtp');
 const authController = require('../controllers/authController');
 
 
-router.post('/student-signup', authController.signup_student);
 router.post('/student-login', authController.login_student);
 
 router.post('/college-admin', authController.login_college);
 
 router.post('/company-admin', authController.login_company);
 
-router.post('/register/check-otp', authController.generateRegistrationOtp);
+router.post('/register/check-otp', authController.checkRegistrationOtp);
 router.post('/logout', authController.logout_college_company);
 
 // Add this test route

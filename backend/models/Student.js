@@ -44,7 +44,7 @@ const studentSchema = new mongoose.Schema({
   // Skills and technologies
   skills: [{ type: String, trim: true }],
   programmingLanguages: [String],
-  technologies: [String],
+  technologies: [{type: String, trim: true}],
 
   // Projects
   projects: [{
@@ -115,21 +115,50 @@ const studentSchema = new mongoose.Schema({
 
   // Verifications
   verified: { type: Boolean, default: false },
+  iskycVerified: { type: Boolean, default: false },
   isCollegeVerified: { type: Boolean, default: false },
   isSalesVerified: { type: Boolean, default: false },
 
   // Password reset fields
   passwordResetToken: { type: String },
   passwordResetExpires: { type: Date },
+  referralCode: { type: String, unique: true },
 
-  // Timestamps
+  // KYC fields
+  kycStatus: { 
+    type: String, 
+    enum: ['pending', 'pending approval', 'verified', 'rejected', 'not started'], 
+    default: 'not started',
+    trim: true
+  },
+  kycData: {
+    verificationId: { type: String, trim: true },
+    accessToken: { type: String, trim: true },
+    expiresInDays: { type: Number, min: 0 },
+    status: { type: String, trim: true },
+    digilockerUrl: { type: String, trim: true },
+    lastUpdated: { type: String, trim: true }
+  },
+  documents: [{
+    type: { type: String, required: true, trim: true },
+    status: { 
+      type: String, 
+      required: true, 
+      enum: ['pending', 'verified', 'rejected', 'missing'], 
+      default: 'pending' 
+    },
+    imageUrl: { type: String, trim: true },
+    metadata: { 
+      type: mongoose.Schema.Types.Mixed,
+      default: () => ({})
+    }
+  }],
   createdAt: { type: Date, default: Date.now }
 }, {
   timestamps: true
 });
 
-// Compound unique index for college + rollNumber (prevents conflicts between colleges)
-studentSchema.index({ college: 1, rollNumber: 1 }, { unique: true, sparse: true });
+
 
 // Campus score calculation logic (from CollegeStudent)
 studentSchema.pre('save', async function(next) {
@@ -179,10 +208,20 @@ studentSchema.pre('save', async function(next) {
   next();
 });
 
+// Get hook to find student by email
+studentSchema.pre('findOne', async function(next) {
+  const email = this.getQuery().email;
+  if (email) {
+    this.populate('email');
+  }
+  next();
+});
+
 // Post-update hooks for score recalculation
 studentSchema.post(['findOneAndUpdate', 'updateOne', 'updateMany'], async function(result) {
   const doc = await this.model.findOne(this.getQuery());
   if (doc) await doc.save();
 });
+
 
 module.exports = mongoose.model('Student', studentSchema);

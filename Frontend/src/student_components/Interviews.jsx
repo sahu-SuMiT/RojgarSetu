@@ -120,6 +120,7 @@ const Interviews = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
+        credentials: "include",
         body: JSON.stringify({ preparationProgress: newProgress })
       });
       // Optionally handle errors and revert if PATCH fails

@@ -81,7 +81,8 @@ const companySchema = new mongoose.Schema({
   verificationToken: String,
   verificationTokenExpires: Date,
   passwordResetToken: String,
-  passwordResetExpires: Date
+  passwordResetExpires: Date,
+  referralCode: { type: String, unique: true },
 }, {
   timestamps: true
 });

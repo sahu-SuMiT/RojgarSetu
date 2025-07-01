@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import path from "path";
 import dotenv from 'dotenv';
 dotenv.config();
+console.log("Backend: ",process.env.VITE_API_URL)
 
 // export default defineConfig({
 //   plugins: [react()],
