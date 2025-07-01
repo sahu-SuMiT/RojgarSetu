@@ -74,6 +74,11 @@ const collegeSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  salesId: {
+    type: String,
+    required: false,
+    unique: true
+  },
   verificationToken: String,
   verificationTokenExpires: Date,
   passwordResetToken: String,
