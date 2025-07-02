@@ -1,16 +1,17 @@
-// checkPlacementData.js
-const mongoose = require("mongoose");
-const PlacementData = require("./models/Placement");
-const jobs = require("./models/Job")
+const express = require('express');
+const router = express.Router();
+const mongoose = require('mongoose');
 
-async function checkData() {
-  await mongoose.connect("mongodb+srv://harsh:harsh123@campus.k0by8i8.mongodb.net/");
+const supportTicket = require('./routes/support-ticket')
 
-  const all = await PlacementData.find({});
-  //const jobData = await jobs.find({});
-  console.log("Data:\n", all);
+mongoose.connect('mongodb+srv://harsh:harsh123@campus.k0by8i8.mongodb.net/').then(()=>{
+  console.log('Connected to MongoDB');
+})
+const app = express();
+app.use(express.json());  
 
-  mongoose.connection.close();
-}
+app.use('/api/support-ticket', supportTicket);
 
-checkData();
+app.listen(2000,()=>{
+  console.log('Server is running on port 2000');
+})

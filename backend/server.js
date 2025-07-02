@@ -28,6 +28,7 @@ const collegesRoutes = require('./routes/colleges');
 const internshipsRoutes = require('./routes/internships');
 const supportRoutes = require('./routes/support');
 const studentMatchingRoutes = require('./routes/studentMatchingRoutes');
+const supportTicketRoutes = require('./routes/support-ticket');
 const bcrypt = require('bcrypt');
 
 const app = express();
@@ -205,6 +206,9 @@ app.use('/api/v1/placement', placementRoutes);
 
 // Add after other app.use for routes
 app.use('/api/student-matching', studentMatchingRoutes);
+
+//support-ticket routes
+app.use('/api/support-ticket',supportTicketRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
