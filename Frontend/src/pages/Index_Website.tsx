@@ -492,7 +492,7 @@ const Index_Website: React.FC = () => {
                       </span>
                     </h1>
                     <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                      Join over 10M+ students who found their perfect career match. Connect with top employers and unlock unlimited opportunities.
+                      Join over 100k+ students who found their perfect career match. Connect with top employers and unlock unlimited opportunities.
                     </p>
                     {/* Enhanced Search Bar */}
                     <div className="bg-white rounded-2xl shadow-2xl p-6 mb-8 border border-gray-100">
@@ -927,7 +927,7 @@ const Index_Website: React.FC = () => {
           </div>
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
-              © 2024 ROJGAR SETU. All rights reserved.
+              © 2025 ROJGAR SETU. All rights reserved.
             </p>
             <p className="text-gray-400 text-sm mt-4 md:mt-0 flex items-center">
               Made with <Heart className="w-4 h-4 mx-1 text-red-500" /> for students across India
