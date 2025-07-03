@@ -72,10 +72,6 @@ const SupportTicketSchema = new mongoose.Schema({
   resolvedAt: {
     type: Date,
     default: null
-  },
-    escalatedToManager: {
-    type: Boolean,
-    default: false
   }
 });
 
@@ -85,4 +81,4 @@ SupportTicketSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model('SupportTicket', SupportTicketSchema); 
+module.exports = mongoose.model('ManagerSupportTicket', SupportTicketSchema); 

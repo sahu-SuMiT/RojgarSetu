@@ -26,7 +26,7 @@ router.post('/', async (req, res) => {
       title,
       description,
       priority,
-      status,
+      status: status || "open",
       category,
       uploadedFile,
     });

@@ -7,6 +7,9 @@ const path = require('path');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 
+// Importing the scheduler
+const startTicketEscalationJob = require('./scheduler/scheduler'); 
+
 
 // Route modules
 const authRoutes = require('./routes/authRoutes');
@@ -209,6 +212,8 @@ app.use('/api/student-matching', studentMatchingRoutes);
 
 //support-ticket routes
 app.use('/api/support-ticket',supportTicketRoutes);
+
+startTicketEscalationJob(); // Start the ticket escalation job
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
