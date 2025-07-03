@@ -2,7 +2,8 @@ const cron = require('node-cron');
 const ticket = require('../models/SupportTicket');
 const Managerticket = require('../models/manager_ticket');
 
-cron.schedule('0 */1 * * *', async () => { // runs every hour
+function startTicketEscalationJob(){
+    cron.schedule('0 */1 * * *', async () => { // runs every hour
   console.log("Running ticket check...");
 
   const now = new Date();
@@ -29,5 +30,5 @@ cron.schedule('0 */1 * * *', async () => { // runs every hour
   }
 });
 
-module.exports = startComplaintEscalationJob;
-    
+}
+module.exports = startTicketEscalationJob;
