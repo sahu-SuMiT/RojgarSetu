@@ -59,8 +59,13 @@ const Support = () => {
   useEffect(() => {
     const fetchTickets = async () => {
       try {
+        const userName = localStorage.getItem("userName");
+        let url = `${API_URL}/api/sales/support-tickets`;
+        if (userName && userName.trim().toLowerCase() === "senior manager") {
+          url = `${API_URL}/api/sales/manager-support-tickets`;
+        }
         const res = await axios.get(
-          `${API_URL}/api/sales/support-tickets`,
+          url,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setTickets(res.data.map((t: any) => ({

@@ -4,6 +4,7 @@ const Company = require('../../models/Company');
 const User = require('../../models/User');
 const { emailTransport } = require('../../config/email');
 const SupportTicket = require('../../models/SupportTicket');
+const ManagerTicket = require('../../models/manager_ticket'); // Import your manager ticket model
 
 const DEFAULT_PASSWORD = "Campus@123";
 
@@ -200,6 +201,16 @@ exports.getSupportTicketsBySales = async (req, res) => {
   }
 };
 
+exports.getManagerSupportTickets = async (req, res) => {
+  try {
+    // You can add filters if needed, for now fetch all manager tickets
+    const tickets = await ManagerTicket.find().lean();
+    res.json(tickets);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
 exports.getSupportTicketsBySales = async (req, res) => {
   try {
     // Fetch all colleges and companies
@@ -267,4 +278,6 @@ exports.markTicketResolved = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+
+
 

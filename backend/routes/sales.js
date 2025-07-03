@@ -18,5 +18,6 @@ router.get('/support-tickets', getSupportTicketsBySales);
 
 router.post('/ticket/evaluation', require('../controllers/sales/salesController').updateTicketEvaluation);
 router.post('/ticket/resolve', require('../controllers/sales/salesController').markTicketResolved);
+router.get('/manager-support-tickets', require('../controllers/sales/salesController').getManagerSupportTickets);
 
 module.exports = router;

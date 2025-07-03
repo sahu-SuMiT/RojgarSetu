@@ -7,6 +7,9 @@ const path = require('path');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 
+// Importing the scheduler
+const startTicketEscalationJob = require('./scheduler/scheduler'); 
+
 
 // Route modules
 const authRoutes = require('./routes/authRoutes');
@@ -26,6 +29,7 @@ const collegesRoutes = require('./routes/colleges');
 const internshipsRoutes = require('./routes/internships');
 const supportRoutes = require('./routes/support');
 const studentMatchingRoutes = require('./routes/studentMatchingRoutes');
+const supportTicketRoutes = require('./routes/support-ticket');
 const bcrypt = require('bcrypt');
 
 //admin
@@ -185,6 +189,11 @@ app.use('/api/v1/placement', placementRoutes);
 
 // Add after other app.use for routes
 app.use('/api/student-matching', studentMatchingRoutes);
+
+//support-ticket routes
+app.use('/api/support-ticket',supportTicketRoutes);
+
+startTicketEscalationJob(); // Start the ticket escalation job
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
