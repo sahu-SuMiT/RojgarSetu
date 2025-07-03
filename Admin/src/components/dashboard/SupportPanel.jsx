@@ -152,66 +152,18 @@ export function SupportPanel() {
     },
   ];
 
-  const supportTickets = [
-    {
-      id: "TKT-001",
-      user: "rahul.sharma@email.com",
-      userType: "Student",
-      subject: "Unable to upload resume",
-      priority: "high",
-      status: "open",
-      created: "2024-01-28 10:30 AM",
-      lastUpdate: "2024-01-28 11:15 AM",
-      assignedTo: "Support Agent 1",
-      description: "User is facing issues while uploading resume. Error message appears when trying to upload PDF files."
-    },
-    {
-      id: "TKT-002",
-      user: "hr@techcorp.com",
-      userType: "Company",
-      subject: "Job posting not visible",
-      priority: "medium",
-      status: "in_progress",
-      created: "2024-01-28 09:15 AM",
-      lastUpdate: "2024-01-28 10:45 AM",
-      assignedTo: "Support Agent 2",
-      description: "Company cannot see their job posting on the platform after submission."
-    },
-    {
-      id: "TKT-003",
-      user: "admin@university.edu",
-      userType: "College",
-      subject: "Student verification issues",
-      priority: "high",
-      status: "open",
-      created: "2024-01-28 08:45 AM",
-      lastUpdate: "2024-01-28 09:30 AM",
-      assignedTo: "Support Agent 1",
-      description: "Multiple students from the college are facing verification issues with their academic credentials."
-    },
-    {
-      id: "TKT-004",
-      user: "priya.patel@email.com",
-      userType: "Student",
-      subject: "Login authentication error",
-      priority: "low",
-      status: "resolved",
-      created: "2024-01-27 04:20 PM",
-      lastUpdate: "2024-01-28 08:15 AM",
-      assignedTo: "Support Agent 3",
-      description: "User was unable to login due to authentication errors. Issue resolved by password reset."
-    },
-  ];
+ // REMOVE the dummy array, keep only the state:
+const [supportTickets, setSupportTickets] = useState([]);
 
-  const filteredTickets = supportTickets.filter((ticket) => {
-    const matchesSearch = ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         ticket.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || ticket.status === statusFilter;
-    const matchesPriority = priorityFilter === "all" || ticket.priority === priorityFilter;
-    const matchesUserType = userTypeFilter === "all" || ticket.userType === userTypeFilter;
-    return matchesSearch && matchesStatus && matchesPriority && matchesUserType;
-  });
+ const filteredTickets = supportTickets.filter((ticket) => {
+  const matchesSearch = (ticket.subject || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                       (ticket.email || ticket.user || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                       (ticket.id || ticket._id || "").toLowerCase().includes(searchQuery.toLowerCase());
+  const matchesStatus = statusFilter === "all" || ticket.status === statusFilter;
+  const matchesPriority = priorityFilter === "all" || ticket.priority === priorityFilter;
+  const matchesUserType = userTypeFilter === "all" || (ticket.userType || "").toLowerCase() === userTypeFilter.toLowerCase();
+  return matchesSearch && matchesStatus && matchesPriority && matchesUserType;
+});
 
   const filteredStaff = users.filter((user) => {
     const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
@@ -271,6 +223,37 @@ export function SupportPanel() {
         return <Badge variant="secondary">Unknown</Badge>;
     }
   };
+
+const [isLoadingTickets, setIsLoadingTickets] = useState(false);
+const [ticketError, setTicketError] = useState(null);
+
+const fetchSupportTickets = async () => {
+  setIsLoadingTickets(true);
+  setTicketError(null);
+  try {
+    const token = localStorage.getItem("token");
+    const res = await axios.get(
+      `${API_URL}/api/admin/allsupport-tickets`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // Adjust this line based on actual response structure
+    setSupportTickets(res.data.data || []);
+  } catch (error) {
+    setTicketError(error.response?.data?.message || error.message);
+    toast({
+      title: "Error",
+      description: `Failed to fetch support tickets: ${error.response?.data?.message || error.message}`,
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoadingTickets(false);
+  }
+};
+
+useEffect(() => {
+  fetchSupportTickets();
+}, []);
 
   const handleCreateTicket = () => {
     if (!newTicket.userEmail || !newTicket.subject || !newTicket.description) {
@@ -549,7 +532,7 @@ export function SupportPanel() {
                         <TableHead>Priority</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Updated</TableHead>
-                        <TableHead>Actions</TableHead>
+                        {/* <TableHead>Actions</TableHead> */}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -564,8 +547,8 @@ export function SupportPanel() {
                         </TableRow>
                       ) : (
                         filteredTickets.map((ticket) => (
-                          <TableRow key={ticket.id} className="ticket-row">
-                            <TableCell className="ticket-id">{ticket.id}</TableCell>
+                          <TableRow key={ticket.ticketId} className="ticket-row">
+                            <TableCell className="ticket-id">{ticket.ticketId}</TableCell>
                             <TableCell>
                               <div className="user-cell">
                                 <p className="user-email">{ticket.user}</p>
@@ -575,9 +558,9 @@ export function SupportPanel() {
                             <TableCell>{ticket.subject}</TableCell>
                             <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
                             <TableCell>{getStatusBadge(ticket.status)}</TableCell>
-                            <TableCell>{ticket.lastUpdate}</TableCell>
+                            <TableCell>{ticket.updated}</TableCell>
                             <TableCell>
-                              <div className="action-buttons">
+                              {/* <div className="action-buttons">
                                 <Button size="sm" variant="outline" onClick={() => handleViewTicket(ticket)}>
                                   <Eye className="w-3 h-3" />
                                 </Button>
@@ -613,7 +596,7 @@ export function SupportPanel() {
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
                                 </AlertDialog>
-                              </div>
+                              </div> */}
                             </TableCell>
                           </TableRow>
                         ))
@@ -713,7 +696,7 @@ export function SupportPanel() {
                           </div>
                         </div>
                       ))
-                    )} */}
+                    } */}
                     <div className="empty-state">
                       <div className="empty-content">
                         <MessageSquare className="empty-icon" />

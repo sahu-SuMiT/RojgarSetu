@@ -3,6 +3,7 @@ const College = require('../../models/College');
 const Company = require('../../models/Company');
 const User = require('../../models/User');
 const { emailTransport } = require('../../config/email');
+const SupportTicket = require('../../models/SupportTicket');
 
 const DEFAULT_PASSWORD = "Campus@123";
 
@@ -150,3 +151,120 @@ exports.getCompaniesBySales = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+
+exports.getSupportTicketsBySales = async (req, res) => {
+  try {
+    const { userName } = req.query;
+    if (!userName) return res.status(400).json({ message: "userName is required" });
+    const salesId = await getSalesIdByUserName(userName);
+    if (!salesId) return res.status(404).json({ message: "Sales ID not found for this user." });
+
+    // Find all tickets for colleges/companies with this salesId
+    const colleges = await College.find({ salesId });
+    const companies = await Company.find({ salesId });
+
+    const collegeIds = colleges.map(c => c._id.toString());
+    const companyIds = companies.map(c => c._id.toString());
+
+    // Find tickets for these users
+    const tickets = await SupportTicket.find({
+      $or: [
+        { userType: 'college', userId: { $in: collegeIds } },
+        { userType: 'company', userId: { $in: companyIds } }
+      ]
+    }).lean();
+
+    // Attach email and phone to each ticket
+    const collegeMap = {};
+    colleges.forEach(c => { collegeMap[c._id] = c; });
+    const companyMap = {};
+    companies.forEach(c => { companyMap[c._id] = c; });
+
+    const ticketsWithContact = tickets.map(ticket => {
+      let email = "";
+      let phone = "";
+      if (ticket.userType === "college" && collegeMap[ticket.userId]) {
+        email = collegeMap[ticket.userId].contactEmail;
+        phone = collegeMap[ticket.userId].contactPhone;
+      }
+      if (ticket.userType === "company" && companyMap[ticket.userId]) {
+        email = companyMap[ticket.userId].contactEmail;
+        phone = companyMap[ticket.userId].contactPhone;
+      }
+      return { ...ticket, email, phone };
+    });
+
+    res.json(ticketsWithContact);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+exports.getSupportTicketsBySales = async (req, res) => {
+  try {
+    // Fetch all colleges and companies
+    const colleges = await College.find();
+    const companies = await Company.find();
+
+    const collegeMap = {};
+    colleges.forEach(c => { collegeMap[c._id] = c; });
+    const companyMap = {};
+    companies.forEach(c => { companyMap[c._id] = c; });
+
+    // Fetch all tickets
+    const tickets = await SupportTicket.find().lean();
+
+    // Attach email and phone to each ticket
+    const ticketsWithContact = tickets.map(ticket => {
+      let email = "";
+      let phone = "";
+      if (ticket.userType === "college" && collegeMap[ticket.userId]) {
+        email = collegeMap[ticket.userId].contactEmail;
+        phone = collegeMap[ticket.userId].contactPhone;
+      }
+      if (ticket.userType === "company" && companyMap[ticket.userId]) {
+        email = companyMap[ticket.userId].contactEmail;
+        phone = companyMap[ticket.userId].contactPhone;
+      }
+      return { ...ticket, email, phone };
+    });
+
+    res.json(ticketsWithContact);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+exports.updateTicketEvaluation = async (req, res) => {
+  try {
+    const { ticketId, evaluation } = req.body;
+    const ticket = await SupportTicket.findOneAndUpdate(
+      { _id: ticketId },
+      { evaluation },
+      { new: true }
+    );
+    if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+    res.json(ticket);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+exports.markTicketResolved = async (req, res) => {
+  try {
+    const { ticketId, secretCode } = req.body;
+    if (secretCode !== process.env.SECRET_CODE) {
+      return res.status(403).json({ message: "Invalid secret code" });
+    }
+    const ticket = await SupportTicket.findOneAndUpdate(
+      { _id: ticketId },
+      { status: "resolved" },
+      { new: true }
+    );
+    if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+    res.json(ticket);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+

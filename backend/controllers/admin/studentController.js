@@ -130,3 +130,28 @@ exports.getRecentActivity = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch recent activity' });
   }
 };
+
+
+// GET all support tickets
+// GET all support tickets
+exports.getAllSupportTickets = async (req, res) => {
+  try {
+    // Fetch all support tickets and select specific fields
+    const supportTickets = await SupportTicket.find().select('ticketId userId subject priority status updatedAt');
+
+    // Map the results to include the desired field names
+    const formattedTickets = supportTickets.map(ticket => ({
+      ticketId: ticket.ticketId,
+      user: ticket.userId, // Assuming userId is the field representing the user
+      subject: ticket.subject,
+      priority: ticket.priority,
+      status: ticket.status,
+      updated: ticket.updatedAt
+    }));
+
+    res.status(200).json({ success: true, data: formattedTickets });
+  } catch (error) {
+    console.error('Error fetching support tickets:', error);
+    res.status(500).json({ success: false, message: 'Server error while fetching support tickets' });
+  }
+};

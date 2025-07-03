@@ -72,7 +72,11 @@ const SupportTicketSchema = new mongoose.Schema({
   resolvedAt: {
     type: Date,
     default: null
-  }
+  },
+  evaluation: {
+    type: Boolean,
+    default: false
+  },
 });
 
 // Update the updatedAt field before saving
