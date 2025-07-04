@@ -33,7 +33,7 @@ const studentSchema = new mongoose.Schema({
   resume: String,
 
   // Contact
-  phone: String,
+  phone: { type: String, required: true, unique: true },
   location: String,
 
   // Personal info
@@ -127,7 +127,7 @@ const studentSchema = new mongoose.Schema({
   // KYC fields
   kycStatus: { 
     type: String, 
-    enum: ['pending', 'pending approval', 'verified', 'rejected', 'not started'], 
+    enum: ['requested','pending','approved', 'pending approval', 'verified', 'rejected', 'not started'], 
     default: 'not started',
     trim: true
   },
@@ -139,17 +139,22 @@ const studentSchema = new mongoose.Schema({
     digilockerUrl: { type: String, trim: true },
     lastUpdated: { type: String, trim: true }
   },
-  documents: [{
-    type: { type: String, required: true, trim: true },
-    status: { 
-      type: String, 
-      required: true, 
-      enum: ['pending', 'verified', 'rejected', 'missing'], 
-      default: 'pending' 
+   documents: [{
+    type: {
+      type: String,
+      required: true,
+      trim: true,
+      enum: ['xii_marksheet', 'x_marksheet', 'aadhaar', 'pan', 'passport', 'other']
     },
-    imageUrl: { type: String, trim: true },
-    metadata: { 
+    status: {
+      type: String,
+      required: true,
+      enum: ['pending', 'verified', 'rejected', 'missing'],
+      default: 'pending'
+    },
+    details: {
       type: mongoose.Schema.Types.Mixed,
+      required: true,
       default: () => ({})
     }
   }],

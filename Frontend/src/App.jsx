@@ -225,7 +225,7 @@ const App = () => {
         // }
       >
         {/* <Route index element={<Dashboard user={user} />} /> */}
-        <Route path="/*" element={<Index_Website />} />
+        <Route path="/" element={<Index_Website />} />
         <Route path="/login_panel" element={<Login />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /> </ProtectedRoute>} />
         <Route path="/studentProfile" element={<ProtectedRoute><Student /></ProtectedRoute>} />
@@ -285,6 +285,8 @@ const App = () => {
         {/* Landing website */}
         <Route path="/contact" element={<Contact />} />
         <Route path="/portfolio-view" element={<ProtectedRoute><PortfolioView /></ProtectedRoute>} />
+
+        <Route path="*" element={<NotFound />} />
       </Route>
 
       {/* Catch all: redirect to dashboard or auth */}

@@ -73,14 +73,16 @@ const SupportTicketSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-  evaluation: {
+
+    evaluation: {
     type: Boolean,
     default: false
   },
-    escalatedToManager: {
+  escalatedToManager: {
     type: Boolean,
     default: false
   }
+
 });
 
 // Update the updatedAt field before saving

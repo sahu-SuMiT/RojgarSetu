@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback, memo, useMemo } from 'react';
+import React, { useState,useEffect, useCallback, memo, useMemo } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Target, ShieldAlert, Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { SidebarContext } from './Sidebar';
 import Loader from '../components/Loader';
@@ -108,9 +109,12 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [profilePicFile, setProfilePicFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
-  const [kycStatus, setKycStatus] = useState('pending'); // New state for KYC status
-  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [kycStatus, setKycStatus] = useState('not started'); // New state for KYC status
+  const [isKycDialogOpen, setIsKycDialogOpen] = useState(false);
+  const [kycStep, setKycStep] = useState(0); // 0: intro, 1: payment, 2: confirm, 3: done
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [kycIdentifierType, setKycIdentifierType] = useState('phone');
+  const [kycIdentifierValue, setKycIdentifierValue] = useState('');
 
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
@@ -132,9 +136,14 @@ const Profile = () => {
         });
         if (response.ok) {
           const data = await response.json();
+          console.log('KYC Status:', data.kycStatus);
+          console.log('verification id:', data.kycData.verificationId);
           // If iskycVerified is true, set to approved
-          if (data.kycStatus === 'verified' || data.iskycVerified) {
+          if (data.kycStatus === 'verified' || data.iskycVerified|| data.kycStatus === 'approved') {
             setKycStatus('approved');
+          }
+          if (data.kycStatus === 'pending' || data.kycStatus === 'pending approval'|| data.kycStatus === 'requested') {
+            setKycStatus('pending');
           }
         }
       } catch (error) {
@@ -247,16 +256,34 @@ const Profile = () => {
 
   const handleVerification = async () => {
     try {
-      if (kycStatus === 'verified') {
+      if (kycStatus === 'verified' || kycStatus === 'approved') {
         alert('KYC is already verified.');
         return;
       }
-      // Show payment dialog before proceeding
-      setIsPaymentDialogOpen(true);
+      setIsKycDialogOpen(true);
+      setKycStep(0);
     } catch (error) {
       console.error('KYC verification error:', error);
       alert('Failed to initiate KYC verification');
     }
+  };
+
+  const handleKycNext = () => {
+    if (kycStep === 1) {
+      // Set default value for identifier when moving to step 2
+      setKycIdentifierValue(kycIdentifierType === 'phone' ? (profileData.phone || '') : (profileData.email || ''));
+    }
+    setKycStep((prev) => prev + 1);
+  };
+
+  const handleKycBack = () => {
+    setKycStep((prev) => prev - 1);
+  };
+
+  const handleKycClose = () => {
+    setIsKycDialogOpen(false);
+    setKycStep(0);
+    setPaymentProcessing(false);
   };
 
   const handleMockPayment = async () => {
@@ -267,42 +294,52 @@ const Profile = () => {
     if (paymentProcessing) return; // Prevent multiple clicks
     setPaymentProcessing(true);
     // Simulate payment delay
-    setTimeout(async () => {
-      setIsPaymentDialogOpen(false);
+    setTimeout(() => {
       setPaymentProcessing(false);
-      // Proceed with KYC verification after payment
-      try {
-        const response = await fetch(`${API_URL}/api/kyc/verify-digio`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            email: profileData.email,
-            phone: profileData.phone,
-            firstName: profileData.firstName,
-            lastName: profileData.lastName,
-          }),
-        });
-        if (response.status === 401 || response.status === 403) {
-          window.location.href = '/student-login';
-          return;
-        }
-        if (!response.ok) {
-          throw new Error('Failed to initiate KYC verification');
-        }
-        const data = await response.json();
-        if (data.digilockerUrl) {
-          window.location.href = data.digilockerUrl;
-        } else {
-          alert('KYC verification initiated. Please check your profile later.');
-        }
-      } catch (error) {
-        console.error('KYC verification error:', error);
-        alert('Failed to initiate KYC verification');
-      }
+      setKycStep(2); // Move to confirm step
     }, 2000); // 2 seconds mock payment
+  };
+
+  const handleKycConfirm = async () => {
+    try {
+      const identifier = kycIdentifierType === 'phone' ? { phone: kycIdentifierValue } : { email: kycIdentifierValue };
+      const response = await fetch(`${API_URL}/api/kyc/verify-digio`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...identifier,
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+          template_name: 'ADHAAR_PAN_MARKSHEET',
+        }),
+      });
+      if(response.status === 400) {
+        toast('Kyc verification already in progress or completed. Please check your KYC status.');
+        setIsKycDialogOpen(false);
+        return;
+      }
+      if (response.status === 401 || response.status === 403) {
+        window.location.href = '/student-login';
+        return;
+      }
+      if (!response.ok) {
+        throw new Error('Failed to initiate KYC verification');
+      }
+      const data = await response.json();
+      setKycStep(3); // Done step
+      if (data.digilockerUrl) {
+        setTimeout(() => {
+          window.location.href = data.digilockerUrl;
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('KYC verification error:', error);
+      alert('Failed to initiate KYC verification');
+      setIsKycDialogOpen(false);
+    }
   };
 
   if (loading) {
@@ -747,30 +784,67 @@ const Profile = () => {
         
     
 
-      {/* Payment Dialog */}
-      {isPaymentDialogOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+      {/* KYC Verification Dialog */}
+      {isKycDialogOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-transpaernt bg-opacity-40 z-50">
           <div className="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full">
-            <h2 className="text-xl font-bold mb-4">Pay KYC Verification Fee</h2>
-            <p className="mb-4">To start your KYC verification, please pay the verification fee.</p>
-            <div className="mb-4 flex items-center justify-between">
-              <span className="font-semibold">Amount:</span>
-              <span className="text-green-700 font-bold">₹100</span>
-            </div>
-            <button
-              className="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors"
-              onClick={handleMockPayment}
-              disabled={paymentProcessing}
-            >
-              {paymentProcessing ? 'Processing Payment...' : 'Pay & Start KYC'}
-            </button>
-            <button
-              className="w-full mt-2 bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
-              onClick={() => setIsPaymentDialogOpen(false)}
-              disabled={paymentProcessing}
-            >
-              Cancel
-            </button>
+            {kycStep === 0 && (
+              <>
+                <h2 className="text-xl font-bold mb-4">KYC Verification</h2>
+                <p className="mb-4">To complete your profile, you need to verify your identity (KYC) using DigiLocker. This process requires a one-time verification fee.</p>
+                <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors mb-2" onClick={handleKycNext}>Start KYC</button>
+                <button className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors" onClick={handleKycClose}>Cancel</button>
+              </>
+            )}
+            {kycStep === 1 && (
+              <>
+                <h2 className="text-xl font-bold mb-4">Pay KYC Verification Fee</h2>
+                <p className="mb-4">To start your KYC verification, please pay the verification fee.</p>
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="font-semibold">Amount:</span>
+                  <span className="text-green-700 font-bold">₹100</span>
+                </div>
+                <button className="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors" onClick={handleMockPayment} disabled={paymentProcessing}>{paymentProcessing ? 'Processing Payment...' : 'Pay & Continue'}</button>
+                <button className="w-full mt-2 bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors" onClick={handleKycBack} disabled={paymentProcessing}>Back</button>
+              </>
+            )}
+            {kycStep === 2 && (
+              <>
+                <h2 className="text-xl font-bold mb-4">Confirm KYC Initiation</h2>
+                <p className="mb-4">Payment successful! Please select an identifier and provide its value to initiate your DigiLocker KYC verification.</p>
+                <div className="mb-4">
+                  <label className="block mb-1 font-medium">Select Identifier</label>
+                  <select
+                    className="w-full border rounded p-2 mb-2"
+                    value={kycIdentifierType}
+                    onChange={e => {
+                      setKycIdentifierType(e.target.value);
+                      setKycIdentifierValue(e.target.value === 'phone' ? (profileData.phone || '') : (profileData.email || ''));
+                    }}
+                  >
+                    <option value="phone">Phone</option>
+                    <option value="email">Email</option>
+                  </select>
+                  <label className="block mb-1 font-medium">{kycIdentifierType === 'phone' ? 'Phone Number' : 'Email Address'}</label>
+                  <input
+                    className="w-full border rounded p-2"
+                    type={kycIdentifierType === 'phone' ? 'tel' : 'email'}
+                    value={kycIdentifierValue}
+                    onChange={e => setKycIdentifierValue(e.target.value)}
+                    placeholder={kycIdentifierType === 'phone' ? 'Enter phone number' : 'Enter email address'}
+                  />
+                </div>
+                <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors mb-2" onClick={handleKycConfirm}>Initiate KYC</button>
+                <button className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors" onClick={handleKycClose}>Cancel</button>
+              </>
+            )}
+            {kycStep === 3 && (
+              <>
+                <h2 className="text-xl font-bold mb-4">KYC Initiated</h2>
+                <p className="mb-4">Your KYC verification has been initiated. Please complete the process in the DigiLocker window. You will be redirected if required.</p>
+                <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors" onClick={handleKycClose}>Close</button>
+              </>
+            )}
           </div>
         </div>
       )}

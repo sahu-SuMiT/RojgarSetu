@@ -33,7 +33,7 @@ router.put('/:id', isCompanyAuthenticated, isCompanyAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
-    console.log(req.body)
+    //console.log(req.body)
 
     const employee = await Employee.findByIdAndUpdate(
       id,

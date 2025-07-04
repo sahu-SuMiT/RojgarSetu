@@ -117,27 +117,24 @@ const SignIn = () => {
               </Button>
             </form>
             
-            {/* Demo Credentials */}
+            {/* Demo Credentials
             <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <h3 className="text-sm font-medium text-blue-900 mb-2">Demo Credentials</h3>
               <div className="text-xs text-blue-800 space-y-3">
                 <div>
                   <p className="font-medium text-blue-900">Admin Accounts:</p>
                   <div className="mt-1 space-y-1">
-                    <p><strong>Raj Shivre:</strong> raj@email.com / raj123</p>
-                    <p><strong>Kishori:</strong> kishori@email.com / kishori123</p>
+                    <p><strong>Raj Shivre:</strong> raj@email.com / raj123</p>  
                   </div>
                 </div>
                 <div>
                   <p className="font-medium text-blue-900">Employee Accounts:</p>
                   <div className="mt-1 space-y-1">
                     <p><strong>Harsh Raj:</strong> harshraj@email.com / harsh123 (Inactive)</p>
-                    <p><strong>Anmol Tiwari:</strong> anmol@email.com / anmol123</p>
-                    <p><strong>Sumit Sahu:</strong> sumit@email.com / sumit123</p>
                   </div>
                 </div>
               </div>
-            </div>
+            </div> */}
           </CardContent>
         </Card>
       </div>

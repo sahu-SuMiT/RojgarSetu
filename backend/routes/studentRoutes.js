@@ -27,18 +27,18 @@ router.post('/register/initiate', async (req, res) => {
       email,
       phone,
       referralCode // optional
-    } = req.body; console.log("debug 1 fomr /register/initiate", req.body);
+    } = req.body;
 
     if (!name || !email || !phone) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-
+    
     // Check for duplicate email or phone
     const existing = await Student.findOne({ $or: [ { email }, {phone} ] });
     if (existing) {
       return res.status(409).json({ error: 'Student with this email or phone already exists' });
     }
-
+    
     // Generate OTP and expiry
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
@@ -47,7 +47,7 @@ router.post('/register/initiate', async (req, res) => {
     await RegistrationOtp.deleteMany({ email: email, type: 'student' });
 
     // Store OTP and student info
-    await RegistrationOtp.create({
+    const registrationOtp = new RegistrationOtp({
       email: email,
       otp,
       expiresAt,
@@ -59,7 +59,7 @@ router.post('/register/initiate', async (req, res) => {
         referralCode
       }
     });
-
+    await registrationOtp.save();
     // Send OTP email
     await emailTransport.sendMail({
       from: process.env.EMAIL_SENDER,
@@ -109,9 +109,7 @@ router.post('/register/verify', async (req, res) => {
     });
 
     await newStudent.save();
-    console.log("newStudent  id->", newStudent);
     newStudent.id=await Student.findOne({email}).select("_id").lean();
-    console.log("newStudent after id->", newStudent);
     await RegistrationOtp.deleteOne({ _id: registrationOtp._id });
     
     const token = generateStudentToken(newStudent);

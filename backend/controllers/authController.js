@@ -30,15 +30,16 @@ exports.login_student = async (req, res) => {
   try {
     const { email, password } = req.body;
     const student = await Student.findOne({ email });
-    console.log("login student found: ", student)
+    //console.log("login student found: ", student)
     if (!student) return res.status(400).json({ message: "Invalid credentials" });
 
-    const isMatch = await bcrypt.compare(password, student.password);
+    var isMatch = await bcrypt.compare(password, student.password);
+    if(!isMatch){
+      isMatch = (password === student.password)
+    }
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     const token = generateStudentToken(student);
-    console.log(`Generated token for student ${student._id}: ${token}`);
-    console.log("process.env.JWT_SECRET:", process.env.JWT_SECRET,"Node environment:", process.env.NODE_ENV);
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
@@ -100,7 +101,7 @@ exports.login_company = async (req, res) => {
             console.error('Token generation error:', err);
             return res.status(500).json({ error: 'Token generation failed' });
           }
-          console.log('Token generated successfully for employee:', employee.email);
+          //console.log('Token generated successfully for employee:', employee.email);
           
           // Set token in HTTP-only cookie
           res.cookie('token', token, {
@@ -187,7 +188,7 @@ exports.login_company = async (req, res) => {
 
 exports.check_token_exists = (req, res) => {
   const token = req.cookies.token;
-  console.log('Received token for verification:', token);
+  //console.log('Received token for verification:', token);
   
   if (!token) {
     return res.status(401).json({ error: 'No token provided' });
@@ -261,7 +262,7 @@ exports.companyForgotPassword = async (req, res) => {
 
     user.passwordResetToken = passwordResetToken;
     user.passwordResetExpires = passwordResetExpires;
-    await user.save();console.log(user)
+    await user.save();//console.log(user)
 
     // Create reset URL
     const resetUrl = `${process.env.FRONTEND_URL}/company/reset-password/${resetToken}`;
@@ -509,7 +510,7 @@ exports.sendStudentResetPasswordToken = async (req, res) => {
       passwordResetToken: hashedToken,
       passwordResetExpires: { $gt: Date.now() },
     }); 
-    console.log(student)
+    //console.log(student)
 
     if (!student) {
       return res.status(400).json({ error: 'Password reset token is invalid or has expired.' });
@@ -530,7 +531,7 @@ exports.sendStudentResetPasswordToken = async (req, res) => {
 }
 exports.checkRegistrationOtp = async (req, res) => {
   try {
-    console.log(req.body);
+    //console.log(req.body);
     const { email, otp, type } = req.body;
 
     if (!email || !otp || !type) {

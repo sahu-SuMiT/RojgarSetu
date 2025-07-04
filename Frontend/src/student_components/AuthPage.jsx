@@ -106,7 +106,8 @@ export const AuthPage = ({ onAuthSuccess }) => {
           setRegisterStep(2);
           setMessage({ type: "success", text: "OTP sent to your email/phone." });
         } else {
-          setMessage({ type: "error", text: data.message || "Failed to send OTP." });
+          console.log(data);
+          setMessage({ type: "error", text: data?.message || data?.error || "Failed to send OTP." });
         }
       } else if (currentView === "signup" && registerStep === 2) {
         // Step 2: verify OTP
@@ -146,7 +147,7 @@ export const AuthPage = ({ onAuthSuccess }) => {
           setTimeout(() => navigate("/dashboard"), 1000);
           if (onAuthSuccess) onAuthSuccess(data);
         } else {
-          setMessage({ type: "error", text: data.message || "Failed to create account." });
+          setMessage({ type: "error", text: data?.message || data?.error ||"Failed to create account." });
         }
       }
     } catch {
@@ -308,6 +309,15 @@ export const AuthPage = ({ onAuthSuccess }) => {
                   />
                 </div>
                 {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/student/forgot-password')}
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline focus:outline-none"
+                  >
+                    Forgot Password?
+                  </button>
+              </div>
               </div>
             </>
           )}

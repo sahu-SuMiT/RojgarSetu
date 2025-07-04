@@ -20,7 +20,6 @@ exports.listMyApplications = async (req, res) => {
 exports.applyToJob = async (req, res) => {
   try {
     // Ensure user is authenticated
-    console.log("Debug 1: req.body:",req.body, "req.user:", req.user)
     if (!req.user || !req.user.id) {
       return res.status(401).json({ success: false, message: 'Not logged in' });
     }
@@ -54,7 +53,7 @@ exports.applyToJob = async (req, res) => {
       experience,
       availability
     });
-    console.log("debug 2:",studentApp)
+    //console.log("debug 2:",studentApp)
     await studentApp.save();
     
 

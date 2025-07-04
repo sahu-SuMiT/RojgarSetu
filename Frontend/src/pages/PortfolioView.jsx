@@ -34,6 +34,7 @@ const PortfolioView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [profileCareerObjective, setProfileCareerObjective] = useState('');
+  const [profileLinks, setProfileLinks] = useState({});
 
   // Get studentId from portfolio or localStorage
   const studentId = portfolio?.personalInfo?.studentId || localStorage.getItem('studentId');
@@ -73,6 +74,20 @@ const PortfolioView = () => {
         }
       })
       .catch(() => {});
+
+    // Fetch links from student profile
+    fetch(`${apiUrl}/api/student/me`, {
+      credentials: 'include'
+    })
+      .then(res => res.json())
+      .then(data => {
+        setProfileLinks({
+          resume: data.resume,
+          portfolioUrl: data.portfolioUrl,
+          githubUrl: data.githubUrl,
+          linkedinUrl: data.linkedinUrl
+        });
+      });
   }, []);
 
   const handleDownloadPDF = async () => {
@@ -306,6 +321,39 @@ const PortfolioView = () => {
               className="w-56 h-56 rounded-2xl object-cover border-4 border-purple-300 shadow-lg"
               onError={e => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR; }}
             />
+          </div>
+        </div>
+      </section>
+
+      {/* All Links Section (fetches directly from student profile, using correct field names) */}
+      <section className="w-full max-w-5xl mx-auto mt-2">
+        <div className="bg-purple-600 rounded-xl shadow p-6 mb-4 space-y-2">
+          <h2 className="text-lg font-bold text-white mb-2">Links</h2>
+          <div className="flex flex-col gap-2">
+            <div>
+              <span className="text-white">Resume (link): </span>
+              <a href={profileLinks.resume || "#"} className="text-yellow-200 hover:text-yellow-300" target="_blank" rel="noopener noreferrer">
+                {profileLinks.resume || "Not Provided"}
+              </a>
+            </div>
+            <div>
+              <span className="text-white">Portfolio URL: </span>
+              <a href={profileLinks.portfolioUrl || "#"} className="text-yellow-200 hover:text-yellow-300" target="_blank" rel="noopener noreferrer">
+                {profileLinks.portfolioUrl || "Not Provided"}
+              </a>
+            </div>
+            <div>
+              <span className="text-white">GitHub: </span>
+              <a href={profileLinks.githubUrl || "#"} className="text-yellow-200 hover:text-yellow-300" target="_blank" rel="noopener noreferrer">
+                {profileLinks.githubUrl || "Not Provided"}
+              </a>
+            </div>
+            <div>
+              <span className="text-white">LinkedIn: </span>
+              <a href={profileLinks.linkedinUrl || "#"} className="text-yellow-200 hover:text-yellow-300" target="_blank" rel="noopener noreferrer">
+                {profileLinks.linkedinUrl || "Not Provided"}
+              </a>
+            </div>
           </div>
         </div>
       </section>

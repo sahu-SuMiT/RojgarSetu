@@ -11,7 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Clock, MessageSquare, CheckCircle, AlertCircle, Plus, Upload, Search } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 type Priority = "low" | "medium" | "high" | "urgent";
 type Status = "open" | "in-progress" | "resolved" | "closed" | "pending" | "active";
@@ -39,7 +41,45 @@ const Support = () => {
   if (!token) {
     window.location.href = "https://company.rojgarsetu.org/";
   }
+
   const userName = localStorage.getItem("userName");
+
+  const [tickets, setTickets] = useState<SupportTicket[]>([
+    {
+      id: "TICK-001",
+      title: "Login Issues with Student Portal",
+      description: "Unable to access student portal after password reset",
+      priority: "high",
+      status: "open",
+      category: "Technical",
+      created: "2024-01-20",
+      lastUpdated: "2024-01-20",
+      responses: 0
+    },
+    {
+      id: "TICK-002", 
+      title: "Grade Discrepancy in Mathematics",
+      description: "There seems to be an error in my final grade calculation",
+      priority: "medium",
+      status: "in-progress",
+      category: "Academic",
+      created: "2024-01-18",
+      lastUpdated: "2024-01-19",
+      responses: 2
+    },
+    {
+      id: "TICK-003",
+      title: "Library Access Card Not Working",
+      description: "My student ID card is not scanning at the library entrance",
+      priority: "low",
+      status: "resolved",
+      category: "Facilities",
+      created: "2024-01-15",
+      lastUpdated: "2024-01-17",
+      responses: 1
+    }
+  ]);
+
 
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false);
@@ -83,24 +123,14 @@ const Support = () => {
     fetchTickets();
   }, [token]);
 
-  const handleCreateTicket = () => {
-    if (!newTicket.title || !newTicket.description || !newTicket.category) {
-      toast.error("Please fill in all required fields.");
-      return;
-    }
+const handleCreateTicket = async () => {
+  const { title, description, category, priority, uploadedFile } = newTicket;
 
-    const ticket: SupportTicket = {
-      id: `TICK-${String(tickets.length + 1).padStart(3, '0')}`,
-      title: newTicket.title,
-      description: newTicket.description,
-      priority: newTicket.priority,
-      status: "open",
-      category: newTicket.category,
-      created: new Date().toISOString().split('T')[0],
-      lastUpdated: new Date().toISOString().split('T')[0],
-      responses: 0,
-      uploadedFile: newTicket.uploadedFile || undefined
-    };
+  // Step 1: Validate input
+  if (!title || !description || !category || !priority || !uploadedFile) {
+    toast.error("Please fill in all required fields.");
+    return;
+  }
 
     setTickets([ticket, ...tickets]);
     setIsCreateTicketOpen(false);
@@ -112,16 +142,28 @@ const Support = () => {
       uploadedFile: null
     });
 
-    toast.success("Support ticket created successfully!");
-  };
+  try {
+    // Step 2: Prepare FormData for backend (because of file upload)
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("priority", priority);
+    formData.append("status", "open"); // default or dynamic
+    formData.append("category", category);
+    formData.append("uploadedFile", uploadedFile); // File object
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setNewTicket({...newTicket, uploadedFile: file});
-      toast.success(`File "${file.name}" uploaded successfully!`);
-    }
-  };
+
+
+    const res = await axios.post(`${import.meta.env.MONGODB_URI}/api/support-ticket`, formData);
+
+    toast.success("Ticket created successfully!");
+    console.log("Response:", res.data);
+  } catch (err) {
+    console.error("Create Ticket Error:", err);
+    toast.error("Failed to create ticket. Try again later.");
+  }
+};
+
 
   const handleSecretCodeSubmit = (ticketId: string) => {
     if (secretCode === "YOUR_SECRET_CODE") {
@@ -133,6 +175,17 @@ const Support = () => {
       toast.error("Invalid secret code.");
     }
   };
+
+
+const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    setNewTicket((prev) => ({
+      ...prev,
+      uploadedFile: file,
+    }));
+  }
+};
 
   const filteredTickets = tickets.filter(ticket => {
     const title = ticket.title || "";
