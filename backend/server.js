@@ -36,6 +36,10 @@ const bcrypt = require('bcrypt');
 const studentAdminRoutes = require('./routes/admin/studentAdminRoutes');
 const signup = require('./controllers/user/signup');
 
+
+// sales
+const salesRoutes = require('./routes/sales'); // Assuming you have a sales route file
+
 const app = express();
 
 // Debug middleware
@@ -151,7 +155,8 @@ app.use('/api/admin', studentAdminRoutes);
 app.use('/api/signup', signup);
 app.use('/api/admin', require('./routes/admin/platformSettingsRoutes'));
 
-
+//sales
+app.use('/api/sales', salesRoutes);
 
 // Make sure portfolioRoutes is properly loaded
 const portfolioRoutes = require('./routes/portfolioRoutes');

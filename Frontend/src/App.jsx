@@ -51,7 +51,7 @@ import CollegePlacementAnalysis from './college_components/PlacementAnalysis';
 import CompanySupport from './company_components/Support';
 import CompanyPlacementAnalysis from './company_components/PlacementAnalysis';
 import PortfolioView from './pages/PortfolioView';
-
+import Onboard from './pages/Onboard';
 
 // Landing page component
 import Index_Website from "./pages/Index_Website";
@@ -244,6 +244,7 @@ const App = () => {
         <Route path="/kyc-dashboard" element={<EKysDashboard />} />
         <Route path="/sales" element={<Sales />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="/onboard" element={<Onboard />} />
         {/* <Route path="/profile" element={<NotFound />} /> */}
 
         {/* College and Compay */}

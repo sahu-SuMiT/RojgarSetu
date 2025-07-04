@@ -24,11 +24,15 @@ function startTicketEscalationJob(){
       await ticket.save();
     }
 
+
     console.log(`Escalated ${ticketsToEscalate.length} tickets.`);
+
   } catch (err) {
     console.error("Error during escalation:", err);
   }
 });
 
 }
+
 module.exports = startTicketEscalationJob;
+
