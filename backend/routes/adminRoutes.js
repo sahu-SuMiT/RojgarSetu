@@ -39,7 +39,7 @@ router.post('/login', async (req, res) => {
       });
     }
     // Find admin by email
-    const admin = await Admin.findOne({ email: email.toLowerCase() }); console.log("Admin found:", admin)
+    const admin = await Admin.findOne({ email: email.toLowerCase() }); //console.log("Admin found:", admin)
 
     if (!admin) {
       return res.status(404).json({

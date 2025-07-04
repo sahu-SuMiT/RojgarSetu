@@ -1,16 +1,26 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { AlertCircle } from 'lucide-react';
 
 const ProtectedRoute = ({ children }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [countdown, setCountdown] = useState(3);
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+  const getLoginRoute = () => {
+    const path = location.pathname;
+    if (path.includes('/company/')) return '/company-login';
+    if (path.includes('/college/')) return '/college-login';
+    if (path.includes('/student/')) return '/student-login';
+    return '/login_panel'; // fallback
+  };
+
   const startRedirectCountdown = () => {
     let counter = 3;
     setCountdown(counter);
@@ -20,7 +30,8 @@ const ProtectedRoute = ({ children }) => {
       setCountdown(counter);
       if (counter === 0) {
         clearInterval(interval);
-        navigate('/login_panel');
+        const loginRoute = getLoginRoute();
+        navigate(loginRoute);
       }
     }, 1000);
   };
@@ -49,11 +60,15 @@ const ProtectedRoute = ({ children }) => {
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200">
       <div className="bg-white/90 shadow-lg rounded-xl p-8 max-w-md w-full mx-4 border border-blue-200 flex flex-col items-center">
-        <svg className="animate-spin h-10 w-10 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-        </svg>
-        <h2 className="text-xl font-bold text-blue-600 mb-2">Checking Authorization...</h2>
+        <div className="relative w-12 h-12">
+          <svg className="animate-spin absolute inset-0 h-full w-full text-blue-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          </svg>
+          <svg className="animate-spin absolute inset-0 h-full w-full text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+        <h2 className="text-xl font-bold text-blue-600 mb-2 mt-4">Checking Authorization...</h2>
         <p className="text-gray-500 text-center">Please wait while we verify your access.</p>
       </div>
     </div>

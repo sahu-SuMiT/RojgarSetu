@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Clock, MessageSquare, CheckCircle, AlertCircle, Plus, Upload, Search, Filter } from "lucide-react";
 import { toast } from "sonner";
+import axios from "axios";
 
 type Priority = "low" | "medium" | "high" | "urgent";
 type Status = "open" | "in-progress" | "resolved" | "closed";
@@ -32,7 +33,6 @@ const Support = () => {
   if(!token){
     window.location.href = "https://company.rojgarsetu.org/";
   }
-  console.log("Token:", token);
   const [tickets, setTickets] = useState<SupportTicket[]>([
     {
       id: "TICK-001",
@@ -81,46 +81,45 @@ const Support = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
 
-  const handleCreateTicket = () => {
-    if (!newTicket.title || !newTicket.description || !newTicket.category) {
-      toast.error("Please fill in all required fields.");
-      return;
-    }
+const handleCreateTicket = async () => {
+  const { title, description, category, priority, uploadedFile } = newTicket;
 
-    const ticket: SupportTicket = {
-      id: `TICK-${String(tickets.length + 1).padStart(3, '0')}`,
-      title: newTicket.title,
-      description: newTicket.description,
-      priority: newTicket.priority,
-      status: "open",
-      category: newTicket.category,
-      created: new Date().toISOString().split('T')[0],
-      lastUpdated: new Date().toISOString().split('T')[0],
-      responses: 0,
-      uploadedFile: newTicket.uploadedFile || undefined
-    };
+  // Step 1: Validate input
+  if (!title || !description || !category || !priority || !uploadedFile) {
+    toast.error("Please fill in all required fields.");
+    return;
+  }
 
-    setTickets([ticket, ...tickets]);
-    setIsCreateTicketOpen(false);
-    setNewTicket({
-      title: "",
-      description: "",
-      priority: "medium",
-      category: "",
-      uploadedFile: null
-    });
+  try {
+    // Step 2: Prepare FormData for backend (because of file upload)
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("priority", priority);
+    formData.append("status", "open"); // default or dynamic
+    formData.append("category", category);
+    formData.append("uploadedFile", uploadedFile); // File object
 
-    toast.success("Support ticket created successfully!");
-  };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setNewTicket({...newTicket, uploadedFile: file});
-      toast.success(`File "${file.name}" uploaded successfully!`);
-    }
-  };
+    const res = await axios.post(`${import.meta.env.MONGODB_URI}/api/support-ticket`, formData);
 
+    toast.success("Ticket created successfully!");
+    console.log("Response:", res.data);
+  } catch (err) {
+    console.error("Create Ticket Error:", err);
+    toast.error("Failed to create ticket. Try again later.");
+  }
+};
+
+const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    setNewTicket((prev) => ({
+      ...prev,
+      uploadedFile: file,
+    }));
+  }
+};
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          ticket.description.toLowerCase().includes(searchTerm.toLowerCase());

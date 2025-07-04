@@ -85,12 +85,12 @@ router.get('/find-user/:email', async (req, res) => {
 
 // Search users by name
 router.get('/search-users/:query', async (req, res) => {
-  console.log('Search route hit:', req.params.query); // Debug log
+  //console.log('Search route hit:', req.params.query); // Debug log
   try {
     const { query } = req.params;
     const { type } = req.query;
     
-    console.log('Searching for:', query, 'Type:', type); // Debug log
+    //console.log('Searching for:', query, 'Type:', type); // Debug log
     
     if (!query || query.length < 2) {
       return res.json({ results: [] });
@@ -105,7 +105,7 @@ router.get('/search-users/:query', async (req, res) => {
         name: searchRegex 
       }).limit(15).select('_id name contactEmail location');
       
-      console.log('Found colleges:', colleges.length); // Debug log
+      //console.log('Found colleges:', colleges.length); // Debug log
       
       colleges.forEach(college => {
         const locationParts = [];
@@ -137,7 +137,7 @@ router.get('/search-users/:query', async (req, res) => {
         name: searchRegex 
       }).limit(15).select('_id name contactEmail location');
       
-      console.log('Found companies:', companies.length); // Debug log
+      //console.log('Found companies:', companies.length); // Debug log
       
       companies.forEach(company => {
         const locationParts = [];
@@ -169,7 +169,7 @@ router.get('/search-users/:query', async (req, res) => {
         name: searchRegex 
       }).limit(15).select('_id name email');
       
-      console.log('Found students:', students.length); // Debug log
+      //console.log('Found students:', students.length); // Debug log
       
       students.forEach(student => {
         results.push({
@@ -181,7 +181,7 @@ router.get('/search-users/:query', async (req, res) => {
       });
     }
     
-    console.log('Total results:', results.length); // Debug log
+    //console.log('Total results:', results.length); // Debug log
     res.json({ results });
   } catch (error) {
     console.error('Error searching users:', error);
@@ -383,7 +383,7 @@ router.get('/sent/:userType/:userId', async (req, res) => {
     .populate('recipient', 'name email contactEmail')
     .sort({ createdAt: -1 });
 
-    console.log(`Found ${notifications.length} sent messages`);
+    //console.log(`Found ${notifications.length} sent messages`);
     res.json(notifications);
   } catch (error) {
     console.error('Error fetching sent messages:', error);

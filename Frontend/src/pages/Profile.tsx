@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import AppLayout from "@/components/layouts/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,8 +22,16 @@ import {
   Save,
   X,
 } from "lucide-react";
+import { jwtDecode } from "jwt-decode";
+
+interface DecodedToken {
+  email: string;
+  name: string; 
+  role: string;
+}
 
 const Profile = () => {
+  const token = localStorage.getItem("token");
   const [isEditing, setIsEditing] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -38,6 +46,25 @@ const Profile = () => {
     designation: "Sales Representative",
     department: "Sales & Marketing",
   });
+
+  useEffect(() => {
+  if (token) {
+    try {
+      const decoded = jwtDecode<DecodedToken>(token);
+
+
+      setProfileData(prev => ({
+        ...prev,
+        firstName : decoded.firstName || "user",
+        lastName : decoded.lastName || "name",
+        email: decoded.email,
+        designation: decoded.role,
+      }));
+    } catch (error) {
+      console.error("Failed to decode token:", error);
+    }
+  }
+}, [token]);
 
   const [originalData, setOriginalData] = useState(profileData);
 

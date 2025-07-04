@@ -226,7 +226,7 @@ router.post('/bulk', async (req, res) => {
     Promise.allSettled(emailPromises).then(results => {
       const successful = results.filter(r => r.status === 'fulfilled').length;
       const failed = results.filter(r => r.status === 'rejected').length;
-      console.log(`Bulk email notifications: ${successful} sent successfully, ${failed} failed`);
+      //console.log(`Bulk email notifications: ${successful} sent successfully, ${failed} failed`);
     });
 
     // Prepare response message
@@ -556,7 +556,8 @@ router.post('/excel-sheet', upload.single('file'), async (req, res) => {
     Promise.allSettled(emailPromises).then(results => {
       const successful = results.filter(r => r.status === 'fulfilled').length;
       const failed = results.filter(r => r.status === 'rejected').length;
-      console.log(`Excel upload email notifications: ${successful} sent successfully, ${failed} failed`);
+      //console.log(`Excel upload email notifications: ${successful} sent successfully, ${failed} failed`);
+      //console.log(`Email notifications: ${successful} sent successfully, ${failed} failed`);
     });
 
     // Prepare response message
@@ -653,7 +654,7 @@ const sendLoginCredentialsEmail = async (student, collegeName) => {
     };
 
     await emailTransport.sendMail(mailOptions);
-    console.log(`Login credentials email sent to: ${student.email}`);
+    //console.log(`Login credentials email sent to: ${student.email}`);
   } catch (error) {
     console.error(`Failed to send email to ${student.email}:`, error);
     // Don't throw error to prevent blocking the entire process

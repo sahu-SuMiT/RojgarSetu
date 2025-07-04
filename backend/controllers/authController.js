@@ -101,7 +101,7 @@ exports.login_company = async (req, res) => {
             console.error('Token generation error:', err);
             return res.status(500).json({ error: 'Token generation failed' });
           }
-          console.log('Token generated successfully for employee:', employee.email);
+          //console.log('Token generated successfully for employee:', employee.email);
           
           // Set token in HTTP-only cookie
           res.cookie('token', token, {
@@ -188,7 +188,7 @@ exports.login_company = async (req, res) => {
 
 exports.check_token_exists = (req, res) => {
   const token = req.cookies.token;
-  console.log('Received token for verification:', token);
+  //console.log('Received token for verification:', token);
   
   if (!token) {
     return res.status(401).json({ error: 'No token provided' });
@@ -262,7 +262,7 @@ exports.companyForgotPassword = async (req, res) => {
 
     user.passwordResetToken = passwordResetToken;
     user.passwordResetExpires = passwordResetExpires;
-    await user.save();console.log(user)
+    await user.save();//console.log(user)
 
     // Create reset URL
     const resetUrl = `${process.env.FRONTEND_URL}/company/reset-password/${resetToken}`;
@@ -510,7 +510,7 @@ exports.sendStudentResetPasswordToken = async (req, res) => {
       passwordResetToken: hashedToken,
       passwordResetExpires: { $gt: Date.now() },
     }); 
-    console.log(student)
+    //console.log(student)
 
     if (!student) {
       return res.status(400).json({ error: 'Password reset token is invalid or has expired.' });
@@ -531,7 +531,7 @@ exports.sendStudentResetPasswordToken = async (req, res) => {
 }
 exports.checkRegistrationOtp = async (req, res) => {
   try {
-    console.log(req.body);
+    //console.log(req.body);
     const { email, otp, type } = req.body;
 
     if (!email || !otp || !type) {
