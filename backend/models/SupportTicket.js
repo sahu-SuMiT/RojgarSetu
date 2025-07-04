@@ -12,12 +12,16 @@ const SupportTicketSchema = new mongoose.Schema({
   },
   userType: {
     type: String,
-    enum: ['college', 'company'],
+    enum: ['college', 'company' , 'student', 'sales'],
     required: true
   },
   subject: {
     type: String,
     required: true
+  },
+  description: { // will be used as initial message content
+    type: String,
+    required: true,
   },
   status: {
     type: String,
@@ -73,10 +77,14 @@ const SupportTicketSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-    escalatedToManager: {
+  escalatedToManager: {
     type: Boolean,
     default: false
-  }
+  },
+  uploadedFile: {
+  data: Buffer,         // Actual file data
+  contentType: String,  // e.g., 'image/png', 'application/pdf'
+}
 });
 
 // Update the updatedAt field before saving
