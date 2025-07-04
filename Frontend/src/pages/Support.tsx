@@ -80,8 +80,6 @@ const Support = () => {
     }
   ]);
 
-
-  const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false);
   const [newTicket, setNewTicket] = useState({
     title: "",
