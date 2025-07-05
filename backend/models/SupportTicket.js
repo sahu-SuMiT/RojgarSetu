@@ -85,12 +85,12 @@ const SupportTicketSchema = new mongoose.Schema({
   uploadedFile: {
   data: Buffer,         // Actual file data
   contentType: String,  // e.g., 'image/png', 'application/pdf'
-}
+},
 
     evaluation: {
     type: Boolean,
     default: false
-});
+},
 
 // Update the updatedAt field before saving
 SupportTicketSchema.pre('save', function(next) {
