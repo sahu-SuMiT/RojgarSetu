@@ -43,3 +43,18 @@ exports.updatePreparationProgress = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// GET: Fetch all scheduled or in-progress interviews (for support panel)
+exports.getScheduledInterviews = async (req, res) => {
+  try {
+    const interviews = await Interview.find({ 
+      status: { $in: ['scheduled', 'in-progress'] },
+      isDone: false
+    })
+      .populate('interviewer', 'firstName lastName email')
+      .populate('interviewee', 'firstName lastName email');
+    res.json({ success: true, interviews });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to fetch scheduled interviews', error: err.message });
+  }
+};

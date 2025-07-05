@@ -8,18 +8,28 @@ import {
   X,
   Sparkles,
   LogOut,
-  Bot
+  Bot,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const SidebarContext = React.createContext({ isCollapsed: false });
 
 const Sidebar = ({ 
   isOpen, 
   onClose, 
   user = { initials: '', name: '', role: '' },
+  isCollapsed,
+  setIsCollapsed,
+  children
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  React.useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', isCollapsed);
+  }, [isCollapsed]);
 
   // Prevent background scroll when sidebar is open on mobile
   useEffect(() => {
@@ -66,6 +76,7 @@ const Sidebar = ({
   const role = user?.role || '';
 
   return (
+    <SidebarContext.Provider value={{ isCollapsed }}>
     <>
       {/* Backdrop for mobile only */}
       <div
@@ -80,31 +91,40 @@ const Sidebar = ({
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 h-screen w-64 bg-blue-700 text-white z-50 shadow-lg flex flex-col
-          transition-transform duration-300 ease-in-out
+          fixed top-0 left-0 h-screen z-50 shadow-lg flex flex-col bg-blue-700 text-white transition-all duration-300 ease-in-out
+          ${isCollapsed ? 'w-20' : 'w-64'}
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:translate-x-0 lg:static lg:z-auto
+          lg:translate-x-0 lg:z-auto
         `}
         aria-label="Sidebar"
       >
         {/* Top Section - Header */}
         <div className="flex-shrink-0">
-          <div className="px-8 pt-6 pb-4 border-b border-blue-500 flex items-center justify-between">
-            <div className="w-full font-bold text-lg tracking-wide whitespace-nowrap overflow-hidden text-ellipsis leading-tight max-w-38">
-              Rojgaar Setu
+          <div className={`pt-6 pb-4 border-b border-blue-500 flex items-center justify-between ${isCollapsed ? 'px-2' : 'px-8'}`}>
+            <div className={`font-bold text-lg tracking-wide whitespace-nowrap overflow-hidden text-ellipsis leading-tight max-w-38 transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-full'}`.trim()}>
+              {!isCollapsed && 'Rojgaar Setu'}
             </div>
-            <button
-              onClick={onClose}
-              className="lg:hidden text-blue-200 hover:text-white ml-2 flex-shrink-0"
-              aria-label="Close Sidebar"
-            >
-              <X size={20} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setIsCollapsed((v) => !v)}
+                className="text-blue-200 hover:text-white flex-shrink-0 p-1 rounded transition"
+                aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+              >
+                {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+              </button>
+              <button
+                onClick={onClose}
+                className="lg:hidden text-blue-200 hover:text-white ml-2 flex-shrink-0"
+                aria-label="Close Sidebar"
+              >
+                <X size={20} />
+              </button>
+            </div>
           </div>
         </div>
         
         {/* Navigation */}
-        <nav className="flex flex-col gap-1.5 mb-4 flex-1">
+        <nav className="flex flex-col gap-1.5 mb-4 flex-1 pt-4">
           {navigationItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path === '/dashboard' && location.pathname === '/');
             const IconComponent = item.icon;
@@ -118,17 +138,17 @@ const Sidebar = ({
                   }
                 }}
                 className={`
-                  flex items-center gap-3.5 py-3 px-8 text-base mb-0.5 cursor-pointer text-left w-full
+                  flex items-center ${isCollapsed ? 'justify-center' : 'gap-3.5 px-8'} py-3 text-base mb-0.5 cursor-pointer text-left w-full
                   transition-all duration-200 max-w-55 whitespace-nowrap overflow-hidden text-ellipsis
-                  border-l-4 rounded-r-lg
+                  rounded-r-lg
                   ${isActive 
-                    ? 'text-white font-bold border-l-white bg-blue-800' 
-                    : 'text-blue-200 font-semibold border-l-transparent bg-transparent hover:bg-blue-800'
+                    ? 'text-white font-bold border-l-4 border-l-white bg-blue-800' 
+                    : 'text-blue-200 font-semibold border-l-0 bg-transparent hover:bg-blue-800'
                   }
                 `}
               >
                 <IconComponent className="w-5 h-5 flex-shrink-0" />
-                <span className="overflow-hidden text-ellipsis whitespace-nowrap max-w-40">{item.label}</span>
+                {!isCollapsed && <span className="overflow-hidden text-ellipsis whitespace-nowrap max-w-40">{item.label}</span>}
               </button>
             );
           })}
@@ -138,15 +158,17 @@ const Sidebar = ({
         <div className="flex-shrink-0 border-t border-blue-500">
           <button
             onClick={onLogout}
-            className="w-full bg-blue-800 text-white flex items-center gap-3.5 py-3 px-8 text-base font-semibold hover:bg-blue-900 transition-all duration-200"
+            className={`w-full bg-blue-800 text-white flex items-center ${isCollapsed ? 'justify-center' : 'gap-3.5 px-8'} py-3 text-base font-semibold hover:bg-blue-900 transition-all duration-200`}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
-            <span>Logout</span>
+            {!isCollapsed && <span>Logout</span>}
           </button>
         </div>
       </aside>
     </>
+    </SidebarContext.Provider>
   );
 };
 
+export { SidebarContext };
 export default Sidebar;

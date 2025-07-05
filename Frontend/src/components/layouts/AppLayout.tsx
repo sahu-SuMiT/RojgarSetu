@@ -149,6 +149,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             <Briefcase className="h-5 w-5 mr-3" />
             Sales & Jobs
           </Link>
+          <Link 
+            to="/onboard" 
+            className={`flex items-center px-4 py-3 text-white hover:bg-blue-800 ${isActive("/onboard")}`}
+          >
+            <Briefcase className="h-5 w-5 mr-3" />
+            Onboard
+          </Link>
         </nav>
         
         <div className="absolute bottom-0 w-64 p-4 bg-blue-900 border-t border-blue-800">

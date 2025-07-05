@@ -1,10 +1,12 @@
 const nodemailer = require('nodemailer');
 module.exports.emailTransport = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
+  host: 'smtp.zoho.in',
+  port: 465,
+  secure: true,
   auth: {
-    user: process.env.EMAIL_SENDER,
-    pass: process.env.EMAIL_PASS
+    user: 'noreply@rojgarsetu.org',
+    pass: 'l%llxEs5'
   }
 });
+
+module.exports.emailSender = 'noreply@rojgarsetu.org';

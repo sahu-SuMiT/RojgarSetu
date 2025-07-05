@@ -39,8 +39,8 @@ router.post('/login', async (req, res) => {
       });
     }
     // Find admin by email
-    const admin = await Admin.findOne({ email: email.toLowerCase() });
-    
+    const admin = await Admin.findOne({ email: email.toLowerCase() }); //console.log("Admin found:", admin)
+
     if (!admin) {
       return res.status(404).json({
         success: false,
@@ -126,7 +126,7 @@ router.get('/employees', verifyAdminToken, async (req, res) => {
   try {
 
     // Fetch all admin/employee accounts
-    const employees = await Admin.find({}).select('-password -resetPasswordToken -resetPasswordExpires');
+    const employees = await Admin.find({}).select('-password -resetPasswordToken -resetPasswordExpires').lean();
     
     // Transform data to match frontend expectations
     const transformedEmployees = employees.map((emp, index) => ({
@@ -491,9 +491,9 @@ router.post('/employees', verifyAdminToken, async (req, res) => {
 
   try {
     // Check if user already exists
-    const existingUser = await Admin.findOne({ $or: [{ email }, { username }] });
+    const existingUser = await Admin.findOne({ email }).lean();
     if (existingUser) {
-      return res.status(409).json({ success: false, message: 'Username or email already exists' });
+      return res.status(409).json({ success: false, message: 'Admin with this Email already exists' });
     }
 
     // Create new admin - The plain password will be hashed by the pre-save hook in the Admin model

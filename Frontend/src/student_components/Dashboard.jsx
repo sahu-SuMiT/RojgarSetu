@@ -1,10 +1,17 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
+import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import {
   UserCircle, FileText, Star, Bell, TrendingUp, Calendar, MessageSquare, Clock,
   Target, Award, Users, Eye, CheckCircle, AlertCircle, XCircle, PauseCircle,
   Send, ChevronRight, ShieldAlert, LayoutDashboard, Menu
 } from "lucide-react";
+import  {SidebarContext} from './Sidebar'; // Assuming you have a SidebarContext for managing sidebar state  
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const token = localStorage.getItem('token');
+
+
 
 // Safe fetch helper
 async function safeFetch(url, options) {
@@ -169,6 +176,10 @@ const NotificationPanel = ({ notifications, onClose }) => {
 const Dashboard = () => {
   // Sidebar open state for mobile
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const stored = localStorage.getItem('sidebarCollapsed');
+    return stored === 'true';
+  });
 
   const [loading, setLoading] = useState(true);
   const [student, setStudent] = useState({});
@@ -180,15 +191,42 @@ const Dashboard = () => {
   const [interviews, setInterviews] = useState([]);
   const [error, setError] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
+  const [kycStatus, setKycStatus] = useState('not started');
 
-  const navigate = (path) => {
-    window.location.href = path; 
-  };
+  // fetch kyc status from the backend
+  useEffect(() => {
+    const fetchKycStatus = async () => {
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch(`${API_URL}/api/kyc/status`, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          // If iskycVerified is true, set to approved
+          if (data.kycStatus === 'verified' || data.iskycVerified|| data.kycStatus === 'approved') {
+            setKycStatus('approved');
+          }
+          if (data.kycStatus === 'pending' || data.kycStatus === 'pending approval'|| data.kycStatus === 'requested') {
+            setKycStatus('pending');
+          } else {
+            setKycStatus(data.kycStatus || 'not started');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching KYC status:', error);
+      }
+    };
+    fetchKycStatus();
+  }, [token]);
+
+   const navigate = useNavigate();
 
   useEffect(() => {
     setLoading(true);
     setError("");
-    safeFetch("/api/dashboard", { credentials: "include" })
+    safeFetch(`${import.meta.env.VITE_API_URL}/api/dashboard`, { credentials: "include" })
       .then((data) => {
         setStudent(data.student || {});
         setProfileCompletion(data.profileCompletion || 0);
@@ -208,6 +246,8 @@ const Dashboard = () => {
       .catch((err) => setError(err.message || "Failed to load dashboard"))
       .finally(() => setLoading(false));
   }, []);
+
+ 
 
   const colorMap = {
     blue: "bg-blue-50 text-blue-700 border-blue-200",
@@ -248,20 +288,30 @@ const Dashboard = () => {
   // }
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar for desktop and mobile */}
-      <Sidebar
-        user={{
-        initials: student?.name?.[0]?.toUpperCase() || '',
-        name: student?.name || 'Student',
-        role: student?.role || 'Student'
-      }}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        sectionLabel="CAMPUS SERVICES"
-      />
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+    <SidebarContext.Provider value={{ isCollapsed }}>
+      <div className="flex">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} user={student} isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+        {/* Main content area, margin logic remains unchanged */}
+        <div className={`flex-1 flex flex-col relative min-w-0 transition-all duration-300 ease-in-out ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+          {loading && (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
+              <svg className="mb-4" width="64" height="64" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" stroke="#3b82f6" style={{display: 'block'}}>
+                <g fill="none" fillRule="evenodd" strokeWidth="4">
+                  <circle cx="22" cy="22" r="20" strokeOpacity=".2" />
+                  <path d="M42 22c0-11.046-8.954-20-20-20">
+                    <animateTransform
+                      attributeName="transform"
+                      type="rotate"
+                      from="0 22 22"
+                      to="360 22 22"
+                      dur="1s"
+                      repeatCount="indefinite" />
+                  </path>
+                </g>
+              </svg>
+              <p className="text-gray-600 font-medium text-lg">Loading your dashboard...</p>
+            </div>
+          )}
         {/* Mobile Header */}
         <div className="lg:hidden p-4 bg-white shadow flex items-center">
           <button onClick={() => setSidebarOpen(true)}>
@@ -270,7 +320,7 @@ const Dashboard = () => {
           <span className="ml-4 font-bold">Rojgar Setu</span>
         </div>
         {/* Header ---------------------- */}
-        <div className="relative overflow-hidden">
+          <div className="relative overflow-visible">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700" />
           <div 
             className="absolute inset-0 opacity-20" 
@@ -303,10 +353,15 @@ const Dashboard = () => {
                     )}
                   </button>
                   {/* Verification status */}
-                  {student.verified ? (
+                  {kycStatus === 'approved' || kycStatus === 'verified' ? (
                     <span className="flex items-center gap-2 px-6 py-3 bg-green-100 text-green-700 rounded-xl font-semibold border border-green-200">
                       <CheckCircle className="w-5 h-5" />
-                      Verified
+                      KYC Done
+                    </span>
+                  ) : kycStatus === 'pending' || kycStatus === 'pending approval' ? (
+                    <span className="flex items-center gap-2 px-6 py-3 bg-yellow-100 text-yellow-700 rounded-xl font-semibold border border-yellow-200">
+                      <ShieldAlert className="w-5 h-5" />
+                      Pending
                     </span>
                   ) : (
                     <button
@@ -510,6 +565,7 @@ const Dashboard = () => {
         </div>
       </div>
     </div>
+    </SidebarContext.Provider>
   );
 };
 

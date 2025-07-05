@@ -1,5 +1,8 @@
 const { execSync } = require('child_process');
 const path = require('path');
+const dotenv = require('dotenv');
+
+dotenv.config({ path: '../.env' });
 
 console.log('Starting complete database seeding...\n');
 

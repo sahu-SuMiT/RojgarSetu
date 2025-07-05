@@ -7,7 +7,7 @@ axios.defaults.withCredentials = true;
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const initialRegisterData = {
-  name: '', contactEmail: '', contactPhone: '', password: ''
+  name: '', contactEmail: '', contactPhone: '', referralCode: '', password: ''
 };
 
 const CompanyLogin = () => {
@@ -149,7 +149,8 @@ const CompanyLogin = () => {
       const res = await axios.post(`${apiUrl}/api/company/register/initiate`, {
         name: registerData.name,
         contactEmail: registerData.contactEmail,
-        contactPhone: registerData.contactPhone
+        contactPhone: registerData.contactPhone,
+        referralCode: registerData.referralCode
       });
       setMessage({ type: "success", text: 'New OTP sent to your email.' });
     } catch (err) {
@@ -165,10 +166,13 @@ const CompanyLogin = () => {
 
     try {
       const response = await axios.post(`${apiUrl}/api/auth/company-admin`, formData);
-      const { _id, name, role } = response.data;
+      const { _id, name, role, profileImage } = response.data;
       localStorage.setItem('companyId', _id);
       localStorage.setItem('companyName', name);
       localStorage.setItem('userRole', role);
+      if (profileImage) {
+        localStorage.setItem('profileImage', profileImage);
+      }
       
       setMessage({ type: "success", text: "Login successful! Redirecting..." });
       setTimeout(() => {
@@ -191,7 +195,8 @@ const CompanyLogin = () => {
       const res = await axios.post(`${apiUrl}/api/company/register/initiate`, {
         name: registerData.name,
         contactEmail: registerData.contactEmail,
-        contactPhone: registerData.contactPhone
+        contactPhone: registerData.contactPhone,
+        referralCode: registerData.referralCode
       });
       setMessage({ type: "success", text: res.data.message || 'OTP sent to your email.' });
       setRegisterStep(2);
@@ -349,7 +354,7 @@ const CompanyLogin = () => {
           autoComplete="off"
         />
         {errors.contactEmail && <p className="mt-1 text-sm text-red-600">{errors.contactEmail}</p>}
-                    </div>
+      </div>
 
       <div>
         <label htmlFor="register-phone" className="block text-sm font-medium text-gray-700">
@@ -368,6 +373,21 @@ const CompanyLogin = () => {
           autoComplete="off"
         />
         {errors.contactPhone && <p className="mt-1 text-sm text-red-600">{errors.contactPhone}</p>}
+                    </div>
+
+      <div className="mb-4">
+        <label htmlFor="referralCode" className="block text-sm font-medium text-gray-400">
+          <i>Referral Code (optional)</i>
+        </label>
+        <input
+          type="text"
+          name="referralCode"
+          id="referralCode"
+          value={registerData.referralCode}
+          onChange={handleChange}
+          className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm`}
+          placeholder="Enter referral code"
+        />
                     </div>
 
       <div>
@@ -464,7 +484,7 @@ const CompanyLogin = () => {
           className="flex-1 py-2 px-4 border border-transparent text-sm font-semibold rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
         >
           {registerLoading ? "Creating Account..." : "Create Account"}
-        </button>
+                </button>
               </div>
             </form>
   );

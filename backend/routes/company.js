@@ -181,7 +181,8 @@ router.post('/register/initiate', async (req, res) => {
       adminContact,
       companySize,
       foundedYear,
-      description
+      description,
+      referralCode
     } = req.body;
 
     // Validate required fields
@@ -221,10 +222,11 @@ router.post('/register/initiate', async (req, res) => {
         adminContact:adminContact,
         companySize:companySize,
         foundedYear:foundedYear,
-        description:description
+        description:description,
+        referralCode:referralCode
       }
     });
-    console.log('OTP for company registration:', otpData);
+    //console.log('OTP for company registration:', otpData);
 
     // Send OTP email
     await emailTransport.sendMail({
@@ -280,7 +282,7 @@ router.post('/register/verify', async (req, res) => {
       password: hashedPassword, // Use the hashed password
       verificationStatus: 'unverified' // Set initial verification status
     });
-    console.log('Creating new company with info:', newCompany);
+    //console.log('Creating new company with info:', newCompany);
 
     await newCompany.save();
 

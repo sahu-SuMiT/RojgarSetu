@@ -28,7 +28,7 @@ const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 router.post('/', async (req, res) => {
   try {
     const { applicationFromCollege, applicationToCompany, roleId, roleName, students } = req.body;
-    console.log(req.body);
+    //console.log(req.body);
     
     if (!applicationFromCollege || !applicationToCompany || !roleId || !students || !Array.isArray(students)) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -119,7 +119,7 @@ router.patch('/:applicationId/students/:studentId/status', async (req, res) => {
 // Update application status
 router.patch('/:applicationId/status', async (req, res) => {
   try {
-    console.log("status: ",req.body);
+    //console.log("status: ",req.body);
     const { applicationId } = req.params;
     const { status } = req.body;
 

@@ -3,11 +3,8 @@ const router = express.Router();
 const interviewController = require('../controllers/interviewController');
 const authMiddleware = require('../middleware/authMiddleware');
 
-//  Get ALL their interviews
 router.get('/my', authMiddleware, interviewController.getMyInterviews);
-
-
-//Preparation progress 
-router.patch('/:id/preparation-progress', authMiddleware, interviewController.updatePreparationProgress);
+router.patch('/:id/progress', authMiddleware, interviewController.updatePreparationProgress);
+router.get('/scheduled', interviewController.getScheduledInterviews);
 
 module.exports = router;

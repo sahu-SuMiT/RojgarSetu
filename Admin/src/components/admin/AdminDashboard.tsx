@@ -140,7 +140,7 @@ const AdminDashboard = () => {
       <div className="min-h-screen flex w-full bg-gray-50">
         <AdminSidebar currentView={currentView} setCurrentView={safeSetCurrentView} />
         <div className="flex-1 flex flex-col">
-          <AdminHeader />
+          <AdminHeader setCurrentView={safeSetCurrentView} />
           <main className="flex-1 p-6 overflow-auto">
             {renderContent()}
           </main>
