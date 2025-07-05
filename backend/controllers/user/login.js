@@ -53,7 +53,8 @@ module.exports = async (req, res) => {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
-      role: user.role
+      role: user.type,
+      userId: user.userId
     };
 
     // Sign and return JWT token
