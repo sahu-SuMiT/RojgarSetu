@@ -88,9 +88,9 @@ const SupportTicketSchema = new mongoose.Schema({
 });
 
 // Update the updatedAt field before saving
-SupportTicketSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
+// SupportTicketSchema.pre('save', function(next) {
+//   this.updatedAt = Date.now();
+//   next();
+// });
 
 module.exports = mongoose.model('SupportTicket', SupportTicketSchema); 
