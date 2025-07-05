@@ -61,23 +61,23 @@ const Login = () => {
           <div className="space-y-4">
             <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-orange-600 via-red-600 to-green-700 bg-clip-text text-transparent tracking-tight leading-tight py-2">
               रोजगार सेतु
-            </h1>
+        </h1>
             <div className="w-24 h-1 bg-gradient-to-r from-orange-500 via-red-500 to-green-600 mx-auto rounded-full"></div>
           </div>
           <p className="text-xl md:text-2xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
-            Your one-stop platform for campus placements and career opportunities
-          </p>
+          Your one-stop platform for campus placements and career opportunities
+        </p>
           <p className="text-base text-gray-600 max-w-2xl mx-auto">
             Connect students, colleges, and companies in a seamless recruitment ecosystem
           </p>
-        </div>
+      </div>
 
         {/* Login Options Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {loginOptions.map((option, index) => (
-            <div
-              key={index}
-              onClick={() => navigate(option.path)}
+        {loginOptions.map((option, index) => (
+          <div
+            key={index}
+            onClick={() => navigate(option.path)}
               className={`group relative overflow-hidden bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer border border-orange-100`}
             >
               {/* Gradient Background Overlay */}
@@ -91,16 +91,16 @@ const Login = () => {
                     size={32} 
                     className="text-white drop-shadow-sm" 
                   />
-                </div>
+            </div>
 
                 {/* Title */}
                 <div className="space-y-3">
                   <h2 className="text-2xl font-bold text-gray-900 group-hover:text-gray-800 transition-colors duration-300">
-                    {option.title}
-                  </h2>
+              {option.title}
+            </h2>
                   <p className="text-gray-600 leading-relaxed">
-                    {option.description}
-                  </p>
+              {option.description}
+            </p>
                 </div>
 
                 {/* Action Button */}
@@ -116,9 +116,9 @@ const Login = () => {
 
               {/* Hover Effect Border */}
               <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${option.bgGradient} opacity-0 group-hover:opacity-20 transition-opacity duration-300 -z-10`}></div>
-            </div>
-          ))}
-        </div>
+          </div>
+        ))}
+      </div>
 
         {/* Footer */}
         <div className="text-center space-y-4">

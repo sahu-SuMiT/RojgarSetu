@@ -16,7 +16,9 @@ const reviewSchema = new mongoose.Schema({
     enum: ['Employee', 'Company', 'College', 'Student'],
     required: true
   },
-   feedback: {
+  reviewerName: String,
+  entityName: String,
+  feedback: {
     technicalScore: Number,
     communicationScore: Number,
     problemSolvingScore: Number,
@@ -29,5 +31,4 @@ const reviewSchema = new mongoose.Schema({
 });
 
 const Review = mongoose.model('Review', reviewSchema);
-
 module.exports = Review;

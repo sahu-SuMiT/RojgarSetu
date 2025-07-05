@@ -1,17 +1,19 @@
 const Student = require('../models/Student');
+const {verifyToken} = require('../middleware/auth'); // Assuming you have a utility function to verify JWT
 
 // Generate AI Portfolio
 exports.generatePortfolio = async (req, res) => {
   try {
     // Get user ID from session
-    if (!req.session.user || !req.session.user.id) {
+    if (!req.cookies.token) {
       return res.status(401).json({ 
         success: false, 
         message: 'Not authenticated. Please log in.' 
       });
     }
 
-    const studentId = req.session.user.id;
+    const decoded = verifyToken(req.cookies.token);
+    const studentId = decoded.id;
     
     // Fetch student data
     const student = await Student.findById(studentId);

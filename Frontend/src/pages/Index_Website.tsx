@@ -492,7 +492,7 @@ const Index_Website: React.FC = () => {
                       </span>
                     </h1>
                     <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                      Join over 10M+ students who found their perfect career match. Connect with top employers and unlock unlimited opportunities.
+                      Join over 100k+ students who found their perfect career match. Connect with top employers and unlock unlimited opportunities.
                     </p>
                     {/* Enhanced Search Bar */}
                     <div className="bg-white rounded-2xl shadow-2xl p-6 mb-8 border border-gray-100">
@@ -879,8 +879,8 @@ const Index_Website: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
             <div>
               <div className="flex items-center space-x-2 mb-6">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <GraduationCap className="w-5 h-5 text-white" />
+                <div>
+                  <img src="/images/favicon.png" alt="Rojgar Setu Logo" className="w-12 h-12 rounded-full border-2 border-blue-200 shadow-md bg-white p-1 mr-2" />
                 </div>
                 <span className="text-xl font-bold">ROJGAR SETU</span>
               </div>
@@ -927,7 +927,7 @@ const Index_Website: React.FC = () => {
           </div>
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
-              © 2024 ROJGAR SETU. All rights reserved.
+              © 2025 ROJGAR SETU. All rights reserved.
             </p>
             <p className="text-gray-400 text-sm mt-4 md:mt-0 flex items-center">
               Made with <Heart className="w-4 h-4 mx-1 text-red-500" /> for students across India

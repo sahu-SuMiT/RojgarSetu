@@ -3,6 +3,8 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const multer = require('multer');
 const XLSX = require('xlsx');
+const { emailTransport } = require('../config/email');
+const bcrypt = require('bcrypt');
 
 // Import your models
 const Student = require('../models/Student');
@@ -21,14 +23,28 @@ const College = require('../models/College');
 // Multer setup (memory storage)
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Helper to trim keys and values
+// Header mapping from human-readable to camelCase
+const headerMapping = {
+  'Full Name': 'name',
+  'Email Address': 'email',
+  'Roll Number': 'rollNumber',
+  'Department': 'department',
+  'Joining Year': 'joiningYear',
+  'Graduation Year': 'graduationYear',
+  'CGPA': 'cgpa',
+  'Password': 'password'
+};
+
 function cleanRow(row) {
   const cleaned = {};
   Object.keys(row).forEach(key => {
     const trimmedKey = key.trim();
     let value = row[key];
     if (typeof value === 'string') value = value.trim();
-    cleaned[trimmedKey] = value;
+    
+    // Convert human-readable header to camelCase
+    const camelCaseKey = headerMapping[trimmedKey] || trimmedKey;
+    cleaned[camelCaseKey] = value;
   });
   return cleaned;
 }
@@ -52,8 +68,7 @@ router.post('/bulk', async (req, res) => {
 
     // Validate each student object
     for (const student of students) {
-      if (!student.name || !student.email || !student.rollNumber || !student.department || 
-          !student.batch || !student.joiningYear || !student.graduationYear || !student.cgpa) {
+      if (!student.name || !student.email || !student.rollNumber || !student.department || !student.joiningYear || !student.graduationYear || !student.cgpa || !student.password) {
         return res.status(400).json({ 
           error: 'Missing required fields for student',
           student: student
@@ -78,10 +93,15 @@ router.post('/bulk', async (req, res) => {
       }
     }
 
-    // Check for duplicate emails or roll numbers
+    // Get emails and roll numbers for checking
     const emails = students.map(s => s.email);
     const rollNumbers = students.map(s => s.rollNumber);
+    const collegeId = students[0]?.college;
     
+    // Check if skip-duplicates is requested (for consistency with Excel upload)
+    const skipDuplicates = req.query.query === 'skip-duplicates';
+    
+    // Check for existing students (both with and without college association)
     const existingStudents = await Student.find({
       $or: [
         { email: { $in: emails } },
@@ -89,19 +109,157 @@ router.post('/bulk', async (req, res) => {
       ]
     });
 
-    if (existingStudents.length > 0) {
+    // Separate existing students by type
+    const existingInThisCollege = existingStudents.filter(s => s.college && s.college.toString() === collegeId);
+    const existingInOtherColleges = existingStudents.filter(s => s.college && s.college.toString() !== collegeId);
+    const existingWithoutCollege = existingStudents.filter(s => !s.college);
+
+    // Check for conflicts with students already associated with OTHER colleges
+    if (existingInOtherColleges.length > 0 && !skipDuplicates) {
+      const conflicts = existingInOtherColleges.map(s => ({
+        email: s.email,
+        rollNumber: s.rollNumber,
+        reason: 'Already associated with another college'
+      }));
+      
       return res.status(409).json({ 
-        error: 'Some students already exist',
-        existingStudents: existingStudents.map(s => ({
-          email: s.email,
-          rollNumber: s.rollNumber
-        }))
+        error: 'Some students already exist and are associated with other colleges',
+        existingStudents: conflicts
       });
     }
 
-    // Create all students
-    const createdStudents = await Student.insertMany(students);
-    res.status(201).json(createdStudents);
+    // Process students for creation/update
+    const studentsToCreate = [];
+    const studentsToUpdate = [];
+    const studentsToSkip = [];
+
+    for (const student of students) {
+      // First, check if student already exists in THIS college
+      let existingStudent = existingInThisCollege.find(s => s.email === student.email);
+      
+      if (existingStudent) {
+        // Student already exists in this college - skip or update
+        studentsToSkip.push({
+          studentId: existingStudent._id,
+          email: existingStudent.email,
+          rollNumber: existingStudent.rollNumber,
+          reason: 'Already exists in this college'
+        });
+        continue;
+      }
+      
+      // Check for self-registered students
+      existingStudent = existingWithoutCollege.find(s => s.email === student.email);
+      
+      if (existingStudent) {
+        // Update existing self-registered student
+        studentsToUpdate.push({
+          studentId: existingStudent._id,
+          updateData: {
+            college: collegeId,
+            rollNumber: student.rollNumber,
+            department: student.department,
+            joiningYear: student.joiningYear,
+            graduationYear: student.graduationYear,
+            cgpa: student.cgpa,
+            isCollegeVerified: true,
+            campusScore: 6.5
+          }
+        });
+      } else {
+        // Check for roll number conflicts
+        if (student.rollNumber && !skipDuplicates) {
+          const rollNumberConflict = existingStudents.find(s => s.rollNumber === student.rollNumber);
+          if (rollNumberConflict) {
+            return res.status(409).json({ 
+              error: 'Roll number already exists',
+              existingStudents: [{
+                email: rollNumberConflict.email,
+                rollNumber: rollNumberConflict.rollNumber,
+                reason: rollNumberConflict.college ? 'Roll number already associated with a college' : 'Roll number already exists'
+              }]
+            });
+          }
+        }
+        
+        // Create new student
+        studentsToCreate.push(student);
+      }
+    }
+
+    // Update existing students
+    const updatedStudents = [];
+    for (const updateInfo of studentsToUpdate) {
+      const updatedStudent = await Student.findByIdAndUpdate(
+        updateInfo.studentId,
+        updateInfo.updateData,
+        { new: true }
+      );
+      updatedStudents.push(updatedStudent);
+    }
+
+    // Create new students
+    const createdStudents = studentsToCreate.length > 0 ? await Student.insertMany(studentsToCreate) : [];
+    
+    // Combine all processed students
+    const allProcessedStudents = [...updatedStudents, ...createdStudents];
+    
+    // Get college name for email notifications
+    let collegeName = 'Your College';
+    try {
+      if (collegeId) {
+        const college = await College.findById(collegeId);
+        if (college && college.name) {
+          collegeName = college.name;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching college name for emails:', error);
+    }
+
+    // Send login credentials email to all processed students
+    const emailPromises = allProcessedStudents.map(student => 
+      sendLoginCredentialsEmail(student, collegeName)
+    );
+    
+    // Send emails asynchronously (don't wait for completion)
+    Promise.allSettled(emailPromises).then(results => {
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      //console.log(`Bulk email notifications: ${successful} sent successfully, ${failed} failed`);
+    });
+
+    // Prepare response message
+    let responseMessage = '';
+    const parts = [];
+    
+    if (studentsToSkip.length > 0) {
+      parts.push(`${studentsToSkip.length} existing students were skipped (already in this college)`);
+    }
+    
+    if (studentsToUpdate.length > 0) {
+      parts.push(`${studentsToUpdate.length} self-registered students were updated`);
+    }
+    
+    if (studentsToCreate.length > 0) {
+      parts.push(`${studentsToCreate.length} new students were added`);
+    }
+    
+    if (parts.length > 0) {
+      responseMessage = `${parts.join(', ')}. Login credentials have been sent to all processed students via email.`;
+    } else {
+      responseMessage = 'No new students to process. All students already exist in this college.';
+    }
+
+    res.status(201).json({
+      message: responseMessage,
+      students: allProcessedStudents,
+      summary: {
+        updated: studentsToUpdate.length,
+        created: studentsToCreate.length,
+        total: allProcessedStudents.length
+      }
+    });
   } catch (err) {
     console.error('Error creating students:', err);
     res.status(500).json({ error: err.message });
@@ -243,26 +401,37 @@ router.post('/excel-sheet', upload.single('file'), async (req, res) => {
         isSalesVerified: false
       };
     });
-    // Basic validation
-    for (student of students) {
-      if (!student.name || !student.email || !student.rollNumber || !student.department || 
-          !student.batch || !student.joiningYear || !student.graduationYear || !student.cgpa || !student.password) {
-        return res.status(400).json({ error: 'Missing required fields for student', student });
+
+    // Validate each student object
+    for (const student of students) {
+      if (!student.name || !student.email || !student.rollNumber || !student.department || !student.joiningYear || !student.graduationYear || !student.cgpa || !student.password) {
+        return res.status(400).json({ 
+          error: 'Missing required fields for student',
+          student: student
+        });
       }
-      
-      // Email format
+
+      // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(student.email)) {
-        return res.status(400).json({ error: 'Invalid email format', student });
+        return res.status(400).json({ 
+          error: 'Invalid email format',
+          student: student
+        });
       }
-      // CGPA range
+
+      // Validate CGPA range
       if (student.cgpa < 0 || student.cgpa > 10) {
-        return res.status(400).json({ error: 'CGPA must be between 0 and 10', student });
+        return res.status(400).json({ 
+          error: 'CGPA must be between 0 and 10',
+          student: student
+        });
       }
     }
 
     const skipDuplicates = req.query.query === 'skip-duplicates';
-    // Check for duplicate emails or roll numbers
+    
+    // Check for existing students (both with and without college association)
     const emails = students.map(s => s.email);
     const rollNumbers = students.map(s => s.rollNumber);
     const existingStudents = await Student.find({
@@ -272,41 +441,224 @@ router.post('/excel-sheet', upload.single('file'), async (req, res) => {
       ]
     });
 
-    if (existingStudents.length > 0 && !skipDuplicates) {
-      let result = {
-        error: 'Some students already exist',
-        existingStudents: existingStudents.map(s => ({
-          email: s.email,
-          rollNumber: s.rollNumber
-        }))
+    // Separate existing students by type
+    const existingInThisCollege = existingStudents.filter(s => s.college && s.college.toString() === collegeId);
+    const existingInOtherColleges = existingStudents.filter(s => s.college && s.college.toString() !== collegeId);
+    const existingWithoutCollege = existingStudents.filter(s => !s.college);
+
+    // Check for conflicts with students already associated with OTHER colleges
+    if (existingInOtherColleges.length > 0 && !skipDuplicates) {
+      const conflicts = existingInOtherColleges.map(s => ({
+        email: s.email,
+        rollNumber: s.rollNumber,
+        reason: 'Already associated with another college'
+      }));
+      
+      return res.status(409).json({ 
+        error: 'Some students already exist and are associated with other colleges',
+        existingStudents: conflicts
+      });
+    }
+
+    // Process students for creation/update
+    const studentsToCreate = [];
+    const studentsToUpdate = [];
+    const studentsToSkip = [];
+
+    for (const student of students) {
+      // First, check if student already exists in THIS college
+      let existingStudent = existingInThisCollege.find(s => s.email === student.email);
+      
+      if (existingStudent) {
+        // Student already exists in this college - skip or update
+        studentsToSkip.push({
+          studentId: existingStudent._id,
+          email: existingStudent.email,
+          rollNumber: existingStudent.rollNumber,
+          reason: 'Already exists in this college'
+        });
+        continue;
       }
-      return res.status(409).json(result);
+      
+      // Check for self-registered students
+      existingStudent = existingWithoutCollege.find(s => s.email === student.email);
+      
+      if (existingStudent) {
+        // Update existing self-registered student
+        studentsToUpdate.push({
+          studentId: existingStudent._id,
+          updateData: {
+            college: collegeId,
+            rollNumber: student.rollNumber,
+            department: student.department,
+            joiningYear: student.joiningYear,
+            graduationYear: student.graduationYear,
+            cgpa: student.cgpa,
+            isCollegeVerified: true,
+            campusScore: 6.5
+          }
+        });
+      } else {
+        // Check for roll number conflicts
+        if (student.rollNumber && !skipDuplicates) {
+          const rollNumberConflict = existingStudents.find(s => s.rollNumber === student.rollNumber);
+          if (rollNumberConflict) {
+            return res.status(409).json({ 
+              error: 'Roll number already exists',
+              existingStudents: [{
+                email: rollNumberConflict.email,
+                rollNumber: rollNumberConflict.rollNumber,
+                reason: rollNumberConflict.college ? 'Roll number already associated with a college' : 'Roll number already exists'
+              }]
+            });
+          }
+        }
+        
+        // Create new student
+        studentsToCreate.push(student);
+      }
     }
 
-    // If skipping duplicates, filter them out
-    let studentsToInsert = students; 
-    if (skipDuplicates && existingStudents.length > 0) {
-      const existingEmails = new Set(existingStudents.map(s => s.email));
-      const existingRolls = new Set(existingStudents.map(s => s.rollNumber));
-      studentsToInsert = students.filter(
-        s => !existingEmails.has(s.email) && !existingRolls.has(s.rollNumber)
+    // Update existing students
+    const updatedStudents = [];
+    for (const updateInfo of studentsToUpdate) {
+      const updatedStudent = await Student.findByIdAndUpdate(
+        updateInfo.studentId,
+        updateInfo.updateData,
+        { new: true }
       );
+      updatedStudents.push(updatedStudent);
     }
 
-    if (studentsToInsert.length === 0) {
-      return res.status(200).json({ message: 'No new students to insert. All were duplicates.' });
+    // Create new students
+    const createdStudents = studentsToCreate.length > 0 ? await Student.insertMany(studentsToCreate) : [];
+    
+    // Combine all processed students
+    const allProcessedStudents = [...updatedStudents, ...createdStudents];
+    
+    // Get college name for email notifications
+    let collegeName = 'Your College';
+    try {
+      const college = await College.findById(collegeId);
+      if (college && college.name) {
+        collegeName = college.name;
+      }
+    } catch (error) {
+      console.error('Error fetching college name for emails:', error);
     }
 
-    // Insert only non-duplicates
-    const createdStudents = await Student.insertMany(studentsToInsert);
+    // Send login credentials email to all processed students
+    const emailPromises = allProcessedStudents.map(student => 
+      sendLoginCredentialsEmail(student, collegeName)
+    );
+    
+    // Send emails asynchronously (don't wait for completion)
+    Promise.allSettled(emailPromises).then(results => {
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      //console.log(`Excel upload email notifications: ${successful} sent successfully, ${failed} failed`);
+      //console.log(`Email notifications: ${successful} sent successfully, ${failed} failed`);
+    });
+
+    // Prepare response message
+    let responseMessage = '';
+    const parts = [];
+    
+    if (studentsToSkip.length > 0) {
+      parts.push(`${studentsToSkip.length} existing students were skipped (already in this college)`);
+    }
+    
+    if (studentsToUpdate.length > 0) {
+      parts.push(`${studentsToUpdate.length} self-registered students were updated`);
+    }
+    
+    if (studentsToCreate.length > 0) {
+      parts.push(`${studentsToCreate.length} new students were added`);
+    }
+    
+    if (parts.length > 0) {
+      responseMessage = `${parts.join(', ')}. Login credentials have been sent to all processed students via email.`;
+    } else {
+      responseMessage = 'No new students to process. All students already exist in this college.';
+    }
+
     res.status(201).json({
-      message: `Inserted ${createdStudents.length} students. Skipped ${students.length - studentsToInsert.length} duplicates.`,
-      students: createdStudents
+      message: responseMessage,
+      students: allProcessedStudents,
+      summary: {
+        updated: studentsToUpdate.length,
+        created: studentsToCreate.length,
+        total: allProcessedStudents.length
+      }
     });
   } catch (err) {
     console.error('Error uploading students from Excel:', err);
     res.status(500).json({ error: err.message });
   }
 });
+
+// Function to send login credentials email to students
+const sendLoginCredentialsEmail = async (student, collegeName) => {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_SENDER || 'noreply@rojgarsetu.org',
+      to: student.email,
+      subject: `Welcome to ${collegeName} - Your Login Credentials`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">Welcome to ${collegeName}</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your student account has been created successfully!</p>
+          </div>
+          
+          <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #333; margin-top: 0;">Your Login Credentials</h2>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
+              <h3 style="color: #667eea; margin-top: 0;">Student Information</h3>
+              <p><strong>Name:</strong> ${student.name}</p>
+              <p><strong>Roll Number:</strong> ${student.rollNumber}</p>
+              <p><strong>Department:</strong> ${student.department}</p>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+              <h3 style="color: #28a745; margin-top: 0;">Login Details</h3>
+              <p><strong>Username (Email):</strong> ${student.email}</p>
+              <p><strong>Password:</strong> ${student.password}</p>
+            </div>
+            
+            <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;">
+              <h3 style="color: #007bff; margin-top: 0;">Important Notes</h3>
+              <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Please change your password after your first login for security</li>
+                <li>Keep your login credentials safe and don't share them with others</li>
+                <li>You can now access job opportunities, internships, and placement services</li>
+                <li>Contact your college placement office if you need any assistance</li>
+              </ul>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:5000'}/student-login" 
+                 style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                Login to Your Account
+              </a>
+            </div>
+          </div>
+          
+          <div style="text-align: center; margin-top: 20px; color: #666; font-size: 12px;">
+            <p>This is an automated message from ${collegeName} placement portal.</p>
+            <p>If you didn't expect this email, please contact your college administration.</p>
+          </div>
+        </div>
+      `
+    };
+
+    await emailTransport.sendMail(mailOptions);
+    //console.log(`Login credentials email sent to: ${student.email}`);
+  } catch (error) {
+    console.error(`Failed to send email to ${student.email}:`, error);
+    // Don't throw error to prevent blocking the entire process
+  }
+};
 
 module.exports = router;
