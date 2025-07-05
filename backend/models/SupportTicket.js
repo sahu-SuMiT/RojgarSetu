@@ -58,7 +58,7 @@ const SupportTicketSchema = new mongoose.Schema({
   }],
   category: {
     type: String,
-    enum: ['technical', 'billing', 'general', 'feature_request', 'bug_report'],
+    // enum: ['technical', 'billing', 'general', 'feature_request', 'bug_report'],
     default: 'general'
   },
   assignedTo: {
