@@ -90,7 +90,7 @@ const SupportTicketSchema = new mongoose.Schema({
     evaluation: {
     type: Boolean,
     default: false
-},
+});
 
 // Update the updatedAt field before saving
 SupportTicketSchema.pre('save', function(next) {
