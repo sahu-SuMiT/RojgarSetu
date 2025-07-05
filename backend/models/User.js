@@ -39,6 +39,7 @@ const UserSchema = new mongoose.Schema({
     enum: ['college', 'company', 'admin' , 'sales'],
     required: true,
     default: 'sales'
+  },
 
   salesId: {
     type: String,
