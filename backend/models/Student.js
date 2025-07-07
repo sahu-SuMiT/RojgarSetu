@@ -158,6 +158,30 @@ const studentSchema = new mongoose.Schema({
       default: () => ({})
     }
   }],
+
+  // Payment fields (as an object)
+  payment: {
+    status: {
+      type: String,
+      enum: ['pending', 'paid', 'failed', 'cancelled'],
+      default: 'pending'
+    },
+    amount: {
+      type: Number,
+      min: 0
+    },
+    currency: {
+      type: String,
+      default: 'INR'
+    },
+    date: {
+      type: Date
+    },
+    failureReason: {
+      type: String
+    }
+  },
+
   createdAt: { type: Date, default: Date.now }
 }, {
   timestamps: true
