@@ -4,9 +4,9 @@ module.exports.emailTransport = nodemailer.createTransport({
   port: 465,
   secure: true,
   auth: {
-    user: 'noreply@rojgarsetu.org',
-    pass: 'l%llxEs5'
+    user: 'welcome@rojgarsetu.org',
+    pass: 'Rojgar@setu'
   }
 });
 
-module.exports.emailSender = 'noreply@rojgarsetu.org';
+module.exports.emailSender = 'welcome@rojgarsetu.org';
