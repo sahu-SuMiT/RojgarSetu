@@ -283,10 +283,14 @@ exports.assignTicketToSales = async(req,res) =>{
   freeSales = await User.findOne({IsFree: true, type: 'sales'})
   if(!freeSales) return res.status(404).json({ message: "No available sales representative" });
 
-  const { ticket } = req.body;
+  const { ticketID } = req.body;
+  const ticket = await SupportTicket.findOne({ ticketId: ticketID });
   if (!ticket) return res.status(404).json({ message: "Ticket not found" });
-  const assinTo = freeSales.firstName + " " + freeSales.lastName + "-" + freeSales.salesId
-  ticket.assignedTo = assinTo; // Use _id for assignment
+
+  const fullname_salesID = freeSales.firstName + " " + freeSales.lastName + "-" + freeSales.salesId
+  ticket.assignedTo = fullname_salesID; // 
+
+  ticket.salesPerson = freeSales.firstName + " " + freeSales.lastName; // Store the sales person's ID
   await ticket.save();
 
   freeSales.IsFree = false; // Mark this sales rep as busy
