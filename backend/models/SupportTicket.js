@@ -84,12 +84,15 @@ const SupportTicketSchema = new mongoose.Schema({
   uploadedFile: {
   data: Buffer,         // Actual file data
   contentType: String,  // e.g., 'image/png', 'application/pdf'
-},
-
-    evaluation: {
-    type: Boolean,
-    default: false
-}
+  },
+  evaluation: {
+  type: Boolean,
+  default: false
+  },
+  salesPerson:{
+    type: String,
+    default: null
+  }
 });
 
 // Update the updatedAt field before saving
@@ -97,6 +100,5 @@ const SupportTicketSchema = new mongoose.Schema({
 //   this.updatedAt = Date.now();
 //   next();
 // })
-})
 
 module.exports = mongoose.model('SupportTicket', SupportTicketSchema); 
