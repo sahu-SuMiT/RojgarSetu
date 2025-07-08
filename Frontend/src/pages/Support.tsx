@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Clock, MessageSquare, CheckCircle, AlertCircle, Plus, Upload, Search } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
+const backendUrl = import.meta.env.VITE_API_URL;
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -125,7 +126,7 @@ const handleCreateTicket = async () => {
   const { title, description, category, priority, uploadedFile } = newTicket;
 
   // Step 1: Validate input
-  if (!title || !description || !category || !priority || !uploadedFile) {
+  if (!title || !description || !category || !priority) {
     toast.error("Please fill in all required fields.");
     return;
   }
@@ -151,8 +152,11 @@ const handleCreateTicket = async () => {
     formData.append("uploadedFile", uploadedFile); // File object
 
 
-
-    const res = await axios.post(`${import.meta.env.MONGODB_URI}/api/support-ticket`, formData);
+    const res = await axios.post(`${backendUrl}/api/support-ticket/`,  formData,{
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
     toast.success("Ticket created successfully!");
     console.log("Response:", res.data);

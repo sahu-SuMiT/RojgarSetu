@@ -159,7 +159,7 @@ const AuthButtons: React.FC = () => {
             </h3>
             <div className="grid md:grid-cols-3 gap-6 text-center">
               <div>
-                <div className="text-3xl font-bold text-blue-600 mb-2">10M+</div>
+                <div className="text-3xl font-bold text-blue-600 mb-2">100k+</div>
                 <div className="text-gray-600">Job Opportunities</div>
               </div>
               <div>
