@@ -1,6 +1,7 @@
 
 const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
+const AutoIncrement = require('mongoose-sequence')(mongoose);
 
 const UserSchema = new mongoose.Schema({
   userId: {
@@ -33,20 +34,22 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-
   type:{
     type: String,
     enum: ['college', 'company', 'admin' , 'sales'],
     required: true,
     default: 'sales'
   },
-
   salesId: {
     type: String,
     required: true,
     unique: true
-
+  },
+  IsFree:{
+    type: Boolean,
+    default: true
   }
 });
 
+// UserSchema.plugin(AutoIncrement, { inc_field: 'salesId',start_seq: 1001 });
 module.exports = mongoose.model('user', UserSchema);

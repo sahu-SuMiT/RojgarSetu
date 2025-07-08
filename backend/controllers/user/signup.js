@@ -41,13 +41,8 @@ module.exports = async (req, res) => {
 
     await user.save();
 
-    const payload = {
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      role: user.type,
-      userId: user.userId
-    };
+    const payload = user.toObject();
+    delete payload.password; // Remove password from payload
 
     jwt.sign(
       payload,

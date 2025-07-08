@@ -131,7 +131,7 @@ const handleCreateTicket = async () => {
     return;
   }
 
-    setTickets([ticket, ...tickets]);
+    //setTickets([ticket, ...tickets]);
     setIsCreateTicketOpen(false);
     setNewTicket({
       title: "",

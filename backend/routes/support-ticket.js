@@ -3,9 +3,31 @@ const router = express.Router();
 const SupportTicket = require('../models/SupportTicket'); // Import the SupportTicket model
 const jwt = require('jsonwebtoken'); // to verify JWT tokens
 const { v4: uuidv4 } = require('uuid'); // to generate unique ticketId
+const User = require('../models/User'); // Import the User model
 
 const multer = require('multer'); // for handling file uploads
 const upload = multer({ storage: multer.memoryStorage() });
+
+
+assignTicketToSales = async(ticketID) =>{
+  freeSales = await User.findOne({IsFree: true, type: 'sales'})
+  if (!freeSales) throw new Error("No available sales representative");
+
+  const ticket = await SupportTicket.findOne({ ticketId: ticketID });
+  if (!ticketID) throw new Error("Ticket ID is required");
+ 
+
+  const fullname_salesID = freeSales.firstName + " " + freeSales.lastName + "-" + freeSales.salesId
+  ticket.assignedTo = fullname_salesID; // 
+
+  ticket.salesPerson = freeSales.firstName + " " + freeSales.lastName; // Store the sales person's ID
+  await ticket.save();
+
+  freeSales.IsFree = false; // Mark this sales rep as busy
+  await freeSales.save();
+  console.log(`Assigned ticket ${ticketID} to ${fullname_salesID}`);
+  return ticket;
+}
 
 // Route: POST /api/support-tickets
 router.post('/', upload.single('uploadedFile'), async (req, res) => {
@@ -66,10 +88,9 @@ router.post('/', upload.single('uploadedFile'), async (req, res) => {
           }
         : undefined
     });
-
     await newTicket.save();
-
-    res.status(201).json({ message: 'Support ticket created successfully', ticket: newTicket });
+    const toDisplay_and_return = await assignTicketToSales(newTicket.ticketId)
+    res.status(201).json({ message: 'Support ticket created successfully', ticket: toDisplay_and_return });
   } catch (error) {
     console.error('Error creating support ticket:', error);
     res.status(500).json({ error: 'Internal Server Error' });
