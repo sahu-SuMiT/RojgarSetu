@@ -40,12 +40,10 @@ const UserSchema = new mongoose.Schema({
     required: true,
     default: 'sales'
   },
-
   salesId: {
     type: String,
     required: true,
     unique: true
-
   }
 });
 
