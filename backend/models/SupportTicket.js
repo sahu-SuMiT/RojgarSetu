@@ -77,7 +77,6 @@ const SupportTicketSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-  
   escalatedToManager: {
     type: Boolean,
     default: false
@@ -91,11 +90,12 @@ const SupportTicketSchema = new mongoose.Schema({
     type: Boolean,
     default: false
 },
-
+// probably Don't  need it because status of ticket will be either resolved or open so no point of tracking when ticket was updated
 // Update the updatedAt field before saving
 // SupportTicketSchema.pre('save', function(next) {
 //   this.updatedAt = Date.now();
 //   next();
-// });
+// })
+})
 
 module.exports = mongoose.model('SupportTicket', SupportTicketSchema); 
