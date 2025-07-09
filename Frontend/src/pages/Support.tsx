@@ -99,7 +99,7 @@ const Support = () => {
     const fetchTickets = async () => {
       try {
         const userName = localStorage.getItem("userName");
-        let url = `${API_URL}/api/sales/support-tickets`;
+        let url = `${API_URL}api/sales/userId-support-tickets`;
         if (userName && userName.trim().toLowerCase() === "senior manager") {
           url = `${API_URL}/api/sales/manager-support-tickets`;
         }
@@ -107,11 +107,11 @@ const Support = () => {
           url,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setTickets(res.data.map((t: any) => ({
+        setTickets(res.data.tickets.map((t: any) => ({
           ...t,
           id: t.ticketId || t._id,
-          email: t.email,
-          phone: t.phone,
+          email: t.user_email,
+          phone: t.user_phone,
           status: t.assignedTo ? t.status : "pending",
           category: t.category || "general"
         })));
@@ -361,6 +361,8 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                   Bug <Badge>{categoryCounts.bug_report}</Badge>
                 </TabsTrigger>
               </TabsList>
+
+
               <TabsContent value={activeTab} className="mt-6">
                 <div className="space-y-4">
                   {filteredTickets.map((ticket) => (
@@ -371,10 +373,11 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                       <div className="flex items-center gap-4">
                         {getStatusIcon(ticket.status)}
                         <div>
-                          <h4 className="font-medium text-gray-900">{ticket.title}</h4>
+                          <h4 className="font-medium text-gray-900">{ticket.subject}</h4>
                           <p className="text-sm text-gray-600 mt-1">{ticket.description}</p>
                           <div className="flex flex-wrap items-center gap-2 mt-2">
-                            <span className="text-xs text-gray-500">#{ticket.id}</span>
+                            {/* <span className="text-xs text-gray-500">#{ticket.id}</span> */}
+                            <span className="text-xs text-gray-500">{ticket.user_name}({ticket.userType})</span>
                             <span className="text-xs text-gray-500">•</span>
                             <span className="text-xs text-gray-500 capitalize">{ticket.category}</span>
                             {ticket.email && (
@@ -398,12 +401,23 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                           </div>
                         </div>
                       </div>
-                      <div className="flex flex-col md:flex-row items-start md:items-center gap-3 mt-4 md:mt-0">
+                      <div className="flex flex-col items-center md:flex-row md:items-center gap-3 mt-4 md:mt-0">
                         <Badge className={`${getPriorityColor(ticket.priority)} capitalize`}>{ticket.priority}</Badge>
                         <Badge className={`${getStatusColor(ticket.status)} capitalize`}>{ticket.status}</Badge>
-                        <div className="text-right text-sm text-gray-500">
-                          <div>{ticket.lastUpdated}</div>
-                          <div>{ticket.responses} responses</div>
+                        <div className="flex flex-col items-center text-sm text-gray-700">
+                          <div className="center font-medium text-gray-700">Created At</div>
+                          <div>{new Date(ticket.createdAt).toLocaleString('en-IN', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </div>
+                          <div>{new Date(ticket.createdAt).toLocaleString('en-IN', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true
+                            })}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <input
@@ -466,6 +480,9 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                   )}
                 </div>
               </TabsContent>
+
+
+              
             </Tabs>
           </CardContent>
         </Card>

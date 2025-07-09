@@ -5,6 +5,7 @@ const User = require('../../models/User');
 const { emailTransport } = require('../../config/email');
 const SupportTicket = require('../../models/SupportTicket');
 const ManagerTicket = require('../../models/manager_ticket'); // Import your manager ticket model
+const jwt = require('jsonwebtoken');
 
 const DEFAULT_PASSWORD = "Campus@123";
 
@@ -298,5 +299,33 @@ exports.assignTicketToSales = async(req,res) =>{
   res.json({ message: "Ticket assigned successfully", ticket });
 }
 
+exports.getSupportTicketsByUserID = async(req, res) => {
+    try {
+    const authHeader = req.headers.token || req.headers.authorization;
+    let token = null;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized: Token missing' });
+    }
+
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET);
+    const userId = decoded.userId || decoded.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid token payload' });
+    }
+
+    const tickets = await SupportTicket.find({ userId });
+
+    res.status(200).json({ success: true, tickets });
+  } catch (error) {
+    console.error('Error fetching tickets:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
 
 

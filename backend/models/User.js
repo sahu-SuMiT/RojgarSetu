@@ -48,6 +48,9 @@ const UserSchema = new mongoose.Schema({
   IsFree:{
     type: Boolean,
     default: true
+  },
+  phone:{
+    type: String,
   }
 });
 

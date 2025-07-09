@@ -49,9 +49,17 @@ router.post('/', upload.single('uploadedFile'), async (req, res) => {
 
     console.log("Token received:", token)
     // 2. Verify and decode token
+    let user_phone = null
     const decoded = jwt.verify(token,process.env.SESSION_SECRET);
     const userId = decoded.userId || decoded.id;
     const userType = decoded.role || decoded.type;
+    const user_email = decoded.email || decoded.contactEmail;
+    const user_name = decoded.name || decoded.firstName + " " + decoded.lastName;
+    user_phone = decoded.phone || decoded.contactPhone;
+
+    console.log("user_email", user_email)
+    console.log("user_name", user_name)
+    console.log("user_phone", user_phone)
 
     if (!userId || !userType) {
       return res.status(401).json({ error: 'Unauthorized: Invalid token payload' });
@@ -75,6 +83,9 @@ router.post('/', upload.single('uploadedFile'), async (req, res) => {
       ticketId: uuidv4(),
       userId,
       userType,
+      user_name,
+      user_email,
+      user_phone,
       subject: title,
       description,
       priority,
