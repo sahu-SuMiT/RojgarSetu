@@ -15,10 +15,10 @@ const backendUrl = import.meta.env.VITE_API_URL;
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-
 type Priority = "low" | "medium" | "high" | "urgent";
 type Status = "open" | "in-progress" | "resolved" | "closed" | "pending" | "active";
 type Category = "technical" | "billing" | "general" | "feature_request" | "bug_report";
+type IssuerType = "student" | "faculty" | "staff" | "other";
 
 interface SupportTicket {
   id: string;
@@ -33,9 +33,14 @@ interface SupportTicket {
   uploadedFile?: File;
   email?: string;
   phone?: string;
+  issuedFor?: string;
+  issuerEmail?: string;
+  issuerMobile?: string;
+  issuerType?: IssuerType;
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// const API_URL = 'http://localhost:5000';
 
 const Support = () => {
   const token = localStorage.getItem("token");
@@ -52,7 +57,7 @@ const Support = () => {
       description: "Unable to access student portal after password reset",
       priority: "high",
       status: "open",
-      category: "Technical",
+      category: "technical",
       created: "2024-01-20",
       lastUpdated: "2024-01-20",
       responses: 0
@@ -63,7 +68,7 @@ const Support = () => {
       description: "There seems to be an error in my final grade calculation",
       priority: "medium",
       status: "in-progress",
-      category: "Academic",
+      category: "academic",
       created: "2024-01-18",
       lastUpdated: "2024-01-19",
       responses: 2
@@ -74,7 +79,7 @@ const Support = () => {
       description: "My student ID card is not scanning at the library entrance",
       priority: "low",
       status: "resolved",
-      category: "Facilities",
+      category: "facilities",
       created: "2024-01-15",
       lastUpdated: "2024-01-17",
       responses: 1
@@ -87,7 +92,11 @@ const Support = () => {
     description: "",
     priority: "medium" as Priority,
     category: "general" as Category,
-    uploadedFile: null as File | null
+    uploadedFile: null as File | null,
+    issuedFor: "",
+    issuerEmail: "",
+    issuerMobile: "",
+    issuerType: "student" as IssuerType
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -99,7 +108,7 @@ const Support = () => {
     const fetchTickets = async () => {
       try {
         const userName = localStorage.getItem("userName");
-        let url = `${API_URL}api/sales/userId-support-tickets`;
+        let url = `${API_URL}/api/sales/userId-support-tickets`;
         if (userName && userName.trim().toLowerCase() === "senior manager") {
           url = `${API_URL}/api/sales/manager-support-tickets`;
         }
@@ -113,7 +122,11 @@ const Support = () => {
           email: t.user_email,
           phone: t.user_phone,
           status: t.assignedTo ? t.status : "pending",
-          category: t.category || "general"
+          category: t.category || "general",
+          issuedFor: t.issuedFor,
+          issuerEmail: t.issuerEmail,
+          issuerMobile: t.issuerMobile,
+          issuerType: t.issuerType
         })));
       } catch (err) {
         toast.error("Failed to fetch support tickets");
@@ -122,50 +135,57 @@ const Support = () => {
     fetchTickets();
   }, [token]);
 
-const handleCreateTicket = async () => {
-  const { title, description, category, priority, uploadedFile } = newTicket;
+  const handleCreateTicket = async () => {
+    const { title, description, category, priority, uploadedFile, issuedFor, issuerEmail, issuerMobile, issuerType } = newTicket;
 
-  // Step 1: Validate input
-  if (!title || !description || !category || !priority) {
-    toast.error("Please fill in all required fields.");
-    return;
-  }
+    // Step 1: Validate input
+    if (!title || !description || !category || !priority || !issuedFor || !issuerEmail || !issuerMobile || !issuerType) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
 
-    //setTickets([ticket, ...tickets]);
-    setIsCreateTicketOpen(false);
-    setNewTicket({
-      title: "",
-      description: "",
-      priority: "medium",
-      category: "general",
-      uploadedFile: null
-    });
+    try {
+      // Step 2: Prepare FormData for backend (because of file upload)
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("priority", priority);
+      formData.append("status", "open");
+      formData.append("category", category);
+      formData.append("user_name", issuedFor);
+      formData.append("user_email", issuerEmail);
+      formData.append("user_phone", issuerMobile);
+      formData.append("userType", issuerType);
+      if (uploadedFile) {
+        formData.append("uploadedFile", uploadedFile);
+      }
 
-  try {
-    // Step 2: Prepare FormData for backend (because of file upload)
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("description", description);
-    formData.append("priority", priority);
-    formData.append("status", "open"); // default or dynamic
-    formData.append("category", category);
-    formData.append("uploadedFile", uploadedFile); // File object
+      const res = await axios.post(`${API_URL}/api/support-ticket/`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        },
+      });
 
-
-    const res = await axios.post(`${backendUrl}/api/support-ticket/`,  formData,{
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-    toast.success("Ticket created successfully!");
-    console.log("Response:", res.data);
-  } catch (err) {
-    console.error("Create Ticket Error:", err);
-    toast.error("Failed to create ticket. Try again later.");
-  }
-};
-
+      toast.success("Ticket created successfully!");
+      setTickets([res.data.ticket, ...tickets]);
+      setIsCreateTicketOpen(false);
+      setNewTicket({
+        title: "",
+        description: "",
+        priority: "medium",
+        category: "general",
+        uploadedFile: null,
+        issuedFor: "",
+        issuerEmail: "",
+        issuerMobile: "",
+        issuerType: "student"
+      });
+    } catch (err) {
+      console.error("Create Ticket Error:", err);
+      toast.error("Failed to create ticket. Try again later.");
+    }
+  };
 
   const handleSecretCodeSubmit = (ticketId: string) => {
     if (secretCode === "YOUR_SECRET_CODE") {
@@ -178,16 +198,15 @@ const handleCreateTicket = async () => {
     }
   };
 
-
-const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (file) {
-    setNewTicket((prev) => ({
-      ...prev,
-      uploadedFile: file,
-    }));
-  }
-};
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewTicket((prev) => ({
+        ...prev,
+        uploadedFile: file,
+      }));
+    }
+  };
 
   const filteredTickets = tickets.filter(ticket => {
     const title = ticket.title || "";
@@ -249,7 +268,6 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
   const openCount = tickets.filter(t => t.status === 'open').length;
   const inProgressCount = tickets.filter(t => t.status === 'in-progress').length;
   const resolvedCount = tickets.filter(t => t.status === 'resolved').length;
-  // You can calculate avg response time if you have that data, or leave as static/dummy
 
   return (
     <AppLayout>
@@ -307,7 +325,7 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                   <SelectTrigger className="w-40 bg-gray-50">
                     <SelectValue placeholder="Filter by Status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" align="start" side="bottom" className="w-[200px] z-[1000]">
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="open">Open</SelectItem>
                     <SelectItem value="in-progress">In Progress</SelectItem>
@@ -321,7 +339,7 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                   <SelectTrigger className="w-40 bg-gray-50">
                     <SelectValue placeholder="Filter by Priority" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper" align="start" side="bottom" className="w-[200px] z-[1000]">
                     <SelectItem value="all">All Priority</SelectItem>
                     <SelectItem value="urgent">Urgent</SelectItem>
                     <SelectItem value="high">High</SelectItem>
@@ -362,7 +380,6 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                 </TabsTrigger>
               </TabsList>
 
-
               <TabsContent value={activeTab} className="mt-6">
                 <div className="space-y-4">
                   {filteredTickets.map((ticket) => (
@@ -376,20 +393,19 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                           <h4 className="font-medium text-gray-900">{ticket.subject}</h4>
                           <p className="text-sm text-gray-600 mt-1">{ticket.description}</p>
                           <div className="flex flex-wrap items-center gap-2 mt-2">
-                            {/* <span className="text-xs text-gray-500">#{ticket.id}</span> */}
-                            <span className="text-xs text-gray-500">{ticket.user_name}({ticket.userType})</span>
+                            <span className="text-xs text-gray-500">{ticket.userType} ({ticket.user_name})</span>
                             <span className="text-xs text-gray-500">•</span>
                             <span className="text-xs text-gray-500 capitalize">{ticket.category}</span>
-                            {ticket.email && (
+                            {ticket.user_email && (
                               <>
                                 <span className="text-xs text-gray-500">•</span>
-                                <span className="text-xs text-blue-600">{ticket.email}</span>
+                                <span className="text-xs text-blue-600">{ticket.user_email}</span>
                               </>
                             )}
-                            {ticket.phone && (
+                            {ticket.user_phone && (
                               <>
                                 <span className="text-xs text-gray-500">•</span>
-                                <span className="text-xs text-blue-600">{ticket.phone}</span>
+                                <span className="text-xs text-blue-600">{ticket.user_phone}</span>
                               </>
                             )}
                             {ticket.uploadedFile && (
@@ -405,14 +421,14 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                         <Badge className={`${getPriorityColor(ticket.priority)} capitalize`}>{ticket.priority}</Badge>
                         <Badge className={`${getStatusColor(ticket.status)} capitalize`}>{ticket.status}</Badge>
                         <div className="flex flex-col items-center text-sm text-gray-700">
-                          <div className="center font-medium text-gray-700">Created At</div>
+                          <div className="font-medium text-gray-700">Created At</div>
                           <div>{new Date(ticket.createdAt).toLocaleString('en-IN', {
                               day: '2-digit',
                               month: 'short',
                               year: 'numeric',
                             })}
                           </div>
-                          <div>{new Date(ticket.createdAt).toLocaleString('en-IN', {
+                          <div>{new Date(ticket.createdAt ).toLocaleString('en-IN', {
                               hour: '2-digit',
                               minute: '2-digit',
                               hour12: true
@@ -480,20 +496,17 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                   )}
                 </div>
               </TabsContent>
-
-
-              
             </Tabs>
           </CardContent>
         </Card>
 
         {/* Create Ticket Dialog */}
         <Dialog open={isCreateTicketOpen} onOpenChange={setIsCreateTicketOpen}>
-          <DialogContent className="sm:max-w-[600px] bg-white">
+          <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto bg-white">
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold text-gray-900">Create Support Ticket</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-6 py-4">
+            <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="title" className="text-gray-700">Title</Label>
                 <Input 
@@ -504,18 +517,49 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                   className="bg-gray-50 border-gray-200"
                 />
               </div>
-              
+              <div className="grid gap-2">
+                <Label htmlFor="issuedFor" className="text-gray-700">Issued For</Label>
+                <Input 
+                  id="issuedFor" 
+                  value={newTicket.issuedFor}
+                  onChange={(e) => setNewTicket({...newTicket, issuedFor: e.target.value})}
+                  placeholder="Name of the issuer" 
+                  className="bg-gray-50 border-gray-200"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="issuerEmail" className="text-gray-700">Issuer's Email</Label>
+                <Input 
+                  id="issuerEmail" 
+                  type="email"
+                  value={newTicket.issuerEmail}
+                  onChange={(e) => setNewTicket({...newTicket, issuerEmail: e.target.value})}
+                  placeholder="Issuer's email address" 
+                  className="bg-gray-50 border-gray-200"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="issuerMobile" className="text-gray-700">Issuer's Mobile</Label>
+                <Input 
+                  id="issuerMobile" 
+                  type="tel"
+                  value={newTicket.issuerMobile}
+                  onChange={(e) => setNewTicket({...newTicket, issuerMobile: e.target.value})}
+                  placeholder="Issuer's mobile number" 
+                  className="bg-gray-50 border-gray-200"
+                />
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="grid gap-2">
+                <div className="grid gap-2 relative">
                   <Label htmlFor="category" className="text-gray-700">Category</Label>
                   <Select
                     value={newTicket.category}
                     onValueChange={(value: Category) => setNewTicket({...newTicket, category: value})}
                   >
-                    <SelectTrigger className="bg-gray-50">
+                    <SelectTrigger className="bg-gray-50 w-full">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" align="" side="bottom" className="w-full z-[1000] relative">
                       <SelectItem value="technical">Technical Issues</SelectItem>
                       <SelectItem value="billing">Billing</SelectItem>
                       <SelectItem value="general">General</SelectItem>
@@ -524,17 +568,16 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                     </SelectContent>
                   </Select>
                 </div>
-                
-                <div className="grid gap-2">
+                <div className="grid gap-2 relative">
                   <Label htmlFor="priority" className="text-gray-700">Priority</Label>
                   <Select
                     value={newTicket.priority}
                     onValueChange={(value: Priority) => setNewTicket({...newTicket, priority: value})}
                   >
-                    <SelectTrigger className="bg-gray-50">
-                      <SelectValue />
+                    <SelectTrigger className="bg-gray-50 w-full">
+                      <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" align="start" side="bottom" className="w-full z-[1000]">
                       <SelectItem value="low">Low</SelectItem>
                       <SelectItem value="medium">Medium</SelectItem>
                       <SelectItem value="high">High</SelectItem>
@@ -543,7 +586,23 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                   </Select>
                 </div>
               </div>
-
+              <div className="grid gap-2 relative">
+                <Label htmlFor="issuerType" className="text-gray-700">Issuer's Type</Label>
+                <Select
+                  value={newTicket.issuerType}
+                  onValueChange={(value: IssuerType) => setNewTicket({...newTicket, issuerType: value})}
+                >
+                  <SelectTrigger className="bg-gray-50 w-full">
+                    <SelectValue placeholder="Select issuer type" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" align="start" side="bottom" className="w-full z-[1000]">
+                    <SelectItem value="student">Student</SelectItem>
+                    <SelectItem value="faculty">Faculty</SelectItem>
+                    <SelectItem value="staff">Staff</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="file-upload" className="text-gray-700">Attach File (Optional)</Label>
                 <div className="flex items-center gap-2">
@@ -567,7 +626,6 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                   )}
                 </div>
               </div>
-
               <div className="grid gap-2">
                 <Label htmlFor="description" className="text-gray-700">Description</Label>
                 <Textarea 
@@ -575,7 +633,7 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                   value={newTicket.description}
                   onChange={(e) => setNewTicket({...newTicket, description: e.target.value})}
                   placeholder="Provide detailed information about your issue" 
-                  rows={5}
+                  rows={3}
                   className="bg-gray-50 border-gray-200"
                 />
               </div>
@@ -590,7 +648,7 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
               </Button>
               <Button 
                 onClick={handleCreateTicket}
-                disabled={!newTicket.title || !newTicket.description || !newTicket.category}
+                disabled={!newTicket.title || !newTicket.description || !newTicket.category || !newTicket.issuedFor || !newTicket.issuerEmail || !newTicket.issuerMobile || !newTicket.issuerType}
                 className="bg-blue-600 hover:bg-blue-700 transition-colors"
               >
                 Create Ticket

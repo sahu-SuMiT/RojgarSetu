@@ -313,17 +313,13 @@ exports.getSupportTicketsByUserID = async(req, res) => {
     }
 
     const decoded = jwt.verify(token, process.env.SESSION_SECRET);
-    const userId = decoded.userId || decoded.id;
-    const assignedID = decoded.firstName + " " + decoded.lastName + "-" + userId;
 
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized: Invalid token payload' });
-    }
+    const mail = decoded.email || decoded.contactEmail;
 
     
     const tickets = await SupportTicket.find({  $or: [
-    { userId: userID },
-    { assignedTo: assignedID }
+    { user_email: mail },
+    { assignedTo: mail }
   ]});
 
     res.status(200).json({ success: true, tickets });
