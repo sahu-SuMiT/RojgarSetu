@@ -1,4 +1,4 @@
-name: Deploy Fullstack App on EC2
+name: Deploy Backend on EC2
 
 on:
   push:
@@ -24,8 +24,6 @@ jobs:
           cache: 'npm'
           cache-dependency-path: |
             backend/package-lock.json
-            Frontend/package-lock.json
-            Admin/package-lock.json
 
       # ------------------------------
       # BACKEND SETUP
@@ -37,30 +35,29 @@ jobs:
       - name: Start backend with PM2
         working-directory: ./backend
         run: |
-          /home/ubuntu/.nvm/versions/node/v22.16.0/bin/pm2 restart backend || \
-          /home/ubuntu/.nvm/versions/node/v22.16.0/bin/pm2 start server.js --name backend
+          /home/ubuntu/.nvm/versions/node/v22.17.0/bin/pm2 restart backend || /home/ubuntu/.nvm/versions/node/v22.17.0/bin/pm2 start server.js --name backend
 
       # ------------------------------
       # FRONTEND SETUP
       # ------------------------------
-      - name: Clean npm cache & remove existing dependencies
-        working-directory: ./Frontend
-        run: |
-          rm -rf node_modules package-lock.json
-          npm cache clean --force
+      # - name: Clean npm cache & remove existing dependencies
+      #   working-directory: ./Frontend
+      #   run: |
+      #     rm -rf node_modules package-lock.json
+      #     npm cache clean --force
 
-      - name: Install frontend dependencies
-        working-directory: ./Frontend
-        run: npm install
+      # - name: Install frontend dependencies
+      #   working-directory: ./Frontend
+      #   run: npm install
 
-      - name: Build frontend
-        working-directory: ./Frontend
-        run: npm run build
+      # - name: Build frontend
+      #   working-directory: ./Frontend
+      #   run: npm run build
 
-      - name: Deploy frontend to Nginx
-        run: |
-          sudo rm -rf /var/www/html/*
-          sudo cp -r ./Frontend/dist/* /var/www/html/
+      # - name: Deploy frontend to Nginx
+      #   run: |
+      #     sudo rm -rf /var/www/html/*
+      #     sudo cp -r ./Frontend/dist/* /var/www/html/
 
       # ------------------------------
       # ADMIN FRONTEND SETUP
