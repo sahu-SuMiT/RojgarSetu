@@ -21,7 +21,7 @@ const SupportTicketSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['open', 'in_progress', 'resolved', 'closed'],
+    enum: ['open', 'in-progress', 'resolved', 'closed'], // use 'in-progress' not 'in_progress' for consistency with frontend/backend
     default: 'open'
   },
   priority: {
@@ -54,11 +54,31 @@ const SupportTicketSchema = new mongoose.Schema({
   }],
   category: {
     type: String,
-    enum: ['technical', 'billing', 'general', 'feature_request', 'bug_report'],
+    // Allow categories from frontend, plus fallback
+    enum: [
+      'technical', 'academic', 'facilities', 'financial',
+      'account', 'document verification', 'other', 'general'
+    ],
     default: 'general'
   },
   assignedTo: {
     type: String,
+    default: null
+  },
+  email: {
+    type: String,
+    required: true
+  },
+  secretCode: {
+    type: String,
+    required: true
+  },
+  closed: {
+    type: Boolean,
+    default: false
+  },
+  closedAt: {
+    type: Date,
     default: null
   },
   createdAt: {
@@ -81,4 +101,4 @@ SupportTicketSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model('SupportTicket', SupportTicketSchema); 
+module.exports = mongoose.model('SupportTicket', SupportTicketSchema);

@@ -62,7 +62,7 @@ const Sidebar = ({
     { icon: Calendar, label: 'Interview Schedule', path: '/interviews' },
     { icon: MessageSquare, label: 'Feedback', path: '/feedback' },
     { icon: Sparkles, label: 'AI Portfolio', path: '/portfolio' },
-    { icon: Bot, label: 'Support Chat', path: '/chat' },
+    { icon: Bot, label: 'Support Centre', path: '/chat' },
   ];
 
   // Fallbacks for user info, omit initials if not present

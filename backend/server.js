@@ -27,6 +27,7 @@ const internshipsRoutes = require('./routes/internships');
 const supportRoutes = require('./routes/support');
 const studentMatchingRoutes = require('./routes/studentMatchingRoutes');
 const bcrypt = require('bcrypt');
+const supportTicketRoutes = require('./routes/supportticketroute');
 
 //admin
 const studentAdminRoutes = require('./routes/admin/studentAdminRoutes');
@@ -138,7 +139,7 @@ app.use('/api/support', supportRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
-
+app.use('/api', supportTicketRoutes);
 
 
 // admin routes
@@ -155,10 +156,7 @@ app.use('/api/portfolio', portfolioRoutes);
 // Log available routes for debugging
 console.log('Portfolio routes registered:', portfolioRoutes.stack.map(r => r.route?.path).filter(Boolean));
 
-
-// NEW: /api/student/me and /api/student/me/profile-pic endpoints
-//     This route should implement: GET /api/student/me, PUT /api/student/me, POST /api/student/me/profile-pic, etc.
-app.use('/api/student', studentRoutes); // <-- This must be after any /api/student/:something routes
+app.use('/api/student', studentRoutes); // 
 
 
 // Health check/test route

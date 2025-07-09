@@ -1,270 +1,499 @@
-import React, { useState, useRef, useEffect, useContext } from 'react';
-import { Send, MessageCircle, User, Bot, Clock, CheckCircle, Menu } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Clock, MessageSquare, CheckCircle, AlertCircle, Plus, Search, Eye } from "lucide-react";
 import Sidebar from './Sidebar';
 import { SidebarContext } from './Sidebar';
 
-const Chatbot = () => {
-  // Sidebar open state for mobile
+const Badge = ({ children, className }) => (
+  <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${className}`}>
+    {children}
+  </span>
+);
+
+const StatCard = ({ title, value, icon, iconBg }) => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1 min-w-[220px] max-w-xs px-8 py-7 flex justify-between items-center">
+    <div>
+      <div className="text-lg font-medium text-gray-700 mb-2">{title}</div>
+      <div className="text-3xl font-bold text-gray-900">{value}</div>
+    </div>
+    <div className={`text-3xl ml-4 ${iconBg}`}>{icon}</div>
+  </div>
+);
+
+const Dialog = ({ open, onClose, children }) =>
+  open ? (
+    <div className="fixed z-50 inset-0 flex items-center justify-center bg-black/30">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
+        <div className="p-6">{children}</div>
+        <div className="flex justify-end border-t px-6 py-4 bg-gray-50 rounded-b-xl">
+          <button
+            className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 font-semibold mr-3"
+            onClick={onClose}
+            type="button"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+const DialogFooter = ({ children }) => (
+  <div className="flex justify-end gap-2 mt-4">{children}</div>
+);
+
+export default function SupportCenter() {
+  // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
-    const stored = localStorage.getItem('sidebarCollapsed');
+    const stored = typeof window !== "undefined" ? localStorage.getItem('sidebarCollapsed') : null;
     return stored === 'true';
   });
 
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: "Hello! I'm here to help you with any questions or issues you might have. How can I assist you today?",
-      sender: 'bot',
-      timestamp: new Date(Date.now() - 5000)
-    }
-  ]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef(null);
+  // Tickets state (fetched from backend)
+  const [tickets, setTickets] = useState([]);
+  const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false);
+  const [newTicket, setNewTicket] = useState({
+    category: "",
+    subject: "",
+    description: "",
+    priority: "medium"
+  });
 
-  // Sample FAQ data with responses
-  const faqData = {
-    'hello': "Hello! How can I help you today?",
-    'hi': "Hi there! What can I do for you?",
-    'help': "I'm here to help! You can ask me about account issues, billing, technical problems, or general questions.",
-    'account': "For account-related issues, I can help you with password resets, profile updates, or account verification. What specific account issue are you experiencing?",
-    'billing': "I can assist with billing questions including payment methods, invoices, refunds, and subscription changes. What billing issue can I help you with?",
-    'password': "To reset your password: 1) Go to the login page 2) Click 'Forgot Password' 3) Enter your email 4) Check your email for reset instructions. If you don't receive the email, check your spam folder.",
-    'refund': "For refunds, please provide your order number and reason for the refund request. Most refunds are processed within 5-7 business days.",
-    'technical': "For technical issues, please describe the problem you're experiencing. Common issues include login problems, slow loading, or feature malfunctions.",
-    'contact': "You can reach our support team at support@company.com or call us at (555) 123-4567. Our hours are Monday-Friday 9AM-6PM EST.",
-    'hours': "Our support hours are Monday through Friday, 9:00 AM to 6:00 PM Eastern Time. We're currently closed on weekends.",
-    'cancel': "To cancel your subscription: 1) Log into your account 2) Go to Settings > Billing 3) Click 'Cancel Subscription' 4) Follow the prompts. You'll retain access until your current billing period ends.",
-    'thanks': "You're welcome! Is there anything else I can help you with today?",
-    'thank you': "You're welcome! Is there anything else I can help you with today?",
-    'bye': "Goodbye! Feel free to reach out if you need any further assistance. Have a great day!",
-    'goodbye': "Goodbye! Feel free to reach out if you need any further assistance. Have a great day!",
-    // Campus-specific responses
-    'campus': "I can help you with campus-related questions including facilities, events, dining, transportation, and academic services. What would you like to know?",
-    'dining': "Our campus dining halls are open Monday-Friday 7AM-9PM, weekends 8AM-8PM. We have vegetarian, vegan, and halal options available. Meal plans can be managed through your student portal.",
-    'library': "The campus library is open 24/7 during academic terms. You can reserve study rooms, access digital resources, and get research assistance. Visit library.campus.edu for more information.",
-    'parking': "Student parking permits are required and can be purchased through the campus portal. Visitor parking is available in designated areas. Parking violations can be appealed online.",
-    'wifi': "Campus WiFi network name is 'CampusSecure'. Use your student credentials to connect. For connection issues, try forgetting and reconnecting to the network.",
-    'grades': "You can check your grades through the student portal under 'Academic Records'. If you have concerns about a grade, contact your instructor first, then the department if needed.",
-    'registration': "Course registration opens according to your class standing. Check your registration date in the student portal. For holds or issues, contact the registrar's office.",
-    'financial aid': "Financial aid information is available in your student portal under 'Financial Aid'. For questions about loans, grants, or scholarships, visit the Financial Aid office or call (555) 123-FAID."
-  };
+  // User info assumed present (already authenticated)
+  const [user, setUser] = useState({
+    userId: "",
+    email: "",
+    userType: ""
+  });
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  // Ticket details modal
+  const [detailsTicket, setDetailsTicket] = useState(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [closeTicketCode, setCloseTicketCode] = useState("");
+  const [closeTicketError, setCloseTicketError] = useState("");
+  const [isClosing, setIsClosing] = useState(false);
 
+  // Get user info (from localStorage or context; already authenticated)
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+    setUser({
+      userId: userInfo.userId || "",
+      email: userInfo.email || "",
+      userType: userInfo.userType || "" // "college" or "company"
+    });
+  }, []);
 
-  const getBotResponse = (userMessage) => {
-    const lowerMessage = userMessage.toLowerCase();
-    for (const [key, response] of Object.entries(faqData)) {
-      if (lowerMessage.includes(key)) {
-        return response;
-      }
+  // Fetch tickets from backend
+  useEffect(() => {
+    if (!user.userId) return;
+    fetch(`${process.env.REACT_APP_API_URL || "http://localhost:4000"}/api/tickets?userId=${encodeURIComponent(user.userId)}`)
+      .then(res => res.json())
+      .then(data => setTickets(Array.isArray(data) ? data : []));
+  }, [user.userId]);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterPriority, setFilterPriority] = useState("all");
+
+  // Create Ticket logic (calls backend)
+  const handleCreateTicket = async () => {
+    if (
+      !newTicket.subject ||
+      !newTicket.description ||
+      !newTicket.category ||
+      !user.userId ||
+      !user.email ||
+      !user.userType
+    ) {
+      window.alert("Please fill in all required fields.");
+      return;
     }
-    return "I understand you're looking for help, but I'm not sure how to assist with that specific question. Please try rephrasing your question or contact our support team at support@campus.edu for personalized assistance.";
-  };
-
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
-
-    const userMessage = {
-      id: Date.now(),
-      text: inputMessage,
-      sender: 'user',
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
-    setIsTyping(true);
-
-    setTimeout(() => {
-      const botResponse = {
-        id: Date.now() + 1,
-        text: getBotResponse(inputMessage),
-        sender: 'bot',
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, botResponse]);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 1000);
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:4000"}/api/tickets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.userId,
+          userType: user.userType,
+          subject: newTicket.subject,
+          description: newTicket.description,
+          email: user.email,
+          category: newTicket.category,
+          priority: newTicket.priority
+        })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      window.alert(data.message);
+      setIsCreateTicketOpen(false);
+      setNewTicket({
+        category: "",
+        subject: "",
+        description: "",
+        priority: "medium"
+      });
+      fetch(`${process.env.REACT_APP_API_URL || "http://localhost:4000"}/api/tickets?userId=${encodeURIComponent(user.userId)}`)
+        .then(res => res.json())
+        .then(data => setTickets(Array.isArray(data) ? data : []));
+    } catch (error) {
+      window.alert(error.message || "Failed to create ticket");
     }
   };
 
-  const formatTime = (timestamp) => {
-    return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const getStatusColor = (status) => {
+    if (!status) return "bg-gray-100 text-gray-700";
+    if (["open", "pending"].includes(status.toLowerCase())) return "bg-red-50 text-red-600";
+    if (["in-progress"].includes(status.toLowerCase())) return "bg-yellow-50 text-yellow-600";
+    if (["resolved"].includes(status.toLowerCase())) return "bg-green-50 text-green-700";
+    if (["closed"].includes(status.toLowerCase())) return "bg-gray-100 text-gray-700";
+    return "bg-gray-100 text-gray-700";
   };
 
-  const quickActions = [
-    "Campus dining hours",
-    "Library information",
-    "WiFi help",
-    "Parking permits",
-    "Check grades",
-    "Financial aid"
-  ];
+  const getPriorityColor = (priority) => {
+    if (!priority) return "bg-gray-100 text-gray-700";
+    if (priority === "urgent") return "bg-red-50 text-red-600";
+    if (priority === "high") return "bg-yellow-100 text-yellow-700";
+    if (priority === "medium") return "bg-yellow-50 text-yellow-700";
+    if (priority === "low") return "bg-green-50 text-green-700";
+    return "bg-gray-100 text-gray-700";
+  };
+
+  const getStatusIcon = (status) => {
+    if (!status) return null;
+    if (["open", "pending"].includes(status.toLowerCase()))
+      return <AlertCircle className="inline-block mr-1 text-red-500" size={20} />;
+    if (["in-progress"].includes(status.toLowerCase()))
+      return <Clock className="inline-block mr-1 text-yellow-500" size={20} />;
+    if (["resolved", "closed"].includes(status.toLowerCase()))
+      return <CheckCircle className="inline-block mr-1 text-green-500" size={20} />;
+    return null;
+  };
+
+  // Filtering logic
+  const filteredTickets = tickets.filter(ticket => {
+    const matchesSearch =
+      (ticket.subject || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (ticket.description || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === "all" || (ticket.status && ticket.status.toLowerCase() === filterStatus);
+    const matchesPriority = filterPriority === "all" || (ticket.priority && ticket.priority.toLowerCase() === filterPriority);
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
+
+  // Details modal logic
+  const openTicketDetails = async (ticketId) => {
+    setIsDetailsOpen(true);
+    setDetailsTicket(null);
+    setCloseTicketCode("");
+    setCloseTicketError("");
+    setIsClosing(false);
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:4000"}/api/tickets/${encodeURIComponent(ticketId)}`);
+      const data = await res.json();
+      setDetailsTicket(data);
+    } catch {
+      setDetailsTicket({ error: "Failed to fetch ticket details" });
+    }
+  };
+
+  // Handle close ticket
+  const handleCloseTicket = async () => {
+    setIsClosing(true);
+    setCloseTicketError("");
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:4000"}/api/tickets/close`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticketId: detailsTicket.ticketId, secretCode: closeTicketCode })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      window.alert("Ticket closed successfully!");
+      setIsDetailsOpen(false);
+      setCloseTicketCode("");
+      fetch(`${process.env.REACT_APP_API_URL || "http://localhost:4000"}/api/tickets?userId=${encodeURIComponent(user.userId)}`)
+        .then(res => res.json())
+        .then(data => setTickets(Array.isArray(data) ? data : []));
+    } catch (error) {
+      setCloseTicketError(error.message || "Failed to close ticket");
+    } finally {
+      setIsClosing(false);
+    }
+  };
 
   return (
     <SidebarContext.Provider value={{ isCollapsed }}>
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
-        <div className={`flex-1 flex flex-col relative h-screen overflow-y-auto min-w-0 transition-all duration-300 ease-in-out ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-          {/* Mobile Header */}
-          <div className="lg:hidden p-4 bg-white shadow flex items-center">
-            <button onClick={() => setSidebarOpen(true)}>
-              <Menu size={24} />
-            </button>
-            <span className="ml-4 font-bold">Rojgar Setu</span>
-          </div>
-          <div className="h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-100 p-2 flex-1 flex flex-col items-center overflow-y-auto">
-            <div className="w-full max-w-5xl flex flex-col md:flex-row gap-8 items-stretch justify-center h-full">
-              {/* Chat Window */}
-              <div className="flex-1 flex flex-col rounded-2xl shadow-2xl border border-gray-200 bg-white/90 backdrop-blur-lg overflow-hidden h-full min-w-0 max-w-3xl mx-auto">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 p-6 border-b border-indigo-100/30">
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-white/20 p-2 rounded-full">
-                      <MessageCircle className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h1 className="text-xl font-semibold text-white drop-shadow">Campus Support Chat</h1>
-                      <div className="flex items-center space-x-1 text-sm text-green-200">
-                        <CheckCircle className="w-4 h-4" />
-                        <span>Online - Average response time: 30 seconds</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Chat Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white/70" style={{ minHeight: 0 }}>
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex items-start space-x-3 ${
-                        message.sender === 'user' ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
-                      {message.sender === 'bot' && (
-                        <div className="bg-indigo-600 p-2 rounded-full flex-shrink-0 shadow">
-                          <Bot className="w-4 h-4 text-white" />
-                        </div>
-                      )}
-                      
-                      <div
-                        className={`max-w-xs md:max-w-md px-4 py-2 rounded-2xl shadow-sm ${
-                          message.sender === 'user'
-                            ? 'bg-indigo-600 text-white ml-auto'
-                            : 'bg-gray-100 text-gray-800 mr-auto'
-                        }`}
-                      >
-                        <p className="text-sm break-words whitespace-pre-line">{message.text}</p>
-                        <p className={`text-xs mt-1 ${
-                          message.sender === 'user' ? 'text-indigo-100' : 'text-gray-500'
-                        }`}>
-                          {formatTime(message.timestamp)}
-                        </p>
-                      </div>
-
-                      {message.sender === 'user' && (
-                        <div className="bg-gray-600 p-2 rounded-full flex-shrink-0 shadow">
-                          <User className="w-4 h-4 text-white" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  
-                  {isTyping && (
-                    <div className="flex items-start space-x-3">
-                      <div className="bg-indigo-600 p-2 rounded-full">
-                        <Bot className="w-4 h-4 text-white" />
-                      </div>
-                      <div className="bg-gray-100 px-4 py-2 rounded-lg">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Input Area */}
-                <div className="bg-white/90 p-4 border-t border-gray-100">
-                  <div className="flex space-x-3">
-                    <input
-                      type="text"
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Type your message here..."
-                      className="flex-1 border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/80"
-                    />
-                    <button
-                      onClick={handleSendMessage}
-                      disabled={!inputMessage.trim()}
-                      className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white p-2 rounded-xl transition-colors shadow"
-                    >
-                      <Send className="w-5 h-5" />
-                    </button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-3 h-3" />
-                      <span>Typically replies within minutes</span>
-                    </div>
-                    <span>Press Enter to send</span>
-                  </div>
-                </div>
+      <div className="flex min-h-screen">
+        <Sidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          isCollapsed={isCollapsed}
+          setIsCollapsed={setIsCollapsed}
+        />
+        <div className={`flex-1 flex flex-col relative min-w-0 transition-all duration-300 ease-in-out ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+          <div className="min-h-screen bg-gray-50 px-6 py-6">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-6">
+              <div>
+                <h1 className="text-4xl font-extrabold text-gray-900 mb-1">Support Center</h1>
+                <p className="text-lg text-gray-400 font-medium">
+                  Get help with your campus services and submit support tickets
+                </p>
               </div>
-              {/* Quick Actions (right of chat window on desktop, below on mobile) */}
-              <div className="w-full md:w-64 flex-shrink-0 flex flex-col gap-3 md:mt-0 mt-8 h-full justify-between">
-                <div>
-                  <div className="rounded-2xl shadow-lg border border-gray-200 bg-white/90 p-4 flex flex-col items-stretch">
-                    <span className="text-sm font-semibold text-gray-700 mb-3 text-center">Quick Actions</span>
-                    {quickActions.map((action, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setInputMessage(action)}
-                        className="mb-2 last:mb-0 px-4 py-2 bg-gray-100 hover:bg-indigo-100 rounded-lg text-sm text-gray-700 transition-colors text-left shadow-sm border border-gray-100"
-                      >
-                        {action}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {/* Footer/Extra Info (to the right, below quick actions) */}
-                <div className="text-center mt-8 text-xs text-gray-400 pb-2 w-full max-w-5xl md:mt-6">
-                  Need more help? Contact us at{' '}
-                  <a href="mailto:support@campus.edu" className="text-indigo-600 hover:underline">
-                    support@campus.edu
-                  </a>{' '}
-                  or call{' '}
-                  <a href="tel:+15551234567" className="text-indigo-600 hover:underline">
-                    (555) 123-4567
-                  </a>
-                </div>
+              <button
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-7 py-3 text-lg rounded-xl shadow transition"
+                style={{ minWidth: 180 }}
+                onClick={() => setIsCreateTicketOpen(true)}
+              >
+                <Plus className="w-6 h-6" />
+                Create Ticket
+              </button>
+            </div>
+            {/* Dashboard Stats */}
+            <div className="flex flex-col md:flex-row gap-6 mb-8">
+              <StatCard
+                title="Open Tickets"
+                value={tickets.filter(t => ["pending", "open"].includes((t.status || "").toLowerCase())).length}
+                icon={<AlertCircle className="text-red-500" />}
+              />
+              <StatCard
+                title="In Progress"
+                value={tickets.filter(t => (t.status || "").toLowerCase() === 'in-progress').length}
+                icon={<Clock className="text-yellow-500" />}
+              />
+              <StatCard
+                title="Resolved"
+                value={tickets.filter(t => (t.status || "").toLowerCase() === 'resolved').length}
+                icon={<CheckCircle className="text-green-500" />}
+              />
+              <StatCard
+                title="Avg Response Time"
+                value={<span className="font-black text-3xl">4h</span>}
+                icon={<MessageSquare className="text-blue-500" />}
+              />
+            </div>
+            {/* Filters/Search */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-6 mb-8 flex flex-col md:flex-row items-center gap-4">
+              <div className="flex-1 w-full relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  className="w-full pl-12 pr-3 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 text-base"
+                  placeholder="Search tickets..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                />
               </div>
+              <select
+                className="border border-gray-200 bg-gray-50 rounded-lg px-6 py-3 text-base text-gray-700 font-medium focus:outline-none"
+                value={filterStatus}
+                onChange={e => setFilterStatus(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="open">Open</option>
+                <option value="pending">Pending</option>
+                <option value="in-progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
+              </select>
+              <select
+                className="border border-gray-200 bg-gray-50 rounded-lg px-6 py-3 text-base text-gray-700 font-medium focus:outline-none"
+                value={filterPriority}
+                onChange={e => setFilterPriority(e.target.value)}
+              >
+                <option value="all">All Priority</option>
+                <option value="urgent">Urgent</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+            {/* Tickets List */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">Your Support Tickets</h2>
+              {filteredTickets.length === 0 ? (
+                <div className="text-center text-gray-400 py-8">
+                  No tickets found matching your criteria.
+                </div>
+              ) : (
+                filteredTickets.map(ticket => (
+                  <div
+                    key={ticket.ticketId}
+                    className="bg-gray-50 rounded-xl border border-gray-200 flex flex-col md:flex-row md:items-center justify-between px-8 py-6 mb-4"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        {getStatusIcon(ticket.status)}
+                        <span className="text-lg md:text-xl font-semibold text-gray-900">
+                          {ticket.subject}
+                        </span>
+                        <button
+                          className="ml-2 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded flex items-center gap-1 text-gray-700 font-medium"
+                          onClick={() => openTicketDetails(ticket.ticketId)}
+                        >
+                          <Eye size={18} /> View
+                        </button>
+                      </div>
+                      <div className="text-gray-500 text-base mb-2">{ticket.description}</div>
+                      <div className="flex items-center gap-2 text-gray-400 text-sm">
+                        <span className="">{`#${ticket.ticketId}`}</span>
+                        <span>·</span>
+                        <span>{ticket.category}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col md:items-end gap-2 mt-5 md:mt-0">
+                      <div className="flex gap-2 items-center">
+                        {ticket.priority && (
+                          <Badge className={getPriorityColor(ticket.priority)}>
+                            {ticket.priority}
+                          </Badge>
+                        )}
+                        <Badge className={getStatusColor(ticket.status)}>
+                          {ticket.status}
+                        </Badge>
+                      </div>
+                      <div className="flex flex-col items-end text-gray-400 text-sm mt-2">
+                        <span>{(ticket.createdAt || "").slice(0, 10)}</span>
+                        <span>{`${ticket.responses || 0} responses`}</span>
+                        {ticket.closed && <span className="text-green-500">Closed</span>}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
+        {/* Create Ticket Dialog */}
+        <Dialog open={isCreateTicketOpen} onClose={() => setIsCreateTicketOpen(false)}>
+          <div>
+            <h2 className="text-xl font-bold mb-4">Create Support Ticket</h2>
+            <div className="grid gap-4">
+              <div>
+                <label className="block font-semibold mb-1" htmlFor="category">Issue Type</label>
+                <select
+                  id="category"
+                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  value={newTicket.category}
+                  onChange={(e) => setNewTicket({ ...newTicket, category: e.target.value })}
+                >
+                  <option value="">Select issue type</option>
+                  <option value="Technical">Technical Issues</option>
+                  <option value="Academic">Academic Support</option>
+                  <option value="Facilities">Campus Facilities</option>
+                  <option value="Financial">Financial Services</option>
+                  <option value="Account">Account Issues</option>
+                  <option value="Document Verification">Document Verification</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-semibold mb-1" htmlFor="subject">Subject</label>
+                <input
+                  id="subject"
+                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  value={newTicket.subject}
+                  onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
+                  placeholder="Brief description of your issue"
+                />
+              </div>
+              <div>
+                <label className="block font-semibold mb-1" htmlFor="description">Description</label>
+                <textarea
+                  id="description"
+                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  value={newTicket.description}
+                  onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
+                  placeholder="Provide detailed information about your issue"
+                  rows={4}
+                />
+              </div>
+              <div>
+                <label className="block font-semibold mb-1" htmlFor="priority">Priority</label>
+                <select
+                  id="priority"
+                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  value={newTicket.priority}
+                  onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })}
+                >
+                  <option value="medium">Medium</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="high">High</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+              <DialogFooter>
+                <button className="px-4 py-2 bg-gray-200 rounded font-semibold" type="button" onClick={() => setIsCreateTicketOpen(false)}>
+                  Cancel
+                </button>
+                <button
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold"
+                  type="button"
+                  onClick={handleCreateTicket}
+                  disabled={
+                    !newTicket.subject ||
+                    !newTicket.description ||
+                    !newTicket.category ||
+                    !user.userType
+                  }
+                >
+                  Create Ticket
+                </button>
+              </DialogFooter>
+            </div>
+          </div>
+        </Dialog>
+        {/* Ticket Details Dialog */}
+        <Dialog open={isDetailsOpen} onClose={() => setIsDetailsOpen(false)}>
+          {!detailsTicket ? (
+            <div>Loading...</div>
+          ) : detailsTicket.error ? (
+            <div className="text-red-500">{detailsTicket.error}</div>
+          ) : (
+            <div>
+              <h2 className="text-xl font-bold mb-2">{detailsTicket.subject}</h2>
+              <div className="mb-2 text-gray-700">{detailsTicket.description}</div>
+              <div className="mb-2 text-gray-500 text-sm">Ticket ID: {detailsTicket.ticketId}</div>
+              <div className="mb-2 text-gray-500 text-sm">Status: {detailsTicket.status}</div>
+              <div className="mb-4 text-gray-500 text-sm">Created: {detailsTicket.createdAt?.slice(0, 19).replace("T", " ")}</div>
+              <div className="mb-4">
+                <strong>Category:</strong> {detailsTicket.category} <br />
+                <strong>Priority:</strong> {detailsTicket.priority}
+              </div>
+              <div className="mb-4">
+                <strong>Conversation:</strong>
+                <ul className="mt-2 pl-4 border-l">
+                  {detailsTicket.messages?.map((msg, i) => (
+                    <li key={i} className="mb-2">
+                      <span className="font-semibold">{msg.senderType === "user" ? "You" : "Support"}:</span> {msg.message}
+                      <div className="text-xs text-gray-400">{msg.timestamp ? msg.timestamp.slice(0, 19).replace("T", " ") : ""}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {detailsTicket.status !== "closed" && (
+                <div className="mt-4">
+                  <h3 className="font-semibold mb-2">Close Ticket</h3>
+                  <input
+                    type="text"
+                    className="border px-3 py-2 rounded w-full"
+                    placeholder="Enter your secret code"
+                    value={closeTicketCode}
+                    onChange={e => setCloseTicketCode(e.target.value)}
+                    disabled={isClosing}
+                  />
+                  <button
+                    className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-semibold"
+                    onClick={handleCloseTicket}
+                    disabled={isClosing || !closeTicketCode}
+                  >
+                    {isClosing ? "Closing..." : "Close Ticket"}
+                  </button>
+                  {closeTicketError && <div className="text-red-500 mt-2">{closeTicketError}</div>}
+                </div>
+              )}
+            </div>
+          )}
+        </Dialog>
       </div>
     </SidebarContext.Provider>
   );
-};
-
-export default Chatbot;
+}
