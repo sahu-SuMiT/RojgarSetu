@@ -12,12 +12,16 @@ const SupportTicketSchema = new mongoose.Schema({
   },
   userType: {
     type: String,
-    enum: ['college', 'company'],
+    enum: ['college', 'company' , 'student', 'sales'],
     required: true
   },
   subject: {
     type: String,
     required: true
+  },
+  description: { // will be used as initial message content
+    type: String,
+    required: true,
   },
   status: {
     type: String,
@@ -54,11 +58,15 @@ const SupportTicketSchema = new mongoose.Schema({
   }],
   category: {
     type: String,
+<<<<<<< HEAD
     // Allow categories from frontend, plus fallback
     enum: [
       'technical', 'academic', 'facilities', 'financial',
       'account', 'document verification', 'other', 'general'
     ],
+=======
+    // enum: ['technical', 'billing', 'general', 'feature_request', 'bug_report'],
+>>>>>>> main
     default: 'general'
   },
   assignedTo: {
@@ -92,13 +100,33 @@ const SupportTicketSchema = new mongoose.Schema({
   resolvedAt: {
     type: Date,
     default: null
+  },
+  escalatedToManager: {
+    type: Boolean,
+    default: false
+  },
+  uploadedFile: {
+  data: Buffer,         // Actual file data
+  contentType: String,  // e.g., 'image/png', 'application/pdf'
+  },
+  evaluation: {
+  type: Boolean,
+  default: false
+  },
+  salesPerson:{
+    type: String,
+    default: null
   }
 });
 
 // Update the updatedAt field before saving
-SupportTicketSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
+// SupportTicketSchema.pre('save', function(next) {
+//   this.updatedAt = Date.now();
+//   next();
+// })
 
+<<<<<<< HEAD
 module.exports = mongoose.model('SupportTicket', SupportTicketSchema);
+=======
+module.exports = mongoose.model('SupportTicket', SupportTicketSchema); 
+>>>>>>> main

@@ -27,18 +27,22 @@ interface DecodeToken{
   role: string; 
   iat: number;
   exp: number;
+  salesId?: string; // Optional field for sales ID
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
-    let firstName = "User";
+  let firstName = "User";
   let lastName = "Name";
+  let SalesID = "";
   const token = localStorage.getItem("token");
 
   if(token){
     try{
       const decode = jwtDecode<DecodeToken>(token);
       firstName = decode.firstName || "User";
-      lastName = decode.lastName || "Name";
+      const lastNameOnly = decode.lastName || "Name";
+      SalesID = decode.salesId || "";
+      lastName = lastNameOnly + " " + SalesID;
     }catch(error){
      console.error("Error decoding token:", error); 
     }
@@ -148,6 +152,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           >
             <Briefcase className="h-5 w-5 mr-3" />
             Sales & Jobs
+          </Link>
+          <Link 
+            to="/onboard" 
+            className={`flex items-center px-4 py-3 text-white hover:bg-blue-800 ${isActive("/onboard")}`}
+          >
+            <Briefcase className="h-5 w-5 mr-3" />
+            Onboard
           </Link>
         </nav>
         

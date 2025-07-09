@@ -6,7 +6,10 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
+const helmet = require('helmet');
 
+// Importing the scheduler
+const startTicketEscalationJob = require('./scheduler/scheduler');
 
 // Route modules
 const authRoutes = require('./routes/authRoutes');
@@ -26,12 +29,17 @@ const collegesRoutes = require('./routes/colleges');
 const internshipsRoutes = require('./routes/internships');
 const supportRoutes = require('./routes/support');
 const studentMatchingRoutes = require('./routes/studentMatchingRoutes');
+const supportTicketRoutes = require('./routes/support-ticket');
 const bcrypt = require('bcrypt');
-const supportTicketRoutes = require('./routes/supportticketroute');
+const Student = require('./models/Student');
 
 //admin
 const studentAdminRoutes = require('./routes/admin/studentAdminRoutes');
 const signup = require('./controllers/user/signup');
+
+
+// sales
+const salesRoutes = require('./routes/sales'); // Assuming you have a sales route file
 
 const app = express();
 
@@ -69,6 +77,7 @@ const allowedOrigins = [
   'https://campusadmin.vercel.app',
   'https://www.rojgarsetu.org',
   'https://company.rojgarsetu.org',
+  'https://payomatixpaymentgateway.onrender.com',
   'https://campusadmin.onrender.com', // Add Render backend itself if needed
 ];
 
@@ -88,6 +97,15 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
   optionsSuccessStatus: 200,
 }));
+
+app.use(helmet());
+
+const Campus_INTERNAL_SECRET = process.env.CAMPUS_INTERNAL_SECRET;
+if (!Campus_INTERNAL_SECRET) {
+  console.error("Critical Error: CAMPUS_INTERNAL_SECRET is not set in environment variables.");
+  process.exit(1);
+}
+console.log('Starting server initialization...');
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI, {
@@ -148,16 +166,17 @@ app.use('/api/admin', studentAdminRoutes);
 app.use('/api/signup', signup);
 app.use('/api/admin', require('./routes/admin/platformSettingsRoutes'));
 
-
-
+//sales
+app.use('/api/sales', salesRoutes);
 // Make sure portfolioRoutes is properly loaded
 const portfolioRoutes = require('./routes/portfolioRoutes');
 app.use('/api/portfolio', portfolioRoutes);
 // Log available routes for debugging
 console.log('Portfolio routes registered:', portfolioRoutes.stack.map(r => r.route?.path).filter(Boolean));
 
-app.use('/api/student', studentRoutes); // 
-
+// NEW: /api/student/me and /api/student/me/profile-pic endpoints
+//     This route should implement: GET /api/student/me, PUT /api/student/me, POST /api/student/me/profile-pic, etc.
+app.use('/api/student', studentRoutes); // <-- This must be after any /api/student/:something routes
 
 // Health check/test route
 app.get('/', (req, res) => {
@@ -178,6 +197,14 @@ app.use('/api/v1/placement', placementRoutes);
 
 // Add after other app.use for routes
 app.use('/api/student-matching', studentMatchingRoutes);
+
+//support-ticket routes
+app.use('/api/support-ticket',supportTicketRoutes);
+
+// Add the payment update route
+app.use('/api/payment-update', require('./routes/paymentRoutes'));
+
+startTicketEscalationJob(); // Start the ticket escalation job
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
