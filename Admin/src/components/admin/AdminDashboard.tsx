@@ -9,15 +9,17 @@ import { ContentModeration } from "@/components/dashboard/ContentModeration";
 import { SupportPanel } from "@/components/dashboard/SupportPanel";
 import { PlatformSettings } from "@/components/dashboard/PlatformSettings";
 import { EmployeeManagement } from "@/components/dashboard/EmployeeManagement";
+import { Payments } from "@/components/dashboard/payment";
 
-export type AdminView = 
-  | "overview" 
-  | "users" 
-  | "employees" 
-  | "analytics" 
-  | "moderation" 
-  | "support" 
-  | "settings";
+export type AdminView =
+  | "overview"
+  | "users"
+  | "employees"
+  | "analytics"
+  | "moderation"
+  | "support"
+  | "settings"
+  | "payments";
 
 interface AdminData {
   username: string;
@@ -34,7 +36,8 @@ const viewPermissionMapping = {
   "analytics": "Analytics",
   "moderation": "Content Moderation",
   "support": "Support Panel",
-  "settings": "Platform Settings"
+  "settings": "Platform Settings",
+  "payments": "Payments"
 };
 
 const AdminDashboard = () => {
@@ -49,25 +52,25 @@ const AdminDashboard = () => {
       try {
         const data = JSON.parse(adminDataString);
         setAdminData(data);
-        
+
         // Determine available views based on permissions
         const userPermissions = data.permissions || [];
         const available: AdminView[] = [];
-        
+
         // Check each view against user permissions
         Object.entries(viewPermissionMapping).forEach(([view, permission]) => {
           if (userPermissions.includes(permission)) {
             available.push(view as AdminView);
           }
         });
-        
+
         setAvailableViews(available);
-        
+
         // If current view is not available, set to first available view
         if (!available.includes(currentView) && available.length > 0) {
           setCurrentView(available[0]);
         }
-        
+
       } catch (error) {
         console.error('Error parsing admin data:', error);
       }
@@ -130,6 +133,8 @@ const AdminDashboard = () => {
         return <SupportPanel />;
       case "settings":
         return <PlatformSettings />;
+      case "payments":
+        return <Payments />;
       default:
         return <DashboardOverview />;
     }
