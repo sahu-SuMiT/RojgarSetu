@@ -36,7 +36,6 @@ const UserSchema = new mongoose.Schema({
   },
   type:{
     type: String,
-    enum: ['college', 'company', 'admin' , 'sales'],
     required: true,
     default: 'sales'
   },
@@ -45,9 +44,9 @@ const UserSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  IsFree:{
-    type: Boolean,
-    default: true
+  workload:{
+    type: Number,
+    default: 0
   },
   phone:{
     type: String,

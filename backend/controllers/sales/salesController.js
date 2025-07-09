@@ -281,7 +281,7 @@ exports.markTicketResolved = async (req, res) => {
 };
 
 exports.assignTicketToSales = async(req,res) =>{
-  freeSales = await User.findOne({IsFree: true, type: 'sales'})
+  freeSales = await User.findOne({}).sort({workload:1});
   if(!freeSales) return res.status(404).json({ message: "No available sales representative" });
 
   const { ticketID } = req.body;
@@ -314,12 +314,17 @@ exports.getSupportTicketsByUserID = async(req, res) => {
 
     const decoded = jwt.verify(token, process.env.SESSION_SECRET);
     const userId = decoded.userId || decoded.id;
+    const assignedID = decoded.firstName + " " + decoded.lastName + "-" + userId;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: Invalid token payload' });
     }
 
-    const tickets = await SupportTicket.find({ userId });
+    
+    const tickets = await SupportTicket.find({  $or: [
+    { userId: userID },
+    { assignedTo: assignedID }
+  ]});
 
     res.status(200).json({ success: true, tickets });
   } catch (error) {
