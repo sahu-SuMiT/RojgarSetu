@@ -151,7 +151,7 @@ router.get('/support/tickets', async (req, res) => {
   }
 });
 router.post('/tickets', upload.single('uploadedFile'), async (req, res) => {
-
+  console.log('req.body from student:', req.body);
   try {
     const authHeader = req.headers.token || req.headers.authorization;
     let token = null;
@@ -182,6 +182,8 @@ router.post('/tickets', upload.single('uploadedFile'), async (req, res) => {
       priority,
       status,
       category,
+      userName,
+      contact
     } = req.body;
 
     if (!title || !description) {
@@ -198,6 +200,9 @@ router.post('/tickets', upload.single('uploadedFile'), async (req, res) => {
       userId,
       userType,
       email,
+      user_name:userName,
+      user_email:email,
+      user_phone:contact,
       subject: title,
       description,
       priority,

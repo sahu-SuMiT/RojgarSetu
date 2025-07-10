@@ -4,7 +4,10 @@ const bcrypt = require('bcrypt');
 const College = require('../models/College');
 const Student = require('../models/Student');
 const RegistrationOtp = require('../models/RegistrationOtp');
-const {emailTransport} = require('../config/email');
+const SupportTicket = require('../models/SupportTicket');
+const { v4: uuidv4 } = require('uuid');
+const {emailTransport,emailSender} = require('../config/email');
+const Notification = require('../models/Notification');
 const cloudinary = require('../config/cloudinary');
 const {isCollegeAuthenticated,isCollegeAdmin} = require('../middleware/auth');
 const {isEmailDisposable}= require('../utils/disposableEmail');
@@ -15,6 +18,7 @@ const {isEmailDisposable}= require('../utils/disposableEmail');
 // app.get('/api/colleges/:id') ..... Get college by Id
 // app.get('/api/colleges') ..... Get all colleges
 // app.get('/api/colleges/email/:email') .....Get college by college official email
+
 
 router.get('/:collegeId/student/:studentId', async (req, res) => {
   try {
@@ -302,6 +306,56 @@ router.put('/:id/edit',isCollegeAuthenticated,isCollegeAdmin, async (req, res) =
   } catch (error) {
     console.error('Error updating college:', error);
     res.status(500).json({ error: 'Failed to update college information' });
+  }
+});
+router.post('/tickets', async (req, res) => {
+  try {
+    const { userId, userType, subject, description, category, priority, email,contact, userName} = req.body;
+    if (!userId || !userType || !subject || !description || !email) {
+      return res.status(400).json({ error: 'Missing required fields.' });
+    }
+
+    const newTicket = new SupportTicket({
+      ticketId: uuidv4(),
+      userId,
+      userType: userType || 'college',
+      subject,
+      description,
+      category,
+      priority,
+      user_name:userName,
+      user_phone:contact,
+      email,
+      user_email:email,
+      secretCode: Math.floor(1000 + Math.random() * 9000),
+      status: 'open'
+    });
+    console.log("new Ticket form college:", newTicket);
+    await newTicket.save();
+
+    const autoMsg = `Your Ticket No. #${newTicket.ticketId} has been generated for [${newTicket.subject}]. Your issue will be resolved within 3–4 hours. Please use this secret code: ${newTicket.secretCode} to close your complaint after resolution.`;
+    await Notification.create({
+      sender:userId,
+      senderModel: 'College',
+      recipient:userId,
+      recipientModel: 'College',
+      title: "Your issue has been raised",
+      message:autoMsg,
+      type: 'info',
+      priority: 'normal',
+    })
+
+    await emailTransport.sendMail({
+      from:emailSender,
+      to:email,
+      subject:'Your Ticket has been raised',
+      text: autoMsg,
+    })
+    
+    res.status(201).json({ message: 'Support ticket created successfully', ticket: newTicket });
+  } catch (error) {
+    console.error('Error creating support ticket:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 

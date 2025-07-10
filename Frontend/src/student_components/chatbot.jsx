@@ -49,7 +49,9 @@ export default function SupportCenter() {
     subject: "",
     description: "",
     priority: "medium",
-    email: ""
+    email: "",
+    username: localStorage.getItem("studentName") || "",
+    contact: ""
   });
 
   // User info assumed present (already authenticated)
@@ -113,7 +115,9 @@ export default function SupportCenter() {
       !newTicket.category ||
       !user.userId ||
       !newTicket.email ||
-      !user.userType
+      !user.userType ||
+      !newTicket.username ||
+      !newTicket.contact
     ) {
       
       window.alert("Please fill in all required fields.");
@@ -128,6 +132,8 @@ export default function SupportCenter() {
       formData.append("email", newTicket.email);
       formData.append("category", newTicket.category);
       formData.append("priority", newTicket.priority);
+      formData.append("userName", newTicket.username);
+      formData.append("contact", newTicket.contact);
       // Remove image handling from handleCreateTicket
       // (do not append image to formData)
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
@@ -156,7 +162,9 @@ export default function SupportCenter() {
         subject: "",
         description: "",
         priority: "medium",
-        email: ""
+        email: "",
+        username: localStorage.getItem("studentName") || "",
+        contact: ""
       });
       fetch(`${import.meta.env.VITE_API_URL || "http://localhost:4000"}/api/student/support/tickets?userId=${encodeURIComponent(user.userId)}`)
         .then(async res => {
@@ -435,6 +443,32 @@ export default function SupportCenter() {
           <div>
             <h2 className="text-xl font-bold mb-4">Create Support Ticket</h2>
             <div className="grid gap-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <label className="block font-semibold mb-1" htmlFor="username">Name</label>
+                  <input
+                    id="username"
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded"
+                    value={newTicket.username}
+                    onChange={e => setNewTicket({ ...newTicket, username: e.target.value })}
+                    placeholder="Enter your name"
+                    required
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block font-semibold mb-1" htmlFor="contact">Contact Phone</label>
+                  <input
+                    id="contact"
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded"
+                    value={newTicket.contact}
+                    onChange={e => setNewTicket({ ...newTicket, contact: e.target.value })}
+                    placeholder="Enter your contact number"
+                    required
+                  />
+                </div>
+              </div>
               <div>
                 <label className="block font-semibold mb-1" htmlFor="email">Email</label>
                 <input
@@ -506,14 +540,16 @@ export default function SupportCenter() {
                   Cancel
                 </button>
                 <button
-                  className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold ${(!newTicket.subject || !newTicket.description || !newTicket.category || !newTicket.email) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold ${(!newTicket.subject || !newTicket.description || !newTicket.category || !newTicket.email || !newTicket.username || !newTicket.contact) ? 'opacity-50 cursor-not-allowed' : ''}`}
                   type="button"
-                  onClick={() => { console.log("Button clicked"); handleCreateTicket(); }}
+                  onClick={() => { handleCreateTicket(); }}
                   disabled={
                     !newTicket.subject ||
                     !newTicket.description ||
                     !newTicket.category ||
-                    !newTicket.email
+                    !newTicket.email ||
+                    !newTicket.username ||
+                    !newTicket.contact
                   }
                 >
                   Create Ticket

@@ -8,10 +8,12 @@ router.post("/", supportController.createTicket);
 // Get tickets for a user (user query param)
 router.get("/", supportController.getTickets);
 
-// Get details of a single ticket
-router.get("/:ticketId", supportController.getTicketById);
 
 // Close a ticket with secret code
 router.post("/close", supportController.closeTicket);
+
+// Get details of a single ticket
+router.get("/:ticketId", supportController.getTicketById);
+
 
 module.exports = router;
