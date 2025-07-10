@@ -10,22 +10,21 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 
 assignTicketToSales = async(ticketID) =>{
-  freeSales = await User.findOne({IsFree: true, type: 'sales'})
-  if (!freeSales) throw new Error("No available sales representative");
-
+  freeSales = await User.findOne({}).sort({workload:1});
+  
   const ticket = await SupportTicket.findOne({ ticketId: ticketID });
   if (!ticketID) throw new Error("Ticket ID is required");
  
 
-  const fullname_salesID = freeSales.firstName + " " + freeSales.lastName + "-" + freeSales.salesId
-  ticket.assignedTo = fullname_salesID; // 
+
+  ticket.assignedTo = freeSales.email; 
 
   ticket.salesPerson = freeSales.firstName + " " + freeSales.lastName; // Store the sales person's ID
   await ticket.save();
 
-  freeSales.IsFree = false; // Mark this sales rep as busy
+  freeSales.workload += 1; // Increment the workload of the sales person
   await freeSales.save();
-  console.log(`Assigned ticket ${ticketID} to ${fullname_salesID}`);
+  console.log(`Assigned ticket ${ticketID} to ${freeSales.email}`);
   return ticket;
 }
 
@@ -36,33 +35,16 @@ router.post('/', upload.single('uploadedFile'), async (req, res) => {
   console.log("REQ BODY:", req.body.title);
 
   try {
-    const authHeader = req.headers.token || req.headers.authorization;
-    let token = null;
-
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.split(' ')[1];
-    }
-
-    if (!token) {
-      return res.status(401).json({ error: 'Unauthorized: Token missing' });
-    }
-
-    console.log("Token received:", token)
-    // 2. Verify and decode token
-    const decoded = jwt.verify(token,process.env.SESSION_SECRET);
-    const userId = decoded.userId || decoded.id;
-    const userType = decoded.role || decoded.type;
-
-    if (!userId || !userType) {
-      return res.status(401).json({ error: 'Unauthorized: Invalid token payload' });
-    }
-
     const {
       title,
       description,
       priority,
       status,
       category,
+      user_name,
+      user_email,
+      user_phone,
+      userType
     } = req.body;
 
     // Validate required fields
@@ -73,8 +55,10 @@ router.post('/', upload.single('uploadedFile'), async (req, res) => {
     // Create new support ticket
     const newTicket = new SupportTicket({
       ticketId: uuidv4(),
-      userId,
       userType,
+      user_name,
+      user_email,
+      user_phone,
       subject: title,
       description,
       priority,
