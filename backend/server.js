@@ -140,6 +140,7 @@ app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/interviews', require('./routes/interviews'));
 app.use('/api/applications', require('./routes/applications'));
 app.use('/api/students', require('./routes/students'));
+app.use('/api/tickets', require('./routes/supportTicketRoutes'));
 
 // New REST endpoints
 app.use('/api/auth', authRoutes); // for authentication-related endpoints (login/register)
@@ -177,6 +178,7 @@ console.log('Portfolio routes registered:', portfolioRoutes.stack.map(r => r.rou
 // NEW: /api/student/me and /api/student/me/profile-pic endpoints
 //     This route should implement: GET /api/student/me, PUT /api/student/me, POST /api/student/me/profile-pic, etc.
 app.use('/api/student', studentRoutes); // <-- This must be after any /api/student/:something routes
+
 
 // Health check/test route
 app.get('/', (req, res) => {

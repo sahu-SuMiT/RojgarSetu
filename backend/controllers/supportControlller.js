@@ -4,13 +4,7 @@ const SupportTicket = require("../models/SupportTicket");
 const Notification = require("../models/Notification");
 
 // --- Real Email Setup (Gmail) ---
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_SENDER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+const {emailTransport} = require('../config/email');
 
 /**
  * Send real email using Gmail
@@ -22,7 +16,7 @@ async function sendEmail(to, subject, text) {
     subject,
     text,
   };
-  await transporter.sendMail(mailOptions);
+  await emailTransport.sendMail(mailOptions);
 }
 
 /**
@@ -110,25 +104,41 @@ exports.getTicketById = async (req, res) => {
 
 // --- Close Ticket (with secret code) ---
 exports.closeTicket = async (req, res) => {
-  const { ticketId, secretCode } = req.body;
-  if (!ticketId || !secretCode) {
-    return res.status(400).json({ error: "ticketId and secretCode required" });
-  }
-  const ticket = await SupportTicket.findOne({ ticketId });
-  if (!ticket) return res.status(404).json({ error: "Ticket not found" });
-  if (ticket.secretCode !== secretCode) {
-    return res.status(401).json({ error: "Incorrect secret code" });
-  }
-  if (ticket.status === "closed") {
-    return res.status(400).json({ error: "Ticket already closed" });
-  }
-  ticket.status = "closed";
-  ticket.closed = true;
-  ticket.closedAt = new Date();
-  await ticket.save();
+  try{
+    const { ticketId, secretCode } = req.body; console.log("req.body: ", req.body);
+    if (!ticketId || !secretCode) {
+      return res.status(400).json({ error: "ticketId and secretCode required" });
+    }
+    const ticket = await SupportTicket.findOne({ ticketId });
+    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+    if (ticket.SecretCode && ticket.secretCode !== secretCode) {
+      return res.status(401).json({ error: "Incorrect secret code" });
+    }
+    if (ticket.status === "closed" || ticket.status === "resolved") {
+      return res.status(400).json({ error: "Ticket already closed/resolved" });
+    }
+    ticket.status = "resolved";
+    ticket.closed = true;
+    ticket.closedAt = new Date();
+    await ticket.save();
 
-  await sendPortalNotification(ticket.userId, `Your ticket #${ticket.ticketId} has been closed. Thank you!`);
-  await sendEmail(ticket.email, `Ticket #${ticket.ticketId} Closed`, `Your ticket #${ticket.ticketId} has been closed. Thank you!`);
+    await Notification.create({
+      sender:req.body.userId,
+      senderModel: req.body.senderModel,
+      recipient:req.body.userId,
+      recipientModel: req.body.recipientModel,
+      title: req.body.title,
+      message:req.body.message,
+      type: 'success',
+      priority: 'normal',
+      
+    })
+    await sendEmail(ticket.email, `Ticket #${ticket.ticketId} Closed`, `Your ticket #${ticket.ticketId} has been closed. Thank you!`);
 
-  res.json({ message: "Ticket closed successfully" });
+    res.json({ message: "Ticket closed successfully" });
+  }
+  catch(err){
+    console.log(err);
+    res.status(500).json({error:"Failed to Create Ticket", err})
+  }
 };

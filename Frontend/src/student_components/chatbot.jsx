@@ -21,18 +21,9 @@ const StatCard = ({ title, value, icon, iconBg }) => (
 
 const Dialog = ({ open, onClose, children }) =>
   open ? (
-    <div className="fixed z-50 inset-0 flex items-center justify-center bg-black/30">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
+    <div className="fixed z-50 inset-0 flex items-center justify-center bg-black/30" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
         <div className="p-6">{children}</div>
-        <div className="flex justify-end border-t px-6 py-4 bg-gray-50 rounded-b-xl">
-          <button
-            className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 font-semibold mr-3"
-            onClick={onClose}
-            type="button"
-          >
-            Cancel
-          </button>
-        </div>
       </div>
     </div>
   ) : null;
@@ -52,18 +43,20 @@ export default function SupportCenter() {
   // Tickets state (fetched from backend)
   const [tickets, setTickets] = useState([]);
   const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false);
+  // Remove image from newTicket state
   const [newTicket, setNewTicket] = useState({
     category: "",
     subject: "",
     description: "",
-    priority: "medium"
+    priority: "medium",
+    email: ""
   });
 
   // User info assumed present (already authenticated)
   const [user, setUser] = useState({
     userId: "",
     email: "",
-    userType: ""
+    userType: "student"
   });
 
   // Ticket details modal
@@ -75,19 +68,34 @@ export default function SupportCenter() {
 
   // Get user info (from localStorage or context; already authenticated)
   useEffect(() => {
-    const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
     setUser({
-      userId: userInfo.userId || "",
-      email: userInfo.email || "",
-      userType: userInfo.userType || "" // "college" or "company"
+      userId: localStorage.getItem("studentId"),
+      email: "",
+      userType: "student"
     });
   }, []);
+
+  // Add openCreateTicketDialog function
+  const openCreateTicketDialog = () => {
+    setNewTicket((prev) => ({ ...prev, email: user.email }));
+    setIsCreateTicketOpen(true);
+  };
 
   // Fetch tickets from backend
   useEffect(() => {
     if (!user.userId) return;
-    fetch(`${process.env.REACT_APP_API_URL || "http://localhost:4000"}/api/tickets?userId=${encodeURIComponent(user.userId)}`)
-      .then(res => res.json())
+    fetch(`${import.meta.env.VITE_API_URL || "http://localhost:4000"}/api/student/support/tickets?userId=${encodeURIComponent(user.userId)}`)
+      .then(async res => {
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          return res.json();
+        } else {
+          const text = await res.text();
+          console.error("Expected JSON, got:", text);
+          window.alert("Server returned invalid response.");
+          return [];
+        }
+      })
       .then(data => setTickets(Array.isArray(data) ? data : []));
   }, [user.userId]);
 
@@ -97,32 +105,49 @@ export default function SupportCenter() {
 
   // Create Ticket logic (calls backend)
   const handleCreateTicket = async () => {
+    console.log("Create Ticket clicked");
+    console.log("fields", "\nsub",newTicket.subject, "\ndesc",newTicket.description, "\ncat",newTicket.category, "\nuser",user.userId, "\nemail",newTicket.email, "\ntype",user.userType);
     if (
       !newTicket.subject ||
       !newTicket.description ||
       !newTicket.category ||
       !user.userId ||
-      !user.email ||
+      !newTicket.email ||
       !user.userType
     ) {
+      
       window.alert("Please fill in all required fields.");
       return;
     }
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:4000"}/api/tickets`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user.userId,
-          userType: user.userType,
-          subject: newTicket.subject,
-          description: newTicket.description,
-          email: user.email,
-          category: newTicket.category,
-          priority: newTicket.priority
-        })
+      const formData = new FormData();
+      formData.append("userId", user.userId);
+      formData.append("userType", user.userType);
+      formData.append("subject", newTicket.subject);
+      formData.append("description", newTicket.description);
+      formData.append("email", newTicket.email);
+      formData.append("category", newTicket.category);
+      formData.append("priority", newTicket.priority);
+      // Remove image handling from handleCreateTicket
+      // (do not append image to formData)
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${apiUrl}/api/student/tickets`, {
+        method: "POST", 
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData
       });
-      const data = await res.json();
+      const contentType = res.headers.get("content-type");
+      let data;
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        console.error("Expected JSON, got:", text);
+        window.alert("Server returned invalid response.");
+        return;
+      }
       if (data.error) throw new Error(data.error);
       window.alert(data.message);
       setIsCreateTicketOpen(false);
@@ -130,15 +155,28 @@ export default function SupportCenter() {
         category: "",
         subject: "",
         description: "",
-        priority: "medium"
+        priority: "medium",
+        email: ""
       });
-      fetch(`${process.env.REACT_APP_API_URL || "http://localhost:4000"}/api/tickets?userId=${encodeURIComponent(user.userId)}`)
-        .then(res => res.json())
+      fetch(`${import.meta.env.VITE_API_URL || "http://localhost:4000"}/api/student/support/tickets?userId=${encodeURIComponent(user.userId)}`)
+        .then(async res => {
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            return res.json();
+          } else {
+            const text = await res.text();
+            console.error("Expected JSON, got:", text);
+            window.alert("Server returned invalid response.");
+            return [];
+          }
+        })
         .then(data => setTickets(Array.isArray(data) ? data : []));
     } catch (error) {
       window.alert(error.message || "Failed to create ticket");
     }
   };
+
+  // Remove handleImageChange function
 
   const getStatusColor = (status) => {
     if (!status) return "bg-gray-100 text-gray-700";
@@ -187,8 +225,17 @@ export default function SupportCenter() {
     setCloseTicketError("");
     setIsClosing(false);
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:4000"}/api/tickets/${encodeURIComponent(ticketId)}`);
-      const data = await res.json();
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:4000"}/api/tickets/${encodeURIComponent(ticketId)}`);
+      const contentType = res.headers.get("content-type");
+      let data;
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        console.error("Expected JSON, got:", text);
+        setDetailsTicket({ error: "Failed to fetch ticket details" });
+        return;
+      }
       setDetailsTicket(data);
     } catch {
       setDetailsTicket({ error: "Failed to fetch ticket details" });
@@ -200,18 +247,39 @@ export default function SupportCenter() {
     setIsClosing(true);
     setCloseTicketError("");
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL || "http://localhost:4000"}/api/tickets/close`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:4000"}/api/tickets/close`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticketId: detailsTicket.ticketId, secretCode: closeTicketCode })
+        credentials: "include",
+        body: JSON.stringify({ ticketId: detailsTicket.ticketId, secretCode: closeTicketCode, userId: user.userId, senderModel: 'Student', recipientModel: 'Student', title: 'Ticket Closed', message: `Ticket #${detailsTicket.ticketId} has been closed successfully.` })
       });
-      const data = await res.json();
+      const contentType = res.headers.get("content-type");
+      let data;
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        console.error("Expected JSON, got:", text);
+        setCloseTicketError("Failed to close ticket");
+        setIsClosing(false);
+        return;
+      }
       if (data.error) throw new Error(data.error);
       window.alert("Ticket closed successfully!");
-      setIsDetailsOpen(false);
+      setIsDetailsOpen(false); // Ensure modal closes on success
       setCloseTicketCode("");
-      fetch(`${process.env.REACT_APP_API_URL || "http://localhost:4000"}/api/tickets?userId=${encodeURIComponent(user.userId)}`)
-        .then(res => res.json())
+      fetch(`${import.meta.env.VITE_API_URL || "http://localhost:4000"}/api/student/support/tickets?userId=${encodeURIComponent(user.userId)}`)
+        .then(async res => {
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            return res.json();
+          } else {
+            const text = await res.text();
+            console.error("Expected JSON, got:", text);
+            window.alert("Server returned invalid response.");
+            return [];
+          }
+        })
         .then(data => setTickets(Array.isArray(data) ? data : []));
     } catch (error) {
       setCloseTicketError(error.message || "Failed to close ticket");
@@ -242,7 +310,7 @@ export default function SupportCenter() {
               <button
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-7 py-3 text-lg rounded-xl shadow transition"
                 style={{ minWidth: 180 }}
-                onClick={() => setIsCreateTicketOpen(true)}
+                onClick={openCreateTicketDialog}
               >
                 <Plus className="w-6 h-6" />
                 Create Ticket
@@ -368,6 +436,18 @@ export default function SupportCenter() {
             <h2 className="text-xl font-bold mb-4">Create Support Ticket</h2>
             <div className="grid gap-4">
               <div>
+                <label className="block font-semibold mb-1" htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  value={newTicket.email}
+                  onChange={e => setNewTicket({ ...newTicket, email: e.target.value })}
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+              <div>
                 <label className="block font-semibold mb-1" htmlFor="category">Issue Type</label>
                 <select
                   id="category"
@@ -420,19 +500,20 @@ export default function SupportCenter() {
                   <option value="low">Low</option>
                 </select>
               </div>
+              {/* Remove the image input from the Create Ticket Dialog form */}
               <DialogFooter>
                 <button className="px-4 py-2 bg-gray-200 rounded font-semibold" type="button" onClick={() => setIsCreateTicketOpen(false)}>
                   Cancel
                 </button>
                 <button
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold"
+                  className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold ${(!newTicket.subject || !newTicket.description || !newTicket.category || !newTicket.email) ? 'opacity-50 cursor-not-allowed' : ''}`}
                   type="button"
-                  onClick={handleCreateTicket}
+                  onClick={() => { console.log("Button clicked"); handleCreateTicket(); }}
                   disabled={
                     !newTicket.subject ||
                     !newTicket.description ||
                     !newTicket.category ||
-                    !user.userType
+                    !newTicket.email
                   }
                 >
                   Create Ticket
@@ -471,7 +552,7 @@ export default function SupportCenter() {
               </div>
               {detailsTicket.status !== "closed" && (
                 <div className="mt-4">
-                  <h3 className="font-semibold mb-2">Close Ticket</h3>
+                  <h3 className="font-semibold mb-2">To Close Ticket Enter Code: {detailsTicket.secretCode}</h3>
                   <input
                     type="text"
                     className="border px-3 py-2 rounded w-full"

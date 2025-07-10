@@ -58,15 +58,7 @@ const SupportTicketSchema = new mongoose.Schema({
   }],
   category: {
     type: String,
-<<<<<<< HEAD
-    // Allow categories from frontend, plus fallback
-    enum: [
-      'technical', 'academic', 'facilities', 'financial',
-      'account', 'document verification', 'other', 'general'
-    ],
-=======
     // enum: ['technical', 'billing', 'general', 'feature_request', 'bug_report'],
->>>>>>> main
     default: 'general'
   },
   assignedTo: {
@@ -125,8 +117,4 @@ const SupportTicketSchema = new mongoose.Schema({
 //   next();
 // })
 
-<<<<<<< HEAD
-module.exports = mongoose.model('SupportTicket', SupportTicketSchema);
-=======
 module.exports = mongoose.model('SupportTicket', SupportTicketSchema); 
->>>>>>> main

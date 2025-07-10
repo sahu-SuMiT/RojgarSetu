@@ -6,6 +6,7 @@ const XLSX = require('xlsx');
 const { emailTransport } = require('../config/email');
 const bcrypt = require('bcrypt');
 
+
 // Import your models
 const Student = require('../models/Student');
 const Job = require('../models/Job');
@@ -597,7 +598,9 @@ router.post('/excel-sheet', upload.single('file'), async (req, res) => {
   }
 });
 
-// Function to send login credentials email to students
+
+
+
 const sendLoginCredentialsEmail = async (student, collegeName) => {
   try {
     const mailOptions = {

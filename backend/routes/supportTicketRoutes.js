@@ -1,17 +1,17 @@
 const express = require("express");
 const router = express.Router();
-const supportController = require("../controllers/supportController");
+const supportController = require("../controllers/supportControlller");
 
 // Create a new support ticket
-router.post("/tickets", supportController.createTicket);
+router.post("/", supportController.createTicket);
 
 // Get tickets for a user (user query param)
-router.get("/tickets", supportController.getTickets);
+router.get("/", supportController.getTickets);
 
 // Get details of a single ticket
-router.get("/tickets/:ticketId", supportController.getTicketById);
+router.get("/:ticketId", supportController.getTicketById);
 
 // Close a ticket with secret code
-router.post("/tickets/close", supportController.closeTicket);
+router.post("/close", supportController.closeTicket);
 
 module.exports = router;
