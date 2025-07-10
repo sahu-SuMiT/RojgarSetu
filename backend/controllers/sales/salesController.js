@@ -167,12 +167,13 @@ exports.getSupportTicketsBySales = async (req, res) => {
     const collegeIds = colleges.map(c => c._id.toString());
     const companyIds = companies.map(c => c._id.toString());
 
-    // Find tickets for these users
+    // Find tickets for these users, EXCLUDING escalatedToManager:true
     const tickets = await SupportTicket.find({
       $or: [
         { userType: 'college', userId: { $in: collegeIds } },
         { userType: 'company', userId: { $in: companyIds } }
-      ]
+      ],
+      escalatedToManager: { $ne: true }
     }).lean();
 
     // Attach email and phone to each ticket
@@ -211,40 +212,40 @@ exports.getManagerSupportTickets = async (req, res) => {
   }
 };
 
-exports.getSupportTicketsBySales = async (req, res) => {
-  try {
-    // Fetch all colleges and companies
-    const colleges = await College.find();
-    const companies = await Company.find();
 
-    const collegeMap = {};
-    colleges.forEach(c => { collegeMap[c._id] = c; });
-    const companyMap = {};
-    companies.forEach(c => { companyMap[c._id] = c; });
+//   try {
+//     // Fetch all colleges and companies
+//     const colleges = await College.find();
+//     const companies = await Company.find();
 
-    // Fetch all tickets
-    const tickets = await SupportTicket.find().lean();
+//     const collegeMap = {};
+//     colleges.forEach(c => { collegeMap[c._id] = c; });
+//     const companyMap = {};
+//     companies.forEach(c => { companyMap[c._id] = c; });
 
-    // Attach email and phone to each ticket
-    const ticketsWithContact = tickets.map(ticket => {
-      let email = "";
-      let phone = "";
-      if (ticket.userType === "college" && collegeMap[ticket.userId]) {
-        email = collegeMap[ticket.userId].contactEmail;
-        phone = collegeMap[ticket.userId].contactPhone;
-      }
-      if (ticket.userType === "company" && companyMap[ticket.userId]) {
-        email = companyMap[ticket.userId].contactEmail;
-        phone = companyMap[ticket.userId].contactPhone;
-      }
-      return { ...ticket, email, phone };
-    });
+//     // Fetch all tickets
+//     const tickets = await SupportTicket.find().lean();
 
-    res.json(ticketsWithContact);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
-};
+//     // Attach email and phone to each ticket
+//     const ticketsWithContact = tickets.map(ticket => {
+//       let email = "";
+//       let phone = "";
+//       if (ticket.userType === "college" && collegeMap[ticket.userId]) {
+//         email = collegeMap[ticket.userId].contactEmail;
+//         phone = collegeMap[ticket.userId].contactPhone;
+//       }
+//       if (ticket.userType === "company" && companyMap[ticket.userId]) {
+//         email = companyMap[ticket.userId].contactEmail;
+//         phone = companyMap[ticket.userId].contactPhone;
+//       }
+//       return { ...ticket, email, phone };
+//     });
+
+//     res.json(ticketsWithContact);
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error });
+//   }
+// };
 
 exports.updateTicketEvaluation = async (req, res) => {
   try {
