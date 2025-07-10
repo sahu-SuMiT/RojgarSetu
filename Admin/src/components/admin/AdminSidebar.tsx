@@ -60,6 +60,12 @@ const mainMenuItems = [
     view: "overview" as AdminView,
     permission: "Dashboard"
   },
+  {
+    title: "Payments",
+    icon: UserCheck, // Or use a more appropriate icon
+    view: "payments" as AdminView,
+    permission: "Payments"
+  },
   // {
   //   title: "Analytics",
   //   icon: BarChart3,

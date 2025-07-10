@@ -4,7 +4,7 @@ const Company = require('../../models/Company');
 const User = require('../../models/User'); 
 const SupportTicket = require('../../models/SupportTicket'); // Assuming this model exists
 const moment = require('moment'); // Ensure moment is installed and required
-
+const Transaction = require('../../models/Transaction');
 // GET all students
 exports.getAllStudents = async (req, res) => {
   try {
@@ -153,5 +153,17 @@ exports.getAllSupportTickets = async (req, res) => {
   } catch (error) {
     console.error('Error fetching support tickets:', error);
     res.status(500).json({ success: false, message: 'Server error while fetching support tickets' });
+  }
+};
+
+
+
+
+exports.getAllTransactions = async (req, res) => {
+  try {
+    const transactions = await Transaction.find().sort({ createdAt: -1 });
+    res.json({ data: transactions });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch transactions", error });
   }
 };

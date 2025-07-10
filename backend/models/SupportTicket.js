@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { type } = require('os');
 
 const SupportTicketSchema = new mongoose.Schema({
   ticketId: {
@@ -6,14 +7,21 @@ const SupportTicketSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  userId: {
-    type: String,
-    required: true
-  },
   userType: {
     type: String,
     enum: ['college', 'company' , 'student', 'sales'],
     required: true
+  },
+  user_name:{
+    type: String,
+    required: true
+  },
+  user_email:{
+    type: String,
+    required: true
+  },
+  user_phone:{
+    type: String,
   },
   subject: {
     type: String,

@@ -211,7 +211,7 @@ const Profile = () => {
             setKycStatus('approved');
           }
           if (data.kycStatus === 'pending' || data.kycStatus === 'pending approval'|| data.kycStatus === 'requested') {
-            setKycStatus('pending');
+            // setKycStatus('pending');
           }
         }
       } catch (error) {

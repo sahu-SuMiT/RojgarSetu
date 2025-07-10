@@ -49,13 +49,8 @@ module.exports = async (req, res) => {
     console.log('User authenticated successfully:', email, 'with role:', user.role);
 
     // Create JWT payload
-    const payload = {
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      role: user.type,
-      userId: user.userId
-    };
+    const payload = user.toObject();
+    delete payload.password; // Remove password from payload for security
 
     // Sign and return JWT token
     jwt.sign(
@@ -70,13 +65,7 @@ module.exports = async (req, res) => {
         console.log('Token generated successfully for:', email);
         res.json({ 
           token,
-          user: {
-            id: user.id,
-            email: user.email,
-            role: user.role,
-            firstName: user.firstName,
-            lastName: user.lastName
-          }
+          user: user.toObject()
         });
       }
     );

@@ -5,6 +5,7 @@ const User = require('../../models/User');
 const { emailTransport } = require('../../config/email');
 const SupportTicket = require('../../models/SupportTicket');
 const ManagerTicket = require('../../models/manager_ticket'); // Import your manager ticket model
+const jwt = require('jsonwebtoken');
 
 const DEFAULT_PASSWORD = "Campus@123";
 
@@ -167,12 +168,13 @@ exports.getSupportTicketsBySales = async (req, res) => {
     const collegeIds = colleges.map(c => c._id.toString());
     const companyIds = companies.map(c => c._id.toString());
 
-    // Find tickets for these users
+    // Find tickets for these users, EXCLUDING escalatedToManager:true
     const tickets = await SupportTicket.find({
       $or: [
         { userType: 'college', userId: { $in: collegeIds } },
         { userType: 'company', userId: { $in: companyIds } }
-      ]
+      ],
+      escalatedToManager: { $ne: true }
     }).lean();
 
     // Attach email and phone to each ticket
@@ -211,40 +213,40 @@ exports.getManagerSupportTickets = async (req, res) => {
   }
 };
 
-exports.getSupportTicketsBySales = async (req, res) => {
-  try {
-    // Fetch all colleges and companies
-    const colleges = await College.find();
-    const companies = await Company.find();
 
-    const collegeMap = {};
-    colleges.forEach(c => { collegeMap[c._id] = c; });
-    const companyMap = {};
-    companies.forEach(c => { companyMap[c._id] = c; });
+//   try {
+//     // Fetch all colleges and companies
+//     const colleges = await College.find();
+//     const companies = await Company.find();
 
-    // Fetch all tickets
-    const tickets = await SupportTicket.find().lean();
+//     const collegeMap = {};
+//     colleges.forEach(c => { collegeMap[c._id] = c; });
+//     const companyMap = {};
+//     companies.forEach(c => { companyMap[c._id] = c; });
 
-    // Attach email and phone to each ticket
-    const ticketsWithContact = tickets.map(ticket => {
-      let email = "";
-      let phone = "";
-      if (ticket.userType === "college" && collegeMap[ticket.userId]) {
-        email = collegeMap[ticket.userId].contactEmail;
-        phone = collegeMap[ticket.userId].contactPhone;
-      }
-      if (ticket.userType === "company" && companyMap[ticket.userId]) {
-        email = companyMap[ticket.userId].contactEmail;
-        phone = companyMap[ticket.userId].contactPhone;
-      }
-      return { ...ticket, email, phone };
-    });
+//     // Fetch all tickets
+//     const tickets = await SupportTicket.find().lean();
 
-    res.json(ticketsWithContact);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
-};
+//     // Attach email and phone to each ticket
+//     const ticketsWithContact = tickets.map(ticket => {
+//       let email = "";
+//       let phone = "";
+//       if (ticket.userType === "college" && collegeMap[ticket.userId]) {
+//         email = collegeMap[ticket.userId].contactEmail;
+//         phone = collegeMap[ticket.userId].contactPhone;
+//       }
+//       if (ticket.userType === "company" && companyMap[ticket.userId]) {
+//         email = companyMap[ticket.userId].contactEmail;
+//         phone = companyMap[ticket.userId].contactPhone;
+//       }
+//       return { ...ticket, email, phone };
+//     });
+
+//     res.json(ticketsWithContact);
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error });
+//   }
+// };
 
 exports.updateTicketEvaluation = async (req, res) => {
   try {
@@ -280,7 +282,7 @@ exports.markTicketResolved = async (req, res) => {
 };
 
 exports.assignTicketToSales = async(req,res) =>{
-  freeSales = await User.findOne({IsFree: true, type: 'sales'})
+  freeSales = await User.findOne({}).sort({workload:1});
   if(!freeSales) return res.status(404).json({ message: "No available sales representative" });
 
   const { ticketID } = req.body;
@@ -298,5 +300,34 @@ exports.assignTicketToSales = async(req,res) =>{
   res.json({ message: "Ticket assigned successfully", ticket });
 }
 
+exports.getSupportTicketsByUserID = async(req, res) => {
+    try {
+    const authHeader = req.headers.token || req.headers.authorization;
+    let token = null;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized: Token missing' });
+    }
+
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET);
+
+    const mail = decoded.email || decoded.contactEmail;
+
+    
+    const tickets = await SupportTicket.find({  $or: [
+    { user_email: mail },
+    { assignedTo: mail }
+  ]});
+
+    res.status(200).json({ success: true, tickets });
+  } catch (error) {
+    console.error('Error fetching tickets:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
 
 
