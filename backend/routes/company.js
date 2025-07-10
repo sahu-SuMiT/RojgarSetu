@@ -8,7 +8,10 @@ const Employee = require('../models/Employee');
 const RegistrationOtp = require('../models/RegistrationOtp');
 const Interview = require('../models/Interview');
 const Application = require('../models/CollegeApplication');
-const {emailTransport} = require('../config/email');
+const SupportTicket = require('../models/SupportTicket');
+const { v4: uuidv4 } = require('uuid');
+const {emailTransport,emailSender} = require('../config/email');
+const Notification = require('../models/Notification');
 const cloudinary = require('../config/cloudinary');
 const {isCompanyAuthenticated,isCompanyHR,isCompanyAdmin,isCompanyOwner} = require('../middleware/auth');
 const {isEmailDisposable} = require('../utils/disposableEmail');
@@ -629,6 +632,69 @@ router.get('/:companyId/interviews/complete',isCompanyAuthenticated, async (req,
   } catch (error) {
     console.error('Error in interviews endpoint:', error);
     res.status(500).json({ message: 'Error fetching interviews data', error: error.message });
+  }
+});
+
+// POST /api/company/tickets
+router.post('/tickets', async (req, res) => {
+  try {
+    const { userId, userType, subject, description, category, priority, email,contact, userName} = req.body;
+    if (!userId || !userType || !subject || !description || !email) {
+      return res.status(400).json({ error: 'Missing required fields.' });
+    }
+
+    const newTicket = new SupportTicket({
+      ticketId: uuidv4(),
+      userId,
+      userType: userType || 'company',
+      subject,
+      description,
+      category,
+      priority,
+      user_name:userName,
+      user_phone:contact,
+      email,
+      user_email:email,
+      secretCode: Math.floor(1000 + Math.random() * 9000),
+      status: 'open'
+    });
+    console.log("new Ticket form company:", newTicket);
+    await newTicket.save();
+
+    const autoMsg = `Your Ticket No. #${newTicket.ticketId} has been generated for [${newTicket.subject}]. Your issue will be resolved within 3–4 hours. Please use this secret code: ${newTicket.secretCode} to close your complaint after resolution.`;
+    
+    await Notification.create({
+      sender:userId,
+      senderModel: 'Company',
+      recipient:userId,
+      recipientModel: 'Company',
+      title: "Your issue has been raised",
+      message:autoMsg,
+      type: 'info',
+      priority: 'normal',
+    })
+
+    await emailTransport.sendMail({
+      from:emailSender,
+      to:email,
+      subject:'Your Ticket has been raised',
+      text: autoMsg,
+    })
+
+    res.status(201).json({ message: 'Support ticket created successfully', ticket: newTicket });
+  } catch (error) {
+    console.error('Error creating support ticket:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// GET /api/company/tickets/:companyId
+router.get('/tickets/:companyId', async (req, res) => {
+  try {
+    const tickets = await SupportTicket.find({ userId: req.params.companyId, userType: 'company' }).sort({ createdAt: -1 });
+    res.json({ tickets });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch tickets' });
   }
 });
 

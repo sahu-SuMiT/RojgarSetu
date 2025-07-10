@@ -7,9 +7,13 @@ const SupportTicketSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  userId: {
+    type: String,
+    required: true
+  },
   userType: {
     type: String,
-    enum: ['college', 'company' , 'student', 'sales'],
+    enum: ['college', 'company', 'student'],
     required: true
   },
   user_name:{
@@ -33,7 +37,7 @@ const SupportTicketSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['open', 'in_progress', 'resolved', 'closed'],
+    enum: ['open', 'in-progress', 'resolved', 'closed'], // use 'in-progress' not 'in_progress' for consistency with frontend/backend
     default: 'open'
   },
   priority: {
@@ -71,6 +75,22 @@ const SupportTicketSchema = new mongoose.Schema({
   },
   assignedTo: {
     type: String,
+    default: null
+  },
+  email: {
+    type: String,
+    required: true
+  },
+  secretCode: {
+    type: String,
+    required: true
+  },
+  closed: {
+    type: Boolean,
+    default: false
+  },
+  closedAt: {
+    type: Date,
     default: null
   },
   createdAt: {

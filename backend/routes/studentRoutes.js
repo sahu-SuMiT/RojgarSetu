@@ -7,12 +7,16 @@ const { imageUpload } = require('../middleware/uploadMiddleware');
 const Student = require('../models/Student')
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-const {emailTransport} = require('../config/email'); // Adjust this path as per your project structure
-
-
+const {emailTransport, emailSender} = require('../config/email'); // Adjust this path as per your project structure
+const jwt = require('jsonwebtoken');
+const SupportTicket = require('../models/SupportTicket');
+const {v4: uuidv4} = require('uuid');
 // Import your Mongoose models
 const RegistrationOtp = require('../models/RegistrationOtp'); // Adjust this path
-
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+const Notification = require('../models/Notification');
+require('dotenv').config();
 
 // Profile routes using /me (token-based auth)
 router.get('/me', authMiddleware, studentController.getOwnProfile);
@@ -130,6 +134,113 @@ router.post('/register/verify', async (req, res) => {
   } catch (err) {
     console.error('Error verifying OTP and registering college:', err);
     res.status(500).json({ error: 'Some error occured!', details: err.message });
+  }
+});
+router.get('/support/tickets', async (req, res) => {
+
+  try{
+    let tickets = await SupportTicket.find({userId: req.query.userId}).sort({createdAt: -1}).lean();
+    res.status(200).json(tickets);
+  }
+  catch(error){
+    console.error('Error fetching tickets:', error);
+    res.status(500).json({ 
+      message: 'Error fetching student details',
+      error: error.message 
+    });
+  }
+});
+router.post('/tickets', upload.single('uploadedFile'), async (req, res) => {
+  console.log('req.body from student:', req.body);
+  try {
+    const authHeader = req.headers.token || req.headers.authorization;
+    let token = null;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+    if(!token){
+      token = req.cookies.token;
+    }
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized: Token missing' });
+    }
+
+    const decoded = jwt.verify(token,process.env.JWT_SECRET);
+    const userId = decoded.userId || decoded.id;
+    const userType = decoded.role || decoded.type;
+
+    if (!userId || !userType) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid token payload' });
+    }
+    console.log("decoded:", decoded, "reqbody:", req.body)
+    let {
+      title,
+      subject,
+      email,
+      description,
+      priority,
+      status,
+      category,
+      userName,
+      contact
+    } = req.body;
+
+    if (!title || !description) {
+      if(!title){
+        title = subject;
+      }
+      if(!title){
+        return res.status(400).json({ error: 'Title and description are required.' });
+      }
+    }
+
+    const newTicket = new SupportTicket({
+      ticketId: uuidv4(),
+      userId,
+      userType,
+      email,
+      user_name:userName,
+      user_email:email,
+      user_phone:contact,
+      subject: title,
+      description,
+      priority,
+      status: status || "open",
+      category,
+      secretCode: Math.floor(1000 + Math.random() * 9000),
+      uploadedFile: req.file ? {
+            data: req.file.buffer,
+            contentType: req.file.mimetype,
+            filename: req.file.originalname,
+            size: req.file.size
+          }
+        : undefined
+    });
+    await newTicket.save();
+    const autoMsg = `Your Ticket No. #${newTicket.ticketId} has been generated for [${newTicket.subject}]. Your issue will be resolved within 3–4 hours. Please use this secret code: ${newTicket.secretCode} to close your complaint after resolution.`;
+    await Notification.create({
+      sender:userId,
+      senderModel: 'Student',
+      recipient:userId,
+      recipientModel: 'Student',
+      title: "Your issue has been raised",
+      message:autoMsg,
+      type: 'info',
+      priority: 'normal',
+    })
+
+    await emailTransport.sendMail({
+      from:emailSender,
+      to:email,
+      subject:'Your Ticket has been raised',
+      text: autoMsg,
+    })
+    
+    res.status(201).json({ message: 'Support ticket created successfully', ticket: newTicket });
+  } catch (error) {
+    console.error('Error creating support ticket:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 module.exports = router;

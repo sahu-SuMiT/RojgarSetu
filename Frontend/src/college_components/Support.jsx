@@ -22,6 +22,22 @@ const Support = () => {
   const [college, setCollege] = useState(null);
   const [isBotTyping, setIsBotTyping] = useState(false);
   const messagesEndRef = useRef(null);
+  // Add state for modal and new ticket form
+  const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false);
+  const [newTicket, setNewTicket] = useState({
+    subject: '',
+    description: '',
+    category: '',
+    priority: 'medium',
+    email: college?.email || '',
+    contact: college?.contactPhone || '',
+    username: collegeName || ''
+  });
+  const [detailsTicket, setDetailsTicket] = useState(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [closeTicketCode, setCloseTicketCode] = useState("");
+  const [closeTicketError, setCloseTicketError] = useState("");
+  const [isClosing, setIsClosing] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -165,29 +181,85 @@ const Support = () => {
     setError(null);
   };
 
-  const handleCloseTicket = async () => {
-    if (!currentTicket) return;
-    
-    try {
-      await axios.patch(`${apiUrl}/api/support/tickets/${collegeId}/${currentTicket.ticketId}/status`, {
-        status: 'closed'
-      });
-      
-      setTickets(prev => prev.map(ticket => 
-        ticket.ticketId === currentTicket.ticketId 
-          ? { ...ticket, status: 'closed' }
-          : ticket
-      ));
-      
-      handleNewConversation();
-    } catch (error) {
-      // Error handling without console logging
-    }
-  };
-
   const handleCollegeUpdate = (updatedCollege) => {
     setCollege(updatedCollege);
     setCollegeName(updatedCollege.name);
+  };
+
+  // Add handler for creating ticket
+  const handleCreateTicket = async () => {
+    if (!newTicket.subject || !newTicket.description || !newTicket.category || !newTicket.email) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${apiUrl}/api/colleges/tickets`, {
+        userId: collegeId,
+        userType: 'college',
+        subject: newTicket.subject,
+        description: newTicket.description,
+        category: newTicket.category,
+        priority: newTicket.priority,
+        email: newTicket.email,
+        userName: newTicket.username,
+        contact: newTicket.contact
+      }, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
+      alert('Ticket created successfully!');
+      setIsCreateTicketOpen(false);
+      setNewTicket({ subject: '', description: '', category: '', priority: 'medium', email: college?.email || '', contact: college?.contactPhone || '', username: collegeName || '' });
+      fetchTickets(collegeId);
+    } catch (error) {
+      alert(error.response?.data?.error || 'Failed to create ticket');
+    }
+  };
+
+  const handleViewTicket = async (ticket) => {
+    setIsDetailsOpen(true);
+    setDetailsTicket(null);
+    setCloseTicketCode("");
+    setCloseTicketError("");
+    setIsClosing(false);
+    try {
+      const res = await axios.get(`${apiUrl}/api/support/tickets/${collegeId}/${encodeURIComponent(ticket.ticketId)}`);
+      setDetailsTicket(res.data.ticket);
+    } catch (error) {
+      setDetailsTicket({ error: "Failed to fetch ticket details" });
+    }
+  };
+
+  const handleCloseTicket = async () => {
+    setIsClosing(true);
+    setCloseTicketError("");
+    try {
+      const res = await axios.post(`${apiUrl}/api/tickets/close`, {
+        ticketId: detailsTicket.ticketId,
+        secretCode: closeTicketCode,
+        userId: collegeId,
+        senderModel: 'College',
+        recipientModel: 'College',
+        title: 'Ticket Closed',
+        message: `Ticket #${detailsTicket.ticketId} has been closed successfully.`
+      }, { withCredentials: true });
+      const contentType = res.headers.get("content-type");
+      let data;
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.data;
+      } else {
+        setCloseTicketError("Failed to close ticket");
+        setIsClosing(false);
+        return;
+      }
+      if (data.error) throw new Error(data.error);
+      window.alert("Ticket closed successfully!");
+      setIsDetailsOpen(false);
+      setCloseTicketCode("");
+      fetchTickets(collegeId);
+    } catch (error) {
+      setCloseTicketError(error.message || "Failed to close ticket");
+    } finally {
+      setIsClosing(false);
+    }
   };
 
   // Navigation items with college ID
@@ -232,497 +304,116 @@ const Support = () => {
             <h2 style={{ color: '#1f2937' }}>Support Center</h2>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
-                onClick={() => setShowTicketList(!showTicketList)}
+                onClick={() => setIsCreateTicketOpen(true)}
                 style={{
                   padding: '8px 16px',
-                  background: '#2563eb',
+                  background: '#059669',
                   color: '#fff',
                   border: 'none',
                   borderRadius: '6px',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#1d4ed8'}
-                onMouseOut={(e) => e.currentTarget.style.background = '#2563eb'}
+                onMouseOver={e => e.currentTarget.style.background = '#047857'}
+                onMouseOut={e => e.currentTarget.style.background = '#059669'}
               >
-                {showTicketList ? 'Hide Tickets' : 'View Tickets'}
+                Generate Ticket
               </button>
-              {currentTicket && (
-                <button
-                  onClick={handleNewConversation}
-                  style={{
-                    padding: '8px 16px',
-                    background: '#2563eb',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.background = '#1d4ed8'}
-                  onMouseOut={(e) => e.currentTarget.style.background = '#2563eb'}
-                >
-                  New Conversation
-                </button>
-              )}
             </div>
           </div>
-          
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: showTicketList ? '300px 1fr 300px' : '1fr 300px', 
-            gap: '24px',
-            height: 'calc(100vh - 200px)'
-          }}>
-            {/* Ticket List */}
-            {showTicketList && (
-              <div style={{
-                background: '#fff',
-                borderRadius: '12px',
-                padding: '24px',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                overflowY: 'auto',
-                border: '1px solid #e5e7eb'
-              }}>
-                <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>Previous Tickets</h3>
-                {tickets.length === 0 ? (
-                  <div style={{ color: '#6b7280', textAlign: 'center' }}>No tickets yet</div>
-                ) : (
-                  tickets.map(ticket => (
-                    <div
-                      key={ticket.ticketId}
-                      onClick={() => handleTicketClick(ticket)}
-                      style={{
-                        padding: '12px',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        marginBottom: '8px',
-                        cursor: 'pointer',
-                        background: currentTicket?.ticketId === ticket.ticketId ? '#f3f4f6' : '#fff',
-                        transition: 'all 0.2s ease',
-                        boxShadow: currentTicket?.ticketId === ticket.ticketId ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
-                      }}
-                      onMouseOver={(e) => {
-                        if (currentTicket?.ticketId !== ticket.ticketId) {
-                          e.currentTarget.style.background = '#f9fafb';
-                          e.currentTarget.style.transform = 'translateY(-1px)';
-                          e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        if (currentTicket?.ticketId !== ticket.ticketId) {
-                          e.currentTarget.style.background = '#fff';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }
-                      }}
-                    >
-                      <div style={{ fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px' }}>
-                        {ticket.subject}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '4px' }}>
-                        {formatDate(ticket.createdAt)}
-                      </div>
-      <div style={{
-                        display: 'inline-block',
-                        padding: '2px 8px',
-                        borderRadius: '12px',
-                        fontSize: '0.75rem',
-                        background: getStatusColor(ticket.status) + '20',
-                        color: getStatusColor(ticket.status)
-                      }}>
-                        {ticket.status.replace('_', ' ')}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-
-            {/* Messages Section */}
-        <div style={{
-          background: '#fff',
-          borderRadius: '16px',
-              padding: '24px',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-          display: 'flex',
-          flexDirection: 'column',
-              border: '1px solid #e5e7eb',
-              position: 'relative',
-          overflow: 'hidden'
-        }}>
-              {currentTicket && (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '20px',
-                  paddingBottom: '16px',
-                  borderBottom: '2px solid #f3f4f6'
-                }}>
-                  <div>
-                    <h3 style={{ margin: 0, color: '#1f2937', fontSize: '1.1rem' }}>Ticket: {currentTicket.ticketId}</h3>
-                    <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                      Status: <span style={{ color: getStatusColor(currentTicket.status), fontWeight: 500 }}>
-                        {currentTicket.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                  </div>
-            <button
-                    onClick={handleCloseTicket}
-              style={{
-                      padding: '8px 16px',
-                      background: '#fee2e2',
-                      color: '#dc2626',
-                border: 'none',
-                      borderRadius: '8px',
-                cursor: 'pointer',
-                      fontSize: '0.875rem',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.background = '#fecaca';
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.background = '#fee2e2';
-                      e.currentTarget.style.transform = 'scale(1)';
-                    }}
-                  >
-                    Close Ticket
-            </button>
-          </div>
-              )}
-
-          <div style={{
-                flex: 1, 
-            overflowY: 'auto',
-                marginBottom: '24px',
-                padding: '8px',
-                background: '#fafafa',
-                borderRadius: '12px',
-                border: '1px solid #e5e7eb'
-              }}>
-                {messages.length === 0 ? (
-                  <div style={{ 
-                    textAlign: 'center', 
-                    color: '#6b7280',
-                    padding: '48px 0',
-                    fontSize: '1.1rem'
-                  }}>
-                    {currentTicket ? 'No messages in this ticket' : 'Start a conversation with our support bot!'}
-                  </div>
-                ) : (
-                  <>
-                    {messages.map((message, index) => (
-                      <div
-                        key={index}
-                        style={{
-                          marginBottom: '16px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: message.senderType === 'user' ? 'flex-end' : 'flex-start',
-                          animation: 'slideInUp 0.3s ease-out',
-                          animationFillMode: 'both',
-                          animationDelay: `${index * 0.1}s`
-                        }}
-                      >
-                        <div style={{
-                          background: message.senderType === 'user' 
-                            ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                            : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                          color: '#fff',
-                          padding: '16px 20px',
-                          borderRadius: message.senderType === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                          maxWidth: '75%',
-                          position: 'relative',
-                          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                          border: '1px solid rgba(255, 255, 255, 0.2)',
-                          backdropFilter: 'blur(10px)',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                          e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15)';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-                        }}
-                        >
-                          <div style={{ 
-                            fontSize: '0.875rem',
-                            color: 'rgba(255, 255, 255, 0.9)',
-                            marginBottom: '8px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            fontWeight: 500
-                          }}>
-                            {message.senderType === 'support_bot' && <FaRobot style={{ color: '#ffd700' }} />}
-                            {message.sender}
-                          </div>
-                          <div style={{ 
-                            whiteSpace: 'pre-line',
-                            lineHeight: '1.6',
-                            fontSize: '0.95rem'
-                          }}>
-                            {message.message}
-                          </div>
-                          <div style={{ 
-                            fontSize: '0.75rem',
-                            color: 'rgba(255, 255, 255, 0.7)',
-                            marginTop: '8px',
-                            textAlign: 'right'
-                          }}>
-                            {formatDate(message.timestamp)}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    {isBotTyping && (
-                      <div style={{
-                        marginBottom: '16px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                        animation: 'slideInUp 0.3s ease-out'
-                      }}>
-                        <div style={{
-                          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                          color: '#fff',
-                          padding: '16px 20px',
-                          borderRadius: '18px 18px 18px 4px',
-                          maxWidth: '75%',
-                          position: 'relative',
-                          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                          border: '1px solid rgba(255, 255, 255, 0.2)',
-                          backdropFilter: 'blur(10px)'
-                        }}>
-                          <div style={{ 
-                            fontSize: '0.875rem',
-                            color: 'rgba(255, 255, 255, 0.9)',
-                            marginBottom: '8px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            fontWeight: 500
-                          }}>
-                            <FaRobot style={{ color: '#ffd700' }} />
-                            Support Bot
-                          </div>
-                          <div style={{ 
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}>
-                            <div style={{
-                              width: '8px',
-                              height: '8px',
-                              background: '#fff',
-                              borderRadius: '50%',
-                              animation: 'bounce 1s infinite'
-                            }} />
-                            <div style={{
-                              width: '8px',
-                              height: '8px',
-                              background: '#fff',
-                              borderRadius: '50%',
-                              animation: 'bounce 1s infinite 0.2s'
-                            }} />
-                            <div style={{
-                              width: '8px',
-                              height: '8px',
-                              background: '#fff',
-                              borderRadius: '50%',
-                              animation: 'bounce 1s infinite 0.4s'
-                            }} />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-                <div ref={messagesEndRef} />
-      </div>
-
-              {error && (
-      <div style={{ 
-                  padding: '12px 16px',
-                  background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)',
-                  color: '#fff',
-                  borderRadius: '8px',
-                  marginBottom: '16px',
-                  fontSize: '0.875rem',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                  animation: 'shake 0.5s ease-in-out'
-            }}>
-              {error}
-            </div>
-              )}
-
-              <form onSubmit={handleSubmitMessage} style={{
-                display: 'flex',
-                gap: '12px',
-                background: '#f8fafc',
-                padding: '16px',
-              borderRadius: '12px',
-                border: '1px solid #e2e8f0'
-              }}>
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  disabled={loading}
-                  style={{
-                    flex: 1,
-                    padding: '14px 18px',
-                    borderRadius: '12px',
-                    border: '2px solid #e2e8f0',
-                    fontSize: '1rem',
-                    background: '#fff',
-                    transition: 'all 0.2s ease',
-                    outline: 'none'
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#6366f1';
-                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = '#e2e8f0';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                />
-                <button
-                  type="submit"
-                  disabled={loading || !newMessage.trim()}
-                  style={{
-                    padding: '14px 24px',
-                    background: loading || !newMessage.trim() 
-                      ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)' 
-                      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '12px',
-                    cursor: loading || !newMessage.trim() ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '1rem',
-                    fontWeight: 500,
-                    transition: 'all 0.3s ease',
-                    boxShadow: loading || !newMessage.trim() ? 'none' : '0 4px 6px rgba(0, 0, 0, 0.1)'
-                  }}
-                  onMouseOver={(e) => {
-                    if (!loading && newMessage.trim()) {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15)';
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (!loading && newMessage.trim()) {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-                    }
-                  }}
-                >
-                  {loading ? (
-                    <>
-                      <div style={{
-                        width: '16px',
-                        height: '16px',
-                        border: '2px solid rgba(255,255,255,0.3)',
-                        borderTop: '2px solid #fff',
-                        borderRadius: '50%',
-                        animation: 'spin 1s linear infinite'
-                      }} />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <FaPaperPlane />
-                      Send
-                    </>
-                  )}
-                </button>
-              </form>
-            </div>
-
-            {/* Quick Help Section */}
+          {/* Ticket List - full width */}
+          <div style={{ width: '100%' }}>
             <div style={{
               background: '#fff',
-              borderRadius: '16px',
+              borderRadius: '12px',
               padding: '24px',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
               overflowY: 'auto',
               border: '1px solid #e5e7eb'
             }}>
-              <h3 style={{ 
-                marginBottom: '20px',
-                color: '#1f2937',
-                fontSize: '1.2rem',
-                fontWeight: 600
-              }}>
-                Quick Help
-                      </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {quickHelpTopics.map((topic, index) => (
+              <h3 style={{ marginBottom: '16px', color: '#1f2937' }}>All Tickets</h3>
+              {tickets.length === 0 ? (
+                <div style={{ color: '#6b7280', textAlign: 'center' }}>No tickets yet</div>
+              ) : (
+                tickets.map(ticket => (
                   <div
-                    key={index}
-                    onClick={() => handleQuickHelpClick(topic)}
+                    key={ticket.ticketId}
                     style={{
-                      padding: '16px',
-                      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      border: '1px solid #e2e8f0',
-                      position: 'relative',
-                      overflow: 'hidden'
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)';
-                      e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
-                      e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.1)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)';
-                      e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                      e.currentTarget.style.boxShadow = 'none';
+                      padding: '12px',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      marginBottom: '8px',
+                      background: '#fff',
+                      transition: 'all 0.2s ease',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
                     }}
                   >
-                    <div style={{
-                      fontSize: '0.95rem', 
-                      fontWeight: 500,
-                      color: '#374151',
-                      position: 'relative',
-                      zIndex: 1
-                    }}>
-                      {topic.title}
+                    <div>
+                      <div style={{ fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px' }}>{ticket.subject}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '4px' }}>{formatDate(ticket.createdAt)}</div>
+                      <div style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', background: getStatusColor(ticket.status) + '20', color: getStatusColor(ticket.status) }}>{ticket.status.replace('_', ' ')}</div>
                     </div>
+                    <button onClick={() => handleViewTicket(ticket)} style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer' }}>View</button>
                   </div>
-                ))}
-                
-                <div style={{
-                  padding: '16px',
-                  background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                  borderRadius: '12px',
-                  border: '2px solid #f59e0b',
-                      marginTop: '16px',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '8px', color: '#92400e' }}>
-                    Need more help?
-                  </div>
-                  <div style={{ fontSize: '0.85rem', color: '#b45309' }}>
-                    Contact our support team at support@campusadmin.com
-                  </div>
-                </div>
-              </div>
+                ))
+              )}
             </div>
           </div>
+          {/* Ticket Details Modal */}
+          {isDetailsOpen && (
+            <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setIsDetailsOpen(false)}>
+              <div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 350, maxWidth: 500 }} onClick={e => e.stopPropagation()}>
+                {!detailsTicket ? (
+                  <div>Loading...</div>
+                ) : detailsTicket.error ? (
+                  <div style={{ color: 'red' }}>{detailsTicket.error}</div>
+                ) : (
+                  <div>
+                    <h2 style={{ fontWeight: 'bold', fontSize: 20, marginBottom: 8 }}>{detailsTicket.subject}</h2>
+                    <div style={{ marginBottom: 8 }}>{detailsTicket.description}</div>
+                    <div style={{ marginBottom: 8, color: '#555' }}>Ticket ID: {detailsTicket.ticketId}</div>
+                    <div style={{ marginBottom: 8, color: '#555' }}>Status: {detailsTicket.status}</div>
+                    <div style={{ marginBottom: 8, color: '#555' }}>Created: {detailsTicket.createdAt?.slice(0, 19).replace('T', ' ')}</div>
+                    <div style={{ marginBottom: 8 }}><strong>Category:</strong> {detailsTicket.category} <br /><strong>Priority:</strong> {detailsTicket.priority}</div>
+                    <div style={{ marginBottom: 8 }}>
+                      <strong>Conversation:</strong>
+                      <ul style={{ marginTop: 8, paddingLeft: 16, borderLeft: '2px solid #eee' }}>
+                        {detailsTicket.messages?.map((msg, i) => (
+                          <li key={i} style={{ marginBottom: 8 }}>
+                            <span style={{ fontWeight: 600 }}>{msg.senderType === 'user' ? 'You' : 'Support'}:</span> {msg.message}
+                            <div style={{ fontSize: 12, color: '#888' }}>{msg.timestamp ? msg.timestamp.slice(0, 19).replace('T', ' ') : ''}</div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {detailsTicket.status !== 'closed' && (
+                      <div style={{ marginTop: 16 }}>
+                        <div style={{ marginBottom: 8, fontWeight: 500 }}>To Close Ticket Enter Code: {detailsTicket.secretCode}</div>
+                        <input
+                          type="text"
+                          style={{ border: '1px solid #ccc', padding: 8, borderRadius: 6, width: '100%' }}
+                          placeholder="Enter your secret code"
+                          value={closeTicketCode}
+                          onChange={e => setCloseTicketCode(e.target.value)}
+                          disabled={isClosing}
+                        />
+                        <button
+                          style={{ marginTop: 12, padding: '8px 16px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 600, cursor: 'pointer' }}
+                          onClick={handleCloseTicket}
+                          disabled={isClosing || !closeTicketCode}
+                        >
+                          {isClosing ? 'Closing...' : 'Close Ticket'}
+                        </button>
+                        {closeTicketError && <div style={{ color: 'red', marginTop: 8 }}>{closeTicketError}</div>}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -733,6 +424,83 @@ const Support = () => {
         college={college}
         onUpdate={handleCollegeUpdate}
       />
+
+      {/* Modal for creating a ticket */}
+      {isCreateTicketOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          background: 'rgba(0,0,0,0.3)', zIndex: 1001, display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }} onClick={() => setIsCreateTicketOpen(false)}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 350, maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginBottom: 16 }}>Create Support Ticket</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <input
+                type="text"
+                placeholder="Name"
+                value={newTicket.username}
+                onChange={e => setNewTicket({ ...newTicket, username: e.target.value })}
+                style={{ padding: 8, borderRadius: 6, border: '1px solid #e5e7eb' }}
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={newTicket.email}
+                onChange={e => setNewTicket({ ...newTicket, email: e.target.value })}
+                style={{ padding: 8, borderRadius: 6, border: '1px solid #e5e7eb' }}
+              />
+              <input
+                type="text"
+                placeholder="Contact Phone"
+                value={newTicket.contact}
+                onChange={e => setNewTicket({ ...newTicket, contact: e.target.value })}
+                style={{ padding: 8, borderRadius: 6, border: '1px solid #e5e7eb' }}
+              />
+              <select
+                value={newTicket.category}
+                onChange={e => setNewTicket({ ...newTicket, category: e.target.value })}
+                style={{ padding: 8, borderRadius: 6, border: '1px solid #e5e7eb' }}
+              >
+                <option value="">Select Category</option>
+                <option value="Technical">Technical Issues</option>
+                <option value="Academic">Academic Support</option>
+                <option value="Facilities">Campus Facilities</option>
+                <option value="Financial">Financial Services</option>
+                <option value="Account">Account Issues</option>
+                <option value="Document Verification">Document Verification</option>
+                <option value="Other">Other</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Subject"
+                value={newTicket.subject}
+                onChange={e => setNewTicket({ ...newTicket, subject: e.target.value })}
+                style={{ padding: 8, borderRadius: 6, border: '1px solid #e5e7eb' }}
+              />
+              <textarea
+                placeholder="Description"
+                value={newTicket.description}
+                onChange={e => setNewTicket({ ...newTicket, description: e.target.value })}
+                rows={4}
+                style={{ padding: 8, borderRadius: 6, border: '1px solid #e5e7eb' }}
+              />
+              <select
+                value={newTicket.priority}
+                onChange={e => setNewTicket({ ...newTicket, priority: e.target.value })}
+                style={{ padding: 8, borderRadius: 6, border: '1px solid #e5e7eb' }}
+              >
+                <option value="medium">Medium</option>
+                <option value="urgent">Urgent</option>
+                <option value="high">High</option>
+                <option value="low">Low</option>
+              </select>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+                <button onClick={() => setIsCreateTicketOpen(false)} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#e5e7eb', color: '#374151', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={handleCreateTicket} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer' }}>Create Ticket</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         @keyframes slideInUp {
