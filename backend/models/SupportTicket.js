@@ -9,7 +9,7 @@ const SupportTicketSchema = new mongoose.Schema({
   },
   userId: {
     type: String,
-    required: true
+    required: false 
   },
   userType: {
     type: String,
@@ -79,7 +79,7 @@ const SupportTicketSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: true
+    required: false
   },
   secretCode: {
     type: String,
