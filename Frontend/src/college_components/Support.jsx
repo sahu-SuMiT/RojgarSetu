@@ -259,8 +259,13 @@ const Support = () => {
       setCloseTicketCode("");
       fetchTickets(collegeId);
     } catch (error) {
-      console.log(error);
-      setCloseTicketError(error.message || "Failed to close ticket");
+        console.log(error);
+        setCloseTicketError(
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to close ticket"
+      );
     } finally {
       setIsClosing(false);
     }
