@@ -308,8 +308,10 @@ router.put('/:id/edit',isCollegeAuthenticated,isCollegeAdmin, async (req, res) =
     res.status(500).json({ error: 'Failed to update college information' });
   }
 });
+
 router.post('/tickets', async (req, res) => {
   try {
+    console.log("req.body", req.body);
     const { userId, userType, subject, description, category, priority, email,contact, userName} = req.body;
     if (!userId || !userType || !subject || !description || !email) {
       return res.status(400).json({ error: 'Missing required fields.' });
@@ -318,7 +320,7 @@ router.post('/tickets', async (req, res) => {
     const newTicket = new SupportTicket({
       ticketId: uuidv4(),
       userId,
-      userType: userType || 'college',
+      userType: userType || 'College',
       subject,
       description,
       category,

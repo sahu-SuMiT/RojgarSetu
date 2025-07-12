@@ -39,58 +39,72 @@ function generateSecretCode() {
 
 // --- Create Support Ticket ---
 exports.createTicket = async (req, res) => {
-  const { userId, userType, subject, description, email, category, priority } = req.body;
+  try{
+    console.log("creating ticke: ", req.body);
+    const { userId, userType, subject, description, email, category, priority, userName,contact } = req.body;
 
-  if (!userId || !userType || !subject || !description || !email) {
-    return res.status(400).json({ error: "All fields required: userId, userType, subject, description, email" });
+    if (!userId || !userType || !subject || !description || !email) {
+      return res.status(400).json({ error: "All fields required: userId, userType, subject, description, email" });
+    }
+    if (!['College', 'Company', 'Student',''].includes(userType)) {
+      return res.status(400).json({ error: "userType must be 'college' or 'company" });
+    }
+
+    const ticketId = generateTicketId();
+    const secretCode = generateSecretCode();
+
+    // Initial message in the conversation thread
+    const initialMessage = {
+      sender: userId,
+      senderType: "user",
+      message: description,
+      timestamp: new Date(),
+      isBotResponse: false
+    };
+
+    const ticket = new SupportTicket({
+      ticketId,
+      userId,
+      userType,
+      subject,
+      status: "open",
+      priority: priority || "medium",
+      category: category || "general",
+      messages: [initialMessage],
+      secretCode,
+      email,
+      user_email:email,
+      user_name:userName,
+      user_phone:contact
+    });
+
+    await ticket.save();
+
+    // Automated message
+    const autoMsg = `Your Ticket No. #${ticketId} has been generated for [${subject}]. Your issue will be resolved within 3–4 hours. Please use this secret code: ${secretCode} to close your complaint after resolution.`;
+
+    // Send notifications
+    await sendPortalNotification(userId, autoMsg);
+    await sendEmail(email, `Ticket #${ticketId} Generated`, autoMsg);
+
+    return res.json({ ticketId, message: autoMsg });
   }
-  if (!['college', 'company'].includes(userType)) {
-    return res.status(400).json({ error: "userType must be 'college' or 'company'" });
+  catch(err){
+    return res.json({error:"failed to create ticket", error:err});
   }
-
-  const ticketId = generateTicketId();
-  const secretCode = generateSecretCode();
-
-  // Initial message in the conversation thread
-  const initialMessage = {
-    sender: userId,
-    senderType: "user",
-    message: description,
-    timestamp: new Date(),
-    isBotResponse: false
-  };
-
-  const ticket = new SupportTicket({
-    ticketId,
-    userId,
-    userType,
-    subject,
-    status: "open",
-    priority: priority || "medium",
-    category: category || "general",
-    messages: [initialMessage],
-    secretCode,
-    email
-  });
-
-  await ticket.save();
-
-  // Automated message
-  const autoMsg = `Your Ticket No. #${ticketId} has been generated for [${subject}]. Your issue will be resolved within 3–4 hours. Please use this secret code: ${secretCode} to close your complaint after resolution.`;
-
-  // Send notifications
-  await sendPortalNotification(userId, autoMsg);
-  await sendEmail(email, `Ticket #${ticketId} Generated`, autoMsg);
-
-  return res.json({ ticketId, message: autoMsg });
 };
 
 // --- Get Tickets List for User ---
 exports.getTickets = async (req, res) => {
-  const { userId } = req.query;
-  if (!userId) return res.status(400).json({ error: "Missing userId" });
-  const tickets = await SupportTicket.find({ userId }).sort({ createdAt: -1 });
-  return res.json(tickets);
+  try{
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ error: "Missing userId" });
+    const tickets = await SupportTicket.find({ userId }).sort({ createdAt: -1 });
+    return res.json(tickets);
+  }catch(err){
+    console.error(err);
+    return res.json({error:"failed to fetch tickets"});
+  }
 };
 
 // --- Get Ticket Details by ticketId ---
@@ -110,8 +124,9 @@ exports.closeTicket = async (req, res) => {
       return res.status(400).json({ error: "ticketId and secretCode required" });
     }
     const ticket = await SupportTicket.findOne({ ticketId });
+    console.log('found ticket: ', ticket);
     if (!ticket) return res.status(404).json({ error: "Ticket not found" });
-    if (ticket.SecretCode && ticket.secretCode !== secretCode) {
+    if (ticket.secretCode && ticket.secretCode !== secretCode) {
       return res.status(401).json({ error: "Incorrect secret code" });
     }
     if (ticket.status === "closed" || ticket.status === "resolved") {

@@ -38,7 +38,7 @@ const Support = () => {
   const [closeTicketCode, setCloseTicketCode] = useState("");
   const [closeTicketError, setCloseTicketError] = useState("");
   const [isClosing, setIsClosing] = useState(false);
-
+  const [isCreatingTicket, setIsCreatingTicket] = useState(false);
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -70,7 +70,7 @@ const Support = () => {
 
   const fetchTickets = async (userId) => {
     try {
-      const response = await axios.get(`${apiUrl}/api/support/tickets/${userId}`);
+      const response = await axios.get(`${apiUrl}/api/tickets/college/${userId}`);
       setTickets(response.data.tickets || []);
     } catch (error) {
       // Error handling without console logging
@@ -115,9 +115,9 @@ const Support = () => {
       
       if (!currentTicket) {
         // Create new ticket
-        response = await axios.post(`${apiUrl}/api/support/tickets`, {
+        response = await axios.post(`${apiUrl}/api/company/tickets`, {
           userId: collegeId,
-          userType: 'college',
+          userType: 'College',
           subject: newMessage.substring(0, 50) + (newMessage.length > 50 ? '...' : ''),
           message: newMessage
         });
@@ -193,10 +193,11 @@ const Support = () => {
       return;
     }
     try {
+      setIsCreatingTicket(true);
       const token = localStorage.getItem('token');
       const res = await axios.post(`${apiUrl}/api/colleges/tickets`, {
         userId: collegeId,
-        userType: 'college',
+        userType: 'College',
         subject: newTicket.subject,
         description: newTicket.description,
         category: newTicket.category,
@@ -206,10 +207,12 @@ const Support = () => {
         contact: newTicket.contact
       }, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
       alert('Ticket created successfully!');
+      setIsCreatingTicket(false);
       setIsCreateTicketOpen(false);
       setNewTicket({ subject: '', description: '', category: '', priority: 'medium', email: college?.email || '', contact: college?.contactPhone || '', username: collegeName || '' });
       fetchTickets(collegeId);
     } catch (error) {
+      setIsCreatingTicket(false);
       alert(error.response?.data?.error || 'Failed to create ticket');
     }
   };
@@ -256,6 +259,7 @@ const Support = () => {
       setCloseTicketCode("");
       fetchTickets(collegeId);
     } catch (error) {
+      console.log(error);
       setCloseTicketError(error.message || "Failed to close ticket");
     } finally {
       setIsClosing(false);
@@ -495,7 +499,11 @@ const Support = () => {
               </select>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
                 <button onClick={() => setIsCreateTicketOpen(false)} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#e5e7eb', color: '#374151', cursor: 'pointer' }}>Cancel</button>
-                <button onClick={handleCreateTicket} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer' }}>Create Ticket</button>
+                {isCreatingTicket? 
+                  <button style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'grey', color: '#fff', cursor: 'pointer' }}>Creating...</button>
+                  :<button onClick={handleCreateTicket} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer' }}>Create Ticket</button>
+                }
+                
               </div>
             </div>
           </div>

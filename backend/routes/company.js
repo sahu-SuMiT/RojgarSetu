@@ -638,6 +638,7 @@ router.get('/:companyId/interviews/complete',isCompanyAuthenticated, async (req,
 // POST /api/company/tickets
 router.post('/tickets', async (req, res) => {
   try {
+    console.log("req.body:",req.body)
     const { userId, userType, subject, description, category, priority, email,contact, userName} = req.body;
     if (!userId || !userType || !subject || !description || !email) {
       return res.status(400).json({ error: 'Missing required fields.' });
@@ -646,7 +647,7 @@ router.post('/tickets', async (req, res) => {
     const newTicket = new SupportTicket({
       ticketId: uuidv4(),
       userId,
-      userType: userType || 'company',
+      userType: userType || 'Company',
       subject,
       description,
       category,
@@ -688,15 +689,6 @@ router.post('/tickets', async (req, res) => {
   }
 });
 
-// GET /api/company/tickets/:companyId
-router.get('/tickets/:companyId', async (req, res) => {
-  try {
-    const tickets = await SupportTicket.find({ userId: req.params.companyId, userType: 'company' }).sort({ createdAt: -1 });
-    res.json({ tickets });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch tickets' });
-  }
-});
 
 // Edit company information
 router.put('/:id/edit',isCompanyAuthenticated,isCompanyAdmin, async (req, res) => {
