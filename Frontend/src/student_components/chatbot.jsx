@@ -58,7 +58,7 @@ export default function SupportCenter() {
   const [user, setUser] = useState({
     userId: "",
     email: "",
-    userType: "student"
+    userType: "Student"
   });
 
   // Ticket details modal
@@ -67,13 +67,13 @@ export default function SupportCenter() {
   const [closeTicketCode, setCloseTicketCode] = useState("");
   const [closeTicketError, setCloseTicketError] = useState("");
   const [isClosing, setIsClosing] = useState(false);
-
+  const [isCreatingTicket, setIsCreatingTicket] = useState(false);
   // Get user info (from localStorage or context; already authenticated)
   useEffect(() => {
     setUser({
       userId: localStorage.getItem("studentId"),
       email: "",
-      userType: "student"
+      userType: "Student"
     });
   }, []);
 
@@ -119,7 +119,6 @@ export default function SupportCenter() {
       !newTicket.username ||
       !newTicket.contact
     ) {
-      
       window.alert("Please fill in all required fields.");
       return;
     }
@@ -136,6 +135,7 @@ export default function SupportCenter() {
       formData.append("contact", newTicket.contact);
       // Remove image handling from handleCreateTicket
       // (do not append image to formData)
+      setIsCreatingTicket(true);
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
       const token = localStorage.getItem("token");
       const res = await fetch(`${apiUrl}/api/student/tickets`, {
@@ -152,11 +152,13 @@ export default function SupportCenter() {
         const text = await res.text();
         console.error("Expected JSON, got:", text);
         window.alert("Server returned invalid response.");
+        setIsCreatingTicket(false);
         return;
       }
       if (data.error) throw new Error(data.error);
       window.alert(data.message);
       setIsCreateTicketOpen(false);
+      setIsCreatingTicket(false);
       setNewTicket({
         category: "",
         subject: "",
@@ -181,6 +183,7 @@ export default function SupportCenter() {
         .then(data => setTickets(Array.isArray(data) ? data : []));
     } catch (error) {
       window.alert(error.message || "Failed to create ticket");
+      setIsCreatingTicket(false);
     }
   };
 
@@ -315,14 +318,14 @@ export default function SupportCenter() {
                   Get help with your campus services and submit support tickets
                 </p>
               </div>
-              <button
+                <button
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-7 py-3 text-lg rounded-xl shadow transition"
                 style={{ minWidth: 180 }}
                 onClick={openCreateTicketDialog}
-              >
-                <Plus className="w-6 h-6" />
-                Create Ticket
-              </button>
+                >
+                  <Plus className="w-6 h-6" />
+                  Create Ticket
+                </button>
             </div>
             {/* Dashboard Stats */}
             <div className="flex flex-col md:flex-row gap-6 mb-8">
@@ -539,7 +542,15 @@ export default function SupportCenter() {
                 <button className="px-4 py-2 bg-gray-200 rounded font-semibold" type="button" onClick={() => setIsCreateTicketOpen(false)}>
                   Cancel
                 </button>
-                <button
+                {isCreatingTicket?
+                  <button
+                  className={`px-4 py-2 bg-blue-600 hover:bg-grey-700 text-white rounded font-semibold opacity-50 cursor-not-allowed`}
+                  type="button"
+                  disabled={true}
+                  >
+                    Creating...
+                  </button> :
+                  <button
                   className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold ${(!newTicket.subject || !newTicket.description || !newTicket.category || !newTicket.email || !newTicket.username || !newTicket.contact) ? 'opacity-50 cursor-not-allowed' : ''}`}
                   type="button"
                   onClick={() => { handleCreateTicket(); }}
@@ -550,10 +561,11 @@ export default function SupportCenter() {
                     !newTicket.email ||
                     !newTicket.username ||
                     !newTicket.contact
-                  }
-                >
-                  Create Ticket
-                </button>
+                    }
+                  >
+                    Create Ticket
+                  </button>
+                }
               </DialogFooter>
             </div>
           </div>

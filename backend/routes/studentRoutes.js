@@ -198,7 +198,7 @@ router.post('/tickets', upload.single('uploadedFile'), async (req, res) => {
     const newTicket = new SupportTicket({
       ticketId: uuidv4(),
       userId,
-      userType,
+      userType:req.body.userType,
       email,
       user_name:userName,
       user_email:email,
@@ -217,6 +217,7 @@ router.post('/tickets', upload.single('uploadedFile'), async (req, res) => {
           }
         : undefined
     });
+    console.log(newTicket);
     await newTicket.save();
     const autoMsg = `Your Ticket No. #${newTicket.ticketId} has been generated for [${newTicket.subject}]. Your issue will be resolved within 3–4 hours. Please use this secret code: ${newTicket.secretCode} to close your complaint after resolution.`;
     await Notification.create({
