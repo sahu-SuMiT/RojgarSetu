@@ -27,25 +27,45 @@ function generateStudentToken(student) {
 }
 
 exports.login_student = async (req, res) => {
+  console.log('=== Student login attempt ===');
+  console.log('Request body:', req.body);
+  
   try {
     const { email, password } = req.body;
+    console.log('Login attempt for email:', email);
+    
     const student = await Student.findOne({ email });
-    //console.log("login student found: ", student)
-    if (!student) return res.status(400).json({ message: "Invalid credentials" });
+    console.log('Student found:', student ? 'Yes' : 'No');
+    
+    if (!student) {
+      console.log('Student not found for email:', email);
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
     var isMatch = await bcrypt.compare(password, student.password);
     if(!isMatch){
       isMatch = (password === student.password)
     }
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    console.log('Password match:', isMatch);
+    
+    if (!isMatch) {
+      console.log('Password mismatch for email:', email);
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
     const token = generateStudentToken(student);
+    console.log('Token generated successfully');
+    
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Prevent CSRF attacks
+      secure: false, // Set to false for localhost development
+      sameSite: 'lax', // Set to lax for localhost
+      domain: 'localhost', // Add domain for localhost
+      path: '/', // Ensure path is set
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
 
+    console.log('Login successful for student:', email);
     res.json({
       token,
       student: {
@@ -55,6 +75,7 @@ exports.login_student = async (req, res) => {
       }
     });
   } catch (err) {
+    console.error('Student login error:', err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -562,21 +583,45 @@ exports.checkRegistrationOtp = async (req, res) => {
 }
 exports.checkBypassAuth = (req, res) => {
   const token = req.cookies.token;
+  
   if (!token) {
     return res.status(401).json({ error: 'No token provided' });
   }
+  
   let decoded;
   try {
-    decoded = verifyToken(token); // should throw on failure
-    if(!decoded) {
+    decoded = verifyToken(token);
+    if (!decoded) {
       return res.status(401).json({ error: 'Invalid token' });
-    } 
+    }
+    
+    // More flexible type checking
+    const validTypes = ['college', 'company', 'employee', 'student', 'admin'];
+    const userType = decoded.type || decoded.role || decoded.userType;
+    
+    if (!validTypes.includes(userType)) {
+      console.log('Invalid user type:', userType, 'from token:', decoded);
+      return res.status(401).json({ error: 'Unauthorized access - invalid user type' });
+    }
+    
+    res.status(200).json({ 
+      message: 'Authorized access', 
+      user: decoded,
+      type: userType 
+    });
   } catch (err) {
+    console.error('Token verification error:', err);
     return res.status(403).json({ error: 'Invalid token' });
   }
-  if (!['college','company','employee','student'].includes(decoded.type)) {
-    return res.status(401).json({ error: 'Unauthorized access' });
-  }
-  res.status(200).json({ message: 'Authorized access', user: decoded });
 }
 exports.generateStudentToken = generateStudentToken;
+
+exports.testLogin = (req, res) => {
+  console.log('=== Test login endpoint called ===');
+  res.json({ 
+    message: 'Login endpoint is working',
+    timestamp: new Date().toISOString(),
+    method: req.method,
+    url: req.url
+  });
+};

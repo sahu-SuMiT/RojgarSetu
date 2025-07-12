@@ -7,6 +7,8 @@ const path = require('path');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const helmet = require('helmet');
+const http = require('http');
+const socket = require('./socket');
 
 // Importing the scheduler
 const startTicketEscalationJob = require('./scheduler/scheduler');
@@ -42,6 +44,26 @@ const signup = require('./controllers/user/signup');
 const salesRoutes = require('./routes/sales'); // Assuming you have a sales route file
 
 const app = express();
+const server = http.createServer(app); // <-- Create HTTP server
+
+// Initialize Socket.IO
+const io = socket.init(server);
+
+// Basic Socket.IO connection handler
+io.on('connection', (socket) => {
+  console.log('Socket.IO client connected:', socket.id);
+
+  socket.on('join', (studentId) => {
+    if (studentId) {
+      socket.join(studentId);
+      console.log(`Socket ${socket.id} joined room: ${studentId}`);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Socket.IO client disconnected:', socket.id);
+  });
+});
 
 // Debug middleware
 app.use((req, res, next) => {
@@ -60,45 +82,92 @@ app.use(session({
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
   cookie: {
-    secure: process.env.NODE_ENV === 'production',  // Always true for HTTPS (Render)
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Required for cross-site cookies over HTTPS
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   },
 }));
 
-// CORS setup for Render/production: allow credentials and set allowed origins
+// CORS setup for development and production
 const allowedOrigins = [
+  // Development origins
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:8080',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
+  // Production origins
   'https://campusadmin-y4hh.vercel.app',
   'https://campusadmin.vercel.app',
   'https://www.rojgarsetu.org',
   'https://company.rojgarsetu.org',
   'https://payomatixpaymentgateway.onrender.com',
-  'https://campusadmin.onrender.com', // Add Render backend itself if needed
+  'https://campusadmin.onrender.com',
+  // Add any additional frontend URLs that might be used
+  'https://campusadmin-backend.vercel.app',
+  'https://another-backend.example.com',
 ];
 
-if (process.env.REACT_URL) allowedOrigins.push(process.env.REACT_URL);
+// Add environment variable origins
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+if (process.env.REACT_URL) {
+  allowedOrigins.push(process.env.REACT_URL);
+}
+// Add multiple frontend URLs if needed
+if (process.env.ADDITIONAL_FRONTEND_URLS) {
+  const additionalUrls = process.env.ADDITIONAL_FRONTEND_URLS.split(',');
+  allowedOrigins.push(...additionalUrls);
+}
+
 app.use(cors({
   origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    const normalizedOrigin = origin.replace(/\/$/, '');
-    const normalizedAllowedOrigins = allowedOrigins.map(o => o.replace(/\/$/, ''));
-    if (normalizedAllowedOrigins.includes(normalizedOrigin)) {
+    
+    // Log the origin for debugging
+    console.log('CORS check - Origin:', origin);
+    console.log('CORS check - Allowed origins:', allowedOrigins);
+    
+    if (allowedOrigins.includes(origin)) {
+      console.log('CORS: Origin allowed');
       return callback(null, true);
     }
-    return callback(new Error(`CORS not allowed for origin: ${origin}`), false);
+    
+    console.log('CORS: Origin not allowed:', origin);
+    return callback(new Error('CORS not allowed for origin: ' + origin), false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token', 'Origin', 'Accept', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'X-Requested-With'],
   optionsSuccessStatus: 200,
+  preflightContinue: false,
 }));
 
-app.use(helmet());
+// Configure Helmet with more permissive settings for development
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      connectSrc: ["'self'", "ws:", "wss:", "http://localhost:*", "https://localhost:*"],
+    },
+  },
+}));
+
+// Handle preflight requests
+app.options('*', cors());
+
+// Remove or comment out the custom headers middleware that sets Access-Control-Allow-Origin: '*'
 
 const Campus_INTERNAL_SECRET = process.env.CAMPUS_INTERNAL_SECRET;
 if (!Campus_INTERNAL_SECRET) {
@@ -185,6 +254,51 @@ app.get('/', (req, res) => {
   res.send('Backend running!');
 });
 
+// Socket.IO health check route
+app.get('/socket.io/', (req, res) => {
+  res.json({ 
+    status: 'Socket.IO server is running',
+    timestamp: new Date().toISOString(),
+    connections: io.engine.clientsCount || 0
+  });
+});
+
+// Socket.IO endpoint test
+app.get('/socket-test', (req, res) => {
+  res.json({ 
+    message: 'Socket.IO endpoint is accessible',
+    socketIO: 'enabled',
+    timestamp: new Date().toISOString(),
+    cors: {
+      allowedOrigins: allowedOrigins,
+      currentOrigin: req.headers.origin
+    }
+  });
+});
+
+// Debug route to test CORS
+app.get('/cors-test', (req, res) => {
+  res.json({
+    message: 'CORS test successful',
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Simple test route for debugging
+app.get('/test', (req, res) => {
+  res.json({
+    message: 'Backend is working!',
+    cors: 'enabled',
+    timestamp: new Date().toISOString(),
+    headers: {
+      origin: req.headers.origin,
+      host: req.headers.host,
+      userAgent: req.headers['user-agent']
+    }
+  });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -209,6 +323,6 @@ app.use('/api/payment-update', require('./routes/paymentRoutes'));
 startTicketEscalationJob(); // Start the ticket escalation job
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => { // <-- Use server.listen instead of app.listen
   console.log(`Server listening on port ${PORT}`);
 });

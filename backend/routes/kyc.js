@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const io = require('../socket').getIO();
 const mongoose = require('mongoose');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
@@ -320,6 +321,14 @@ router.post('/verify-digio',authenticateToken,  async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
+    // 🔒 CRITICAL: Check payment status before allowing KYC
+    if (!user.payment || user.payment.status !== 'paid') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Payment required before KYC verification. Please complete payment first.' 
+      });
+    }
+
     let verificationId = user.kycData?.verificationId;
     if(verificationId){
       return res.status(400).json({
@@ -348,15 +357,31 @@ router.post('/verify-digio',authenticateToken,  async (req, res) => {
     if (digioResult.status === 'verified' || digioResult.status === 'approved') {
       user.kycStatus = 'verified';
       user.iskycVerified = true;
+      io.to(user._id.toString()).emit('kyc-status', {
+        status: 'verified',
+        message: 'KYC verification successful'
+      });
     } else if (digioResult.status === 'pending' || digioResult.status === 'pending approval') {
       user.kycStatus = 'pending approval';
       user.iskycVerified = false;
+      io.to(user._id.toString()).emit('kyc-status', {
+        status: 'pending',
+        message: 'KYC verification in progress'
+      });
     } else if (digioResult.status === 'rejected') {
       user.kycStatus = 'rejected';
       user.iskycVerified = false;
+      io.to(user._id.toString()).emit('kyc-status', {
+        status: 'rejected',
+        message: 'KYC verification rejected'
+      });
     } else {
       user.kycStatus = 'pending';
       user.iskycVerified = false;
+      io.to(user._id.toString()).emit('kyc-status', {
+        status: 'pending',
+        message: 'KYC verification pending'
+      });
     }
 
     await user.save();
