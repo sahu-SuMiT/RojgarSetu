@@ -104,32 +104,30 @@ const allowedOrigins = [
   'https://www.rojgarsetu.org',
   'https://company.rojgarsetu.org',
   'https://payomatixpaymentgateway.onrender.com',
-  'https://campusadmin.onrender.com', // Add Render backend itself if needed
+  'https://campusadmin.onrender.com',
 ];
 
-if (process.env.REACT_URL) allowedOrigins.push(process.env.REACT_URL);
+// Add environment variable origins
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+if (process.env.REACT_URL) {
+  allowedOrigins.push(process.env.REACT_URL);
+}
+// Add multiple frontend URLs if needed
+if (process.env.ADDITIONAL_FRONTEND_URLS) {
+  const additionalUrls = process.env.ADDITIONAL_FRONTEND_URLS.split(',');
+  allowedOrigins.push(...additionalUrls);
+}
 
-// More permissive CORS for development
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
-    const normalizedOrigin = origin.replace(/\/$/, '');
-    const normalizedAllowedOrigins = allowedOrigins.map(o => o.replace(/\/$/, ''));
-    
-    if (normalizedAllowedOrigins.includes(normalizedOrigin)) {
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    
-    // For development, be more permissive
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`Development: Allowing origin: ${origin}`);
-      return callback(null, true);
-    }
-    
-    console.log(`CORS blocked origin: ${origin}`);
-    return callback(new Error(`CORS not allowed for origin: ${origin}`), false);
+    return callback(new Error('CORS not allowed for origin: ' + origin), false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -158,28 +156,7 @@ app.use(helmet({
 // Handle preflight requests
 app.options('*', cors());
 
-// Add headers middleware for additional CORS support
-app.use((req, res, next) => {
-  // For development, be very permissive
-  if (process.env.NODE_ENV !== 'production') {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.header('Access-Control-Allow-Headers', '*');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Expose-Headers', '*');
-  } else {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-auth-token');
-    res.header('Access-Control-Allow-Credentials', 'true');
-  }
-  
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
+// Remove or comment out the custom headers middleware that sets Access-Control-Allow-Origin: '*'
 
 const Campus_INTERNAL_SECRET = process.env.CAMPUS_INTERNAL_SECRET;
 if (!Campus_INTERNAL_SECRET) {

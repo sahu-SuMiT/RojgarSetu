@@ -2,6 +2,7 @@ import React from 'react';
 import { Menu } from 'lucide-react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import KycProtectedRoute from './components/KycProtectedRoute';
 // Import all page components
 import Sidebar from './student_components/Sidebar';
 import Dashboard from './student_components/Dashboard';
@@ -229,11 +230,11 @@ const App = () => {
         <Route path="/login_panel" element={<Login />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /> </ProtectedRoute>} />
         <Route path="/studentProfile" element={<ProtectedRoute><Student /></ProtectedRoute>} />
-        <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
-        <Route path="/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
-        <Route path="/interviews" element={<ProtectedRoute><Interviews /></ProtectedRoute>} />
-        <Route path="/feedback" element={<ProtectedRoute><FeedbackCenter /></ProtectedRoute>} />
-        <Route path="/portfolio" element={<ProtectedRoute><ErrorBoundary><AIPortfolioSection /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/jobs" element={<ProtectedRoute><KycProtectedRoute><Jobs /></KycProtectedRoute></ProtectedRoute>} />
+        <Route path="/applications" element={<ProtectedRoute><KycProtectedRoute><Applications /></KycProtectedRoute></ProtectedRoute>} />
+        <Route path="/interviews" element={<ProtectedRoute><KycProtectedRoute><Interviews /></KycProtectedRoute></ProtectedRoute>} />
+        <Route path="/feedback" element={<ProtectedRoute><KycProtectedRoute><FeedbackCenter /></KycProtectedRoute></ProtectedRoute>} />
+        <Route path="/portfolio" element={<ProtectedRoute><KycProtectedRoute><ErrorBoundary><AIPortfolioSection /></ErrorBoundary></KycProtectedRoute></ProtectedRoute>} />
         <Route path="chat" element={<ProtectedRoute><Chatbot /></ProtectedRoute>} />
 
         {/* Sales and Support pages */}

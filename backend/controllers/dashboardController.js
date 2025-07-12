@@ -5,6 +5,11 @@ const Student = require('../models/Student');
 const jwt = require('jsonwebtoken');
 
 exports.getDashboardData = async (req, res) => {
+  console.log('=== Dashboard endpoint called ===');
+  console.log('User from middleware:', req.user);
+  console.log('Cookies:', req.cookies);
+  console.log('Headers:', req.headers);
+  
   try {
     if (!req.cookies) {
       return res.status(401).json({ message: 'Unauthorized: No session user' });

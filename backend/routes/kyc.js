@@ -321,6 +321,14 @@ router.post('/verify-digio',authenticateToken,  async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
+    // 🔒 CRITICAL: Check payment status before allowing KYC
+    if (!user.payment || user.payment.status !== 'paid') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Payment required before KYC verification. Please complete payment first.' 
+      });
+    }
+
     let verificationId = user.kycData?.verificationId;
     if(verificationId){
       return res.status(400).json({

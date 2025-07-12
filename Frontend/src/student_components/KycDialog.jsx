@@ -68,8 +68,8 @@ const KycDialog = ({
                     <h3 className="text-lg font-semibold text-gray-800 mb-2">Welcome to KYC Verification</h3>
                     <p className="text-gray-600 mb-4">Complete your identity verification in 3 simple steps:</p>
                     <ol className="list-decimal list-inside space-y-2 text-gray-600">
-                      <li>Choose your verification method (Phone/Email)</li>
                       <li>Complete the one-time verification fee payment</li>
+                      <li>Choose your verification method (Phone/Email)</li>
                       <li>Verify your identity through DigiLocker</li>
                     </ol>
                   </div>
@@ -118,7 +118,7 @@ const KycDialog = ({
                       <div className="flex items-center space-x-2">
                         <span className={`text-2xl font-bold transition-all duration-500 ${
                           paymentProcessing ? 'text-blue-600 animate-pulse' : 'text-green-600'
-                        }`}>₹1</span>
+                        }`}>₹85</span>
                         {paymentProcessing && (
                           <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
                         )}

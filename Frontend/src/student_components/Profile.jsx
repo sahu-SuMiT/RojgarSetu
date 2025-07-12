@@ -124,11 +124,16 @@ const Profile = () => {
   const [kycPaymentLoading, setKycPaymentLoading] = useState(false);
   const [kycProcessing, setKycProcessing] = useState(false);
   const [kycButtonLoading, setKycButtonLoading] = useState(false);
+  const [paymentRedirected, setPaymentRedirected] = useState(() => {
+    // Check localStorage for existing payment redirect state
+    return localStorage.getItem('paymentRedirected') === 'true';
+  });
   
   // Countdown and WebSocket states
   const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
   const socketRef = useRef(null);
   const pollingRef = useRef(null);
+  const paymentTimeoutRef = useRef(null); // New ref for payment timeout
 
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
@@ -139,6 +144,39 @@ const Profile = () => {
       window.location.href = '/student-login';
     }
   }, [token]);
+
+  // Clear payment redirected state if payment is already completed
+  useEffect(() => {
+    if (profileData?.payment?.status === 'paid' && paymentRedirected) {
+      setPaymentRedirected(false);
+      localStorage.removeItem('paymentRedirected');
+    }
+  }, [profileData?.payment?.status, paymentRedirected]);
+
+  // Payment timeout effect - reset after 1 minute if no response
+  useEffect(() => {
+    if (paymentRedirected) {
+      // Clear any existing timeout
+      if (paymentTimeoutRef.current) {
+        clearTimeout(paymentTimeoutRef.current);
+      }
+      
+      // Set new timeout for 1 minute (60000ms)
+      paymentTimeoutRef.current = setTimeout(() => {
+        console.log('Payment timeout reached - resetting payment state');
+        setPaymentRedirected(false);
+        localStorage.removeItem('paymentRedirected');
+        toast.info('Payment timeout. Please try again if payment was not completed.');
+      }, 60000); // 1 minute timeout
+      
+      // Cleanup timeout on unmount or when paymentRedirected changes
+      return () => {
+        if (paymentTimeoutRef.current) {
+          clearTimeout(paymentTimeoutRef.current);
+        }
+      };
+    }
+  }, [paymentRedirected]);
 
   // Handle URL parameters and payment success
   useEffect(() => {
@@ -298,8 +336,7 @@ const Profile = () => {
           reconnectionAttempts: 5,
           reconnectionDelay: 1000,
           reconnectionDelayMax: 5000,
-          maxReconnectionAttempts: 5,
-          withCredentials: true
+          maxReconnectionAttempts: 5
         });
 
         // Join student's room for real-time updates
@@ -310,6 +347,12 @@ const Profile = () => {
           console.log('Payment status update received:', data);
           
           if (data.status === 'success') {
+            // Clear payment timeout since payment was successful
+            if (paymentTimeoutRef.current) {
+              clearTimeout(paymentTimeoutRef.current);
+              paymentTimeoutRef.current = null;
+            }
+            
             // Update profile data with payment success
             setProfileData(prev => ({
               ...prev,
@@ -321,6 +364,10 @@ const Profile = () => {
               }
             }));
             
+            // Reset payment redirected state
+            setPaymentRedirected(false);
+            localStorage.removeItem('paymentRedirected');
+            
             // Show success toast
             toast.success('Payment successful! You can now proceed with KYC verification.');
             
@@ -330,6 +377,16 @@ const Profile = () => {
             }
             
           } else if (data.status === 'failed') {
+            // Clear payment timeout since payment failed
+            if (paymentTimeoutRef.current) {
+              clearTimeout(paymentTimeoutRef.current);
+              paymentTimeoutRef.current = null;
+            }
+            
+            // Reset payment redirected state on failure
+            setPaymentRedirected(false);
+            localStorage.removeItem('paymentRedirected');
+            
             // Show failure toast
             toast.error(`Payment failed: ${data.message || 'Unknown error'}`);
           }
@@ -371,6 +428,10 @@ const Profile = () => {
           if (socketRef.current) {
             socketRef.current.disconnect();
           }
+          // Clear payment timeout on unmount
+          if (paymentTimeoutRef.current) {
+            clearTimeout(paymentTimeoutRef.current);
+          }
         };
       } catch (error) {
         console.log('WebSocket setup error:', error.message);
@@ -395,7 +456,15 @@ const Profile = () => {
             
             // Check if payment status changed
             if (profileInfo.payment?.status === 'paid' && profileData.payment?.status !== 'paid') {
+              // Clear payment timeout since payment was successful
+              if (paymentTimeoutRef.current) {
+                clearTimeout(paymentTimeoutRef.current);
+                paymentTimeoutRef.current = null;
+              }
+              
               setProfileData(profileInfo);
+              setPaymentRedirected(false);
+              localStorage.removeItem('paymentRedirected');
               toast.success('Payment successful! You can now proceed with KYC verification.');
               if (kycStep !== 3) {
                 setKycStep(2);
@@ -594,12 +663,16 @@ const Profile = () => {
       try { data = await response.json(); } catch {}
 
               if (data && data.success && data.redirectUrl) {
-          // Redirect to Payomatix payment gateway in the current tab
-          window.location.href = data.redirectUrl;
+        // Set payment redirected state in localStorage before redirecting
+        setPaymentRedirected(true);
+        localStorage.setItem('paymentRedirected', 'true');
+        
+        // Redirect to Payomatix payment gateway in the current tab
+        window.location.href = data.redirectUrl;
 
-          // Optionally, move to next KYC step or wait for webhook confirmation
-          setKycStep(2); // Move to confirm step
-        } else {
+        // Optionally, move to next KYC step or wait for webhook confirmation
+        setKycStep(2); // Move to confirm step
+      } else {
         alert('Payment initiation failed: ' + (data?.message || 'No redirect URL received.'));
       }
     } catch (error) {
@@ -764,6 +837,8 @@ const Profile = () => {
       try { data = await response.json(); } catch {}
       if (response.ok && data && data.success && data.redirectUrl) {
         setKycPaymentMessage({ text: 'Redirecting to payment gateway...', type: 'success' });
+        setPaymentRedirected(true);
+        localStorage.setItem('paymentRedirected', 'true');
         window.location.href = data.redirectUrl;
       } else if (response.ok) {
         setKycPaymentMessage({ text: 'Payment initiated. Please complete the payment.', type: 'success' });
@@ -834,10 +909,11 @@ const Profile = () => {
                       : kycStatus === 'pending' ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed' 
                       : kycStatus === 'approved' ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
                       : kycStatus === 'verified' ? 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200'
+                      : paymentRedirected ? 'bg-orange-100 text-orange-800 border-orange-200 cursor-not-allowed'
                       : 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200'
                   }`}
                   style={{ outline: 'none' }}
-                  disabled={kycButtonLoading || kycStatus === 'approved' || kycStatus === 'verified' || kycStatus === 'pending'}
+                  disabled={kycButtonLoading || kycStatus === 'approved' || kycStatus === 'verified' || kycStatus === 'pending' || paymentRedirected}
                 >
                   {kycButtonLoading ? (
                     <>
@@ -851,6 +927,7 @@ const Profile = () => {
                        kycStatus === 'verified' ? 'KYC Verified' : 
                        kycStatus === 'pending' ? 'Pending' : 
                        kycStatus === 'pending approval' ? 'Pending Approval' : 
+                       paymentRedirected ? 'Wait' :
                        profileData?.payment?.status === 'paid' ? 'Continue KYC' : 
                        'Complete Your Verification'}
                     </>
