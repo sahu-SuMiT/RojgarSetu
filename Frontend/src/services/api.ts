@@ -1,6 +1,6 @@
+import { getApiUrl } from '../config/apiConfig';
 
-// API service with improved error handling
-const API_URL = '';
+const API_URL = getApiUrl();
 
 export const getAuthToken = () => localStorage.getItem('token');
 

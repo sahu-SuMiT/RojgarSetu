@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, CheckCircle, CreditCard, UserCheck, Sparkles } from 'lucide-react';
+import { getApiUrl } from '../config/apiConfig';
 
 const KycProtectedRoute = ({ children }) => {
   const [kycStatus, setKycStatus] = useState(null);
@@ -16,16 +17,26 @@ const KycProtectedRoute = ({ children }) => {
           return;
         }
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/student/kyc-status`, {
+        const apiUrl = getApiUrl();
+        console.log('KYC Status API URL:', apiUrl);
+        console.log('Token:', token ? 'Present' : 'Missing');
+        
+        const response = await fetch(`${apiUrl}/api/kyc/status`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
 
+        console.log('Response status:', response.status);
         if (response.ok) {
           const data = await response.json();
+          console.log('KYC Status response:', data);
           setKycStatus(data.kycStatus);
+        } else {
+          console.error('KYC Status error:', response.status, response.statusText);
+          const errorText = await response.text();
+          console.error('Error response:', errorText);
         }
       } catch (error) {
         console.error('Error checking KYC status:', error);

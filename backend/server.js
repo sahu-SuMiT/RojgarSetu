@@ -105,6 +105,9 @@ const allowedOrigins = [
   'https://company.rojgarsetu.org',
   'https://payomatixpaymentgateway.onrender.com',
   'https://campusadmin.onrender.com',
+  // Add any additional frontend URLs that might be used
+  'https://campusadmin-backend.vercel.app',
+  'https://another-backend.example.com',
 ];
 
 // Add environment variable origins
@@ -124,9 +127,17 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
+    
+    // Log the origin for debugging
+    console.log('CORS check - Origin:', origin);
+    console.log('CORS check - Allowed origins:', allowedOrigins);
+    
     if (allowedOrigins.includes(origin)) {
+      console.log('CORS: Origin allowed');
       return callback(null, true);
     }
+    
+    console.log('CORS: Origin not allowed:', origin);
     return callback(new Error('CORS not allowed for origin: ' + origin), false);
   },
   credentials: true,
