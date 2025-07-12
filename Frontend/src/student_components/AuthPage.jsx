@@ -1,7 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaArrowLeft } from "react-icons/fa";
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const AuthPage = ({ onAuthSuccess }) => {
   const navigate = useNavigate();
@@ -73,7 +72,7 @@ export const AuthPage = ({ onAuthSuccess }) => {
     try {
       if (currentView === "login") {
         // Login as before
-        const response = await fetch(`${apiUrl}/api/auth/student-login`, {
+        const response = await fetch(`/api/auth/student-login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
@@ -91,7 +90,7 @@ export const AuthPage = ({ onAuthSuccess }) => {
         }
       } else if (currentView === "signup" && registerStep === 1) {
         // Step 1: initiate registration, send OTP
-        const response = await fetch(`${apiUrl}/api/student/register/initiate`, {
+        const response = await fetch(`/api/student/register/initiate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -111,7 +110,7 @@ export const AuthPage = ({ onAuthSuccess }) => {
         }
       } else if (currentView === "signup" && registerStep === 2) {
         // Step 2: verify OTP
-        const response = await fetch(`${apiUrl}/api/auth/register/check-otp`, {
+        const response = await fetch(`/api/auth/register/check-otp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -129,7 +128,7 @@ export const AuthPage = ({ onAuthSuccess }) => {
         }
       } else if (currentView === "signup" && registerStep === 3) {
         // Step 3: set password and complete registration
-        const response = await fetch(`${apiUrl}/api/student/register/verify`, {
+        const response = await fetch(`/api/student/register/verify`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
