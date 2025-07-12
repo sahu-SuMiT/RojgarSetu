@@ -102,6 +102,7 @@ exports.getDashboardData = async (req, res) => {
       profileCompletion,
       opportunitiesOverview: { total: totalOpportunities, saved: savedOpportunities },
       applicationsOverview,
+      kycStatus:student.kycStatus,
       notificationsList,
       recentFeedback: recentFeedback.map(fb => ({
         _id: fb._id,
