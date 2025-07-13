@@ -137,16 +137,19 @@ exports.getRecentActivity = async (req, res) => {
 exports.getAllSupportTickets = async (req, res) => {
   try {
     // Fetch all support tickets and select specific fields
-    const supportTickets = await SupportTicket.find().select('ticketId userId subject priority status updatedAt');
+    const supportTickets = await SupportTicket.find().select('ticketId userId subject priority status updatedAt assignedTo user_name userType salesPerson').sort({ updatedAt: -1 } );
 
     // Map the results to include the desired field names
     const formattedTickets = supportTickets.map(ticket => ({
       ticketId: ticket.ticketId,
-      user: ticket.userId, // Assuming userId is the field representing the user
+      user: ticket.user_name, // Assuming userId is the field representing the user
       subject: ticket.subject,
       priority: ticket.priority,
       status: ticket.status,
-      updated: ticket.updatedAt
+      updated: ticket.updatedAt,
+      assignedTo: ticket.assignedTo || 'Unassigned', // Default to 'Unassigned' if no assignee
+      userType : ticket.userType || 'Unknown', // Default to 'Unknown' if userType is not set
+      salesPerson: ticket.salesPerson || ' ' // Default to 'Not Assigned' if salesPerson is not set
     }));
 
     res.status(200).json({ success: true, data: formattedTickets });
