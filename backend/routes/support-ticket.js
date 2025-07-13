@@ -16,7 +16,6 @@ assignTicketToSales = async(ticketID) =>{
   if (!ticketID) throw new Error("Ticket ID is required");
  
 
-
   ticket.assignedTo = freeSales.email; 
 
   ticket.salesPerson = freeSales.firstName + " " + freeSales.lastName; // Store the sales person's ID

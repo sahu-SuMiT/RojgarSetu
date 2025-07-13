@@ -240,7 +240,7 @@ const ViewJobs = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 1000;
+          z-index: 1001;
           height: 100vh;
           width: 100vw;
           margin: 0;
@@ -504,7 +504,7 @@ const ViewJobs = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1000
+        zIndex: 1001
       }}>
         <div style={{
           background: '#fff',

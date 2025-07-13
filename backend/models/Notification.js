@@ -5,11 +5,11 @@ const notificationSchema = new mongoose.Schema({
   sender: {
     type: mongoose.Schema.Types.ObjectId,
     refPath: 'senderModel',
-    required: true
+    required: false // Make sender optional for system notifications
   },
   senderModel: {
     type: String,
-    enum: ['College', 'Student', 'Company'],
+    enum: ['College', 'Student', 'Company', 'System'],
     required: true
   },
   

@@ -38,7 +38,8 @@ interface Company {
   contactPhone: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = 'http://localhost:5000';
 
 // Helper to get sales username from localStorage
 const getSalesUserName = () => localStorage.getItem("userName") || "";
@@ -46,10 +47,12 @@ const getSalesUserName = () => localStorage.getItem("userName") || "";
 const Onboard = () => {
   const token = localStorage.getItem("token");
   let salesId = "";
+  let salesUserName = "";
   if (token) {
     try {
       const decoded: any = jwtDecode(token);
       salesId = decoded.salesId || "";
+      salesUserName = decoded.firstName + " " + decoded.lastName || "";
     } catch (e) {
       salesId = "";
     }
@@ -83,15 +86,15 @@ const Onboard = () => {
 
   useEffect(() => {
     const fetchEntities = async () => {
-      const userName = localStorage.getItem("userName");
-      if (!userName) return;
-
       try {
         const [stuRes, colRes, comRes] = await Promise.all([
-          axios.get(`${API_URL}/api/sales/students?userName=${encodeURIComponent(userName)}`),
-          axios.get(`${API_URL}/api/sales/colleges?userName=${encodeURIComponent(userName)}`),
-          axios.get(`${API_URL}/api/sales/companies?userName=${encodeURIComponent(userName)}`)
+          axios.get(`${API_URL}/api/sales/students`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API_URL}/api/sales/colleges`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API_URL}/api/sales/companies`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
+        console.log("Fetched students:", stuRes.data);
+        console.log("Fetched colleges:", colRes.data);
+        console.log("Fetched companies:", comRes.data);
         setStudents(stuRes.data);
         setColleges(colRes.data);
         setCompanies(comRes.data);
@@ -99,7 +102,6 @@ const Onboard = () => {
         toast.error("Failed to fetch entities");
       }
     };
-
     fetchEntities();
   }, []);
 
@@ -112,7 +114,7 @@ const Onboard = () => {
       const userName = localStorage.getItem("userName");
       await axios.post(
         `${API_URL}/api/sales/student`,
-        { ...newStudent, userName },
+        { ...newStudent},
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Student added successfully!");
@@ -129,11 +131,11 @@ const Onboard = () => {
       toast.error("Please fill in all required fields.");
       return;
     }
-    const userName = localStorage.getItem("userName");
+    // const userName = localStorage.getItem("userName");
     try {
       await axios.post(
         `${API_URL}/api/sales/college`,
-        { ...newCollege, userName },
+        { ...newCollege},
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("College added successfully!");
@@ -141,6 +143,7 @@ const Onboard = () => {
       setNewCollege({ name: "", code: "", contactEmail: "", contactPhone: "" });
       await fetchEntities();
     } catch (err: any) {
+      console.error("Error adding college:", err);
       toast.error(err.response?.data?.message || "Failed to add college");
     }
   };
@@ -183,7 +186,7 @@ const Onboard = () => {
     }
   };
 
-  const salesUserName = getSalesUserName();
+  // const salesUserName = getSalesUserName();
 
   const entityCounts = {
     all: students.length + colleges.length + companies.length,

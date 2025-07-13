@@ -13,7 +13,8 @@ const SupportTicketSchema = new mongoose.Schema({
   },
   userType: {
     type: String,
-    enum: ['college', 'company', 'student'],
+    enum: ['College', 'Company', 'Student', 'Employee', 'Admin',''],
+    default:'',
     required: true
   },
   user_name:{
@@ -120,6 +121,10 @@ const SupportTicketSchema = new mongoose.Schema({
   salesPerson:{
     type: String,
     default: null
+  },
+  workload:{
+    type : Number,
+    default: 0
   }
 });
 
