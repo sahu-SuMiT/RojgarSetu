@@ -19,6 +19,9 @@ interface Student {
   name: string;
   email: string;
   enrollmentDate: string;
+  iskycVerified: boolean;
+  college: string;
+  createdAt: string; // Assuming createdAt is a string in ISO format
 }
 
 interface College {
@@ -38,8 +41,8 @@ interface Company {
   contactPhone: string;
 }
 
-// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const API_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// const API_URL = 'http://localhost:5000';
 
 // Helper to get sales username from localStorage
 const getSalesUserName = () => localStorage.getItem("userName") || "";
@@ -281,6 +284,8 @@ const Onboard = () => {
                           <TableHead className="text-gray-700">Name</TableHead>
                           <TableHead className="text-gray-700">Email</TableHead>
                           <TableHead className="text-gray-700">Enrollment Date</TableHead>
+                          <TableHead className="text-gray-700">KYC Status</TableHead>
+                          <TableHead className="text-gray-700">College</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -296,7 +301,16 @@ const Onboard = () => {
                               <TableCell className="text-gray-900">{salesUserName}</TableCell>
                               <TableCell className="text-gray-900">{student.name}</TableCell>
                               <TableCell className="text-gray-900">{student.email}</TableCell>
-                              <TableCell className="text-gray-900">{student.enrollmentDate}</TableCell>
+                              <TableCell className="text-gray-900">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {new Date(student.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {new Date(student.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                  </div>
+                              </TableCell>
+                              <TableCell className="text-gray-900">{student.iskycVerified ? 'Verified' : 'Not Verified'}</TableCell>
+                              <TableCell className="text-gray-900">{student.college}</TableCell>
                             </TableRow>
                           ))
                         )}
@@ -379,6 +393,8 @@ const Onboard = () => {
                       <TableHead className="text-gray-700">Name</TableHead>
                       <TableHead className="text-gray-700">Email</TableHead>
                       <TableHead className="text-gray-700">Enrollment Date</TableHead>
+                      <TableHead className="text-gray-700">KYC Status</TableHead>
+                      <TableHead className="text-gray-700">College</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -394,7 +410,16 @@ const Onboard = () => {
                           <TableCell className="text-gray-900">{salesUserName}</TableCell>
                           <TableCell className="text-gray-900">{student.name}</TableCell>
                           <TableCell className="text-gray-900">{student.email}</TableCell>
-                          <TableCell className="text-gray-900">{student.enrollmentDate}</TableCell>
+                          <TableCell className="text-gray-900">
+                              <div className="text-sm font-medium text-gray-900">
+                                {new Date(student.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {new Date(student.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              </div>
+                          </TableCell>
+                          <TableCell className="text-gray-900">{student.iskycVerified ? "Verified" : "Not Verified"}</TableCell>
+                          <TableCell className="text-gray-900">{student.college}</TableCell>
                         </TableRow>
                       ))
                     )}
