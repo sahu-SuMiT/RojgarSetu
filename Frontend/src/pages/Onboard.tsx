@@ -19,6 +19,9 @@ interface Student {
   name: string;
   email: string;
   enrollmentDate: string;
+  iskycVerified: boolean;
+  college: string;
+  createdAt: string; // Assuming createdAt is a string in ISO format
 }
 
 interface College {
@@ -39,6 +42,7 @@ interface Company {
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// const API_URL = 'http://localhost:5000';
 
 // Helper to get sales username from localStorage
 const getSalesUserName = () => localStorage.getItem("userName") || "";
@@ -46,10 +50,12 @@ const getSalesUserName = () => localStorage.getItem("userName") || "";
 const Onboard = () => {
   const token = localStorage.getItem("token");
   let salesId = "";
+  let salesUserName = "";
   if (token) {
     try {
       const decoded: any = jwtDecode(token);
       salesId = decoded.salesId || "";
+      salesUserName = decoded.firstName + " " + decoded.lastName || "";
     } catch (e) {
       salesId = "";
     }
@@ -83,15 +89,15 @@ const Onboard = () => {
 
   useEffect(() => {
     const fetchEntities = async () => {
-      const userName = localStorage.getItem("userName");
-      if (!userName) return;
-
       try {
         const [stuRes, colRes, comRes] = await Promise.all([
-          axios.get(`${API_URL}/api/sales/students?userName=${encodeURIComponent(userName)}`),
-          axios.get(`${API_URL}/api/sales/colleges?userName=${encodeURIComponent(userName)}`),
-          axios.get(`${API_URL}/api/sales/companies?userName=${encodeURIComponent(userName)}`)
+          axios.get(`${API_URL}/api/sales/students`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API_URL}/api/sales/colleges`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${API_URL}/api/sales/companies`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
+        console.log("Fetched students:", stuRes.data);
+        console.log("Fetched colleges:", colRes.data);
+        console.log("Fetched companies:", comRes.data);
         setStudents(stuRes.data);
         setColleges(colRes.data);
         setCompanies(comRes.data);
@@ -99,7 +105,6 @@ const Onboard = () => {
         toast.error("Failed to fetch entities");
       }
     };
-
     fetchEntities();
   }, []);
 
@@ -112,7 +117,7 @@ const Onboard = () => {
       const userName = localStorage.getItem("userName");
       await axios.post(
         `${API_URL}/api/sales/student`,
-        { ...newStudent, userName },
+        { ...newStudent},
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("Student added successfully!");
@@ -129,11 +134,11 @@ const Onboard = () => {
       toast.error("Please fill in all required fields.");
       return;
     }
-    const userName = localStorage.getItem("userName");
+    // const userName = localStorage.getItem("userName");
     try {
       await axios.post(
         `${API_URL}/api/sales/college`,
-        { ...newCollege, userName },
+        { ...newCollege},
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success("College added successfully!");
@@ -141,6 +146,7 @@ const Onboard = () => {
       setNewCollege({ name: "", code: "", contactEmail: "", contactPhone: "" });
       await fetchEntities();
     } catch (err: any) {
+      console.error("Error adding college:", err);
       toast.error(err.response?.data?.message || "Failed to add college");
     }
   };
@@ -183,7 +189,7 @@ const Onboard = () => {
     }
   };
 
-  const salesUserName = getSalesUserName();
+  // const salesUserName = getSalesUserName();
 
   const entityCounts = {
     all: students.length + colleges.length + companies.length,
@@ -278,6 +284,8 @@ const Onboard = () => {
                           <TableHead className="text-gray-700">Name</TableHead>
                           <TableHead className="text-gray-700">Email</TableHead>
                           <TableHead className="text-gray-700">Enrollment Date</TableHead>
+                          <TableHead className="text-gray-700">KYC Status</TableHead>
+                          <TableHead className="text-gray-700">College</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -293,7 +301,16 @@ const Onboard = () => {
                               <TableCell className="text-gray-900">{salesUserName}</TableCell>
                               <TableCell className="text-gray-900">{student.name}</TableCell>
                               <TableCell className="text-gray-900">{student.email}</TableCell>
-                              <TableCell className="text-gray-900">{student.enrollmentDate}</TableCell>
+                              <TableCell className="text-gray-900">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {new Date(student.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {new Date(student.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                  </div>
+                              </TableCell>
+                              <TableCell className="text-gray-900">{student.iskycVerified ? 'Verified' : 'Not Verified'}</TableCell>
+                              <TableCell className="text-gray-900">{student.college}</TableCell>
                             </TableRow>
                           ))
                         )}
@@ -376,6 +393,8 @@ const Onboard = () => {
                       <TableHead className="text-gray-700">Name</TableHead>
                       <TableHead className="text-gray-700">Email</TableHead>
                       <TableHead className="text-gray-700">Enrollment Date</TableHead>
+                      <TableHead className="text-gray-700">KYC Status</TableHead>
+                      <TableHead className="text-gray-700">College</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -391,7 +410,16 @@ const Onboard = () => {
                           <TableCell className="text-gray-900">{salesUserName}</TableCell>
                           <TableCell className="text-gray-900">{student.name}</TableCell>
                           <TableCell className="text-gray-900">{student.email}</TableCell>
-                          <TableCell className="text-gray-900">{student.enrollmentDate}</TableCell>
+                          <TableCell className="text-gray-900">
+                              <div className="text-sm font-medium text-gray-900">
+                                {new Date(student.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {new Date(student.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              </div>
+                          </TableCell>
+                          <TableCell className="text-gray-900">{student.iskycVerified ? "Verified" : "Not Verified"}</TableCell>
+                          <TableCell className="text-gray-900">{student.college}</TableCell>
                         </TableRow>
                       ))
                     )}

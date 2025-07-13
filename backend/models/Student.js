@@ -33,7 +33,7 @@ const studentSchema = new mongoose.Schema({
   resume: String,
 
   // Contact
-  phone: { type: String, unique: true },
+  phone: { type: String, required: false, unique: true },
   location: String,
 
   // Personal info
