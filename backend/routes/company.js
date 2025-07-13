@@ -9,6 +9,7 @@ const RegistrationOtp = require('../models/RegistrationOtp');
 const Interview = require('../models/Interview');
 const Application = require('../models/CollegeApplication');
 const SupportTicket = require('../models/SupportTicket');
+const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
 const {emailTransport,emailSender} = require('../config/email');
 const Notification = require('../models/Notification');
@@ -33,6 +34,18 @@ const { createCompanyNotification } = require('../utils/notificationHelper');
 // app.post('/api/company/:companyid/employees') .....post Add employee to company (supports both company admin and employee addition)
 // app.get('/api/company/:companyid/applications/complete') .....get Optimized endpoint for company applications with all related data
 // app.get('/api/company/:companyid/interviews/complete') .....Optimized endpoint for company scheduled interviews with all related data
+assignTicketToSales = async(ticketID) =>{
+  freeSales = await User.findOne({}).sort({workload:1});
+  const ticket = await SupportTicket.findOne({ ticketId: ticketID });
+  if (!ticketID) throw new Error("Ticket ID is required");
+  ticket.assignedTo = freeSales.email; 
+  ticket.salesPerson = freeSales.firstName + " " + freeSales.lastName; // Store the sales person's ID
+  await ticket.save();
+  freeSales.workload += 1; // Increment the workload of the sales person
+  await freeSales.save();
+  //console.log(`Assigned ticket ${ticketID} to ${freeSales.email}`);
+  return ticket;
+}
 
 router.post('/auth',  async (req, res) => {
   const { email, password } = req.body;
@@ -686,7 +699,7 @@ router.get('/:companyId/interviews/complete',isCompanyAuthenticated, async (req,
 // POST /api/company/tickets
 router.post('/tickets', async (req, res) => {
   try {
-    console.log("req.body:",req.body)
+    //console.log("req.body:",req.body)
     const { userId, userType, subject, description, category, priority, email,contact, userName} = req.body;
     if (!userId || !userType || !subject || !description || !email) {
       return res.status(400).json({ error: 'Missing required fields.' });
@@ -707,11 +720,12 @@ router.post('/tickets', async (req, res) => {
       secretCode: Math.floor(1000 + Math.random() * 9000),
       status: 'open'
     });
-    console.log("new Ticket form company:", newTicket);
+    //console.log("new Ticket form company:", newTicket);
     await newTicket.save();
+    const assignedTicket = await assignTicketToSales(newTicket.ticketId);
+    let autoMsg = `Your Ticket No. #${newTicket.ticketId} has been generated for [${newTicket.subject}]. Your issue will be resolved within 3–4 hours. Please use this secret code: ${newTicket.secretCode} to close your complaint after resolution.`;
+    autoMsg += `\n\nYour ticket was assigned to ${assignedTicket.salesPerson} (${assignedTicket.assignedTo}).`;
 
-    const autoMsg = `Your Ticket No. #${newTicket.ticketId} has been generated for [${newTicket.subject}]. Your issue will be resolved within 3–4 hours. Please use this secret code: ${newTicket.secretCode} to close your complaint after resolution.`;
-    
     await Notification.create({
       sender:userId,
       senderModel: 'Company',

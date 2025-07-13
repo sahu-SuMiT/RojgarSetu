@@ -166,67 +166,51 @@ exports.getTicketById = async (req, res) => {
  * Close support ticket with notification
  */
 exports.closeTicket = async (req, res) => {
-  try {
-    const { ticketId } = req.params;
-    
-    const ticket = await SupportTicket.findOne({ ticketId });
-    if (!ticket) {
-      return res.status(404).json({ message: 'Ticket not found' });
+  try{
+    const { ticketId, secretCode } = req.body;
+    if (!ticketId || !secretCode) {
+      return res.status(400).json({ error: "ticketId and secretCode required" });
     }
-    
-    ticket.status = 'closed';
+    const ticket = await SupportTicket.findOne({ ticketId });
+    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+    if (ticket.secretCode && ticket.secretCode !== secretCode) {
+      return res.status(401).json({ error: "Incorrect secret code" });
+    }
+    if (ticket.status === "closed" || ticket.status === "resolved") {
+      return res.status(400).json({ error: "Ticket already closed/resolved" });
+    }
+    ticket.status = "resolved";
     ticket.closed = true;
     ticket.closedAt = new Date();
-    
     await ticket.save();
     
-    // Create notification for ticket closure
-    try {
-      if (ticket.userType === 'Student') {
-        await createStudentNotification(
-          ticket.userId,
-          'Support Ticket Closed',
-          `Your support ticket "${ticket.subject}" has been closed.`,
-          {
-            type: 'info',
-            category: 'system',
-            actionUrl: `/support/ticket/${ticketId}`,
-            actionText: 'View Details'
-          }
-        );
-      } else if (ticket.userType === 'College') {
-        await createCollegeNotification(
-          ticket.userId,
-          'Support Ticket Closed',
-          `Your support ticket "${ticket.subject}" has been closed.`,
-          {
-            type: 'info',
-            category: 'system',
-            actionUrl: `/support/ticket/${ticketId}`,
-            actionText: 'View Details'
-          }
-        );
-      } else if (ticket.userType === 'Company') {
-        await createCompanyNotification(
-          ticket.userId,
-          'Support Ticket Closed',
-          `Your support ticket "${ticket.subject}" has been closed.`,
-          {
-            type: 'info',
-            category: 'system',
-            actionUrl: `/support/ticket/${ticketId}`,
-            actionText: 'View Details'
-          }
-        );
-      }
-    } catch (notificationError) {
-      console.error('Error creating ticket closure notification:', notificationError);
-      // Don't fail the ticket closure if notification fails
-    }
     
-    res.json({ message: 'Ticket closed successfully', ticket });
-  } catch (error) {
-    console.error('Error closing ticket:', error);
-    res.status(500).json({ message: 'Error closing ticket' });
+    let actionUrl;
+    if (req.body.recipientModel === 'College' || req.body.recipientModel === 'Company') {
+      actionUrl = `/college/${req.body.userId}/support`;
+    } else if (req.body.recipientModel === 'Student') {
+      actionUrl = `/chat`;
+    } else {
+      actionUrl = null; 
+    }
+    await Notification.create({
+      sender:req.body.userId,
+      senderModel: req.body.senderModel,
+      recipient:req.body.userId,
+      recipientModel: req.body.recipientModel,
+      title: req.body.title,
+      message:req.body.message,
+      actionUrl,
+      actionText: 'Show Ticket',
+      type: 'success',
+      priority: 'normal',
+    })
+    await sendEmail(ticket.email, `Ticket #${ticket.ticketId} Closed`, `Your ticket #${ticket.ticketId} has been closed. Thank you!`);
+
+    res.json({ message: "Ticket closed successfully" });
+  }
+  catch(err){
+    console.log(err);
+    res.status(500).json({error:"Failed to Create Ticket", err})
   }
 };
