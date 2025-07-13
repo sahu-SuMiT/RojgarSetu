@@ -28,11 +28,15 @@ assignTicketToSales = async(ticketID) =>{
   return ticket;
 }
 
+function generateSecretCode(){
+  return Math.floor(1000+ Math.random() * 9000).toString(); // Generates a random 4-digit number
+}
+
 // Route: POST /api/support-tickets
 router.post('/', upload.single('uploadedFile'), async (req, res) => {
   
   console.log("REQ FILE:", req.file);
-  console.log("REQ BODY:", req.body.title);
+  console.log("REQ BODY:", req.body);
 
   try {
     const {
@@ -70,7 +74,8 @@ router.post('/', upload.single('uploadedFile'), async (req, res) => {
             filename: req.file.originalname,
             size: req.file.size
           }
-        : undefined
+        : undefined,
+      secretCode: generateSecretCode()
     });
     await newTicket.save();
     const toDisplay_and_return = await assignTicketToSales(newTicket.ticketId)
