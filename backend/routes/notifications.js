@@ -4,6 +4,52 @@ const Notification = require('../models/Notification');
 const College = require('../models/College');
 const Student = require('../models/Student');
 const Company = require('../models/Company');
+const System = require('../models/System');
+
+
+// Test endpoint to fetch notifications by email (must be first to avoid conflicts)
+router.get('/test/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    // Find student by email
+    const student = await Student.findOne({ email });
+    if (!student) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    // Fetch notifications for this student
+    const notifications = await Notification.find({
+      recipient: student._id,
+      recipientModel: 'Student'
+    })
+    .sort({ createdAt: -1 })
+    .lean();
+
+    // Transform to match frontend format
+    const notificationsList = notifications.map(notification => ({
+      id: notification._id,
+      date: new Date(notification.createdAt).toLocaleDateString(),
+      text: notification.message,
+      title: notification.title,
+      type: notification.type,
+      category: notification.category,
+      read: notification.read,
+      sender: 'System',
+      actionUrl: notification.actionUrl,
+      actionText: notification.actionText
+    }));
+
+    res.json({
+      student: { name: student.name, email: student.email },
+      notificationsList,
+      total: notifications.length
+    });
+  } catch (error) {
+    console.error('Error fetching test notifications:', error);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
+  }
+});
 
 // Find user by email
 router.get('/find-user/:email', async (req, res) => {
@@ -189,27 +235,6 @@ router.get('/search-users/:query', async (req, res) => {
   }
 });
 
-// Get notifications for a user
-router.get('/:userType/:userId', async (req, res) => {
-  try {
-    const { userType, userId } = req.params;
-    const limit = parseInt(req.query.limit) || 50;
-    
-    const notifications = await Notification.find({
-      recipient: userId,
-      recipientModel: userType.charAt(0).toUpperCase() + userType.slice(1)
-    })
-    .populate('sender', 'name email contactEmail')
-    .sort({ createdAt: -1 })
-    .limit(limit);
-    
-    res.json(notifications);
-  } catch (error) {
-    console.error('Error fetching notifications:', error);
-    res.status(500).json({ message: 'Error fetching notifications' });
-  }
-});
-
 // Mark notification as read
 router.patch('/:notificationId/read', async (req, res) => {
   try {
@@ -232,6 +257,111 @@ router.patch('/:notificationId/read', async (req, res) => {
   }
 });
 
+// Create bulk system notifications
+router.post('/system/bulk', async (req, res) => {
+  try {
+    const { title, message, type, priority, category, actionUrl, actionText, metadata, expiresAt, userTypes } = req.body;
+    
+    const notifications = [];
+    
+    // Get users based on specified types
+    if (userTypes.includes('student')) {
+      const students = await Student.find({}, '_id');
+      students.forEach(student => {
+        notifications.push({
+          sender: null,
+          senderModel: 'System',
+          recipient: student._id,
+          recipientModel: 'Student',
+          title,
+          message,
+          type: type || 'info',
+          priority: priority || 'normal',
+          category: category || 'system',
+          actionUrl,
+          actionText,
+          metadata,
+          expiresAt
+        });
+      });
+    }
+    
+    if (userTypes.includes('college')) {
+      const colleges = await College.find({}, '_id');
+      colleges.forEach(college => {
+        notifications.push({
+          sender: null,
+          senderModel: 'System',
+          recipient: college._id,
+          recipientModel: 'College',
+          title,
+          message,
+          type: type || 'info',
+          priority: priority || 'normal',
+          category: category || 'system',
+          actionUrl,
+          actionText,
+          metadata,
+          expiresAt
+        });
+      });
+    }
+    
+    if (userTypes.includes('company')) {
+      const companies = await Company.find({}, '_id');
+      companies.forEach(company => {
+        notifications.push({
+          sender: null,
+          senderModel: 'System',
+          recipient: company._id,
+          recipientModel: 'Company',
+          title,
+          message,
+          type: type || 'info',
+          priority: priority || 'normal',
+          category: category || 'system',
+          actionUrl,
+          actionText,
+          metadata,
+          expiresAt
+        });
+      });
+    }
+    
+    if (notifications.length === 0) {
+      return res.status(400).json({ message: 'No users found for the specified types' });
+    }
+    
+    const savedNotifications = await Notification.insertMany(notifications);
+    res.status(201).json({ 
+      message: `Created ${savedNotifications.length} notifications`,
+      count: savedNotifications.length 
+    });
+  } catch (error) {
+    console.error('Error creating bulk system notifications:', error);
+    res.status(500).json({ message: 'Error creating bulk system notifications' });
+  }
+});
+// Get notifications for a user
+router.get('/:userType/:userId', async (req, res) => {
+  try {
+    const { userType, userId } = req.params; console.log("route hit: req.params: ", req.params);
+    const limit = parseInt(req.query.limit) || 50;
+    
+    const notifications = await Notification.find({
+      recipient: userId,
+      recipientModel: userType.charAt(0).toUpperCase() + userType.slice(1)
+    })
+    .populate('sender', 'name email contactEmail')
+    .sort({ createdAt: -1 })
+    .limit(limit);
+    
+    res.json(notifications);
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(500).json({ message: 'Error fetching notifications' });
+  }
+});
 // Mark all notifications as read for a user
 router.patch('/:userType/:userId/read-all', async (req, res) => {
   try {
@@ -328,6 +458,42 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Create a system notification for a specific user
+router.post('/system/:userType/:userId', async (req, res) => {
+  try {
+    const { userType, userId } = req.params;
+    const { title, message, type, priority, category, actionUrl, actionText, metadata, expiresAt } = req.body;
+    
+    // Validate user type
+    if (!['college', 'company', 'student'].includes(userType)) {
+      return res.status(400).json({ message: 'Invalid user type' });
+    }
+    
+    const notification = new Notification({
+      sender: null, // System notification
+      senderModel: 'System',
+      recipient: userId,
+      recipientModel: userType.charAt(0).toUpperCase() + userType.slice(1),
+      title,
+      message,
+      type: type || 'info',
+      priority: priority || 'normal',
+      category: category || 'system',
+      actionUrl,
+      actionText,
+      metadata,
+      expiresAt
+    });
+    
+    await notification.save();
+    res.status(201).json(notification);
+  } catch (error) {
+    console.error('Error creating system notification:', error);
+    res.status(500).json({ message: 'Error creating system notification' });
+  }
+});
+
+
 // Delete a notification
 router.delete('/:notificationId', async (req, res) => {
   try {
@@ -343,6 +509,31 @@ router.delete('/:notificationId', async (req, res) => {
   } catch (error) {
     console.error('Error deleting notification:', error);
     res.status(500).json({ message: 'Error deleting notification' });
+  }
+});
+
+// Delete all notifications for a user
+router.delete('/:userType/:userId/all', async (req, res) => {
+  try {
+    const { userType, userId } = req.params;
+    
+    // Validate user type
+    if (!['college', 'company', 'student'].includes(userType)) {
+      return res.status(400).json({ message: 'Invalid user type' });
+    }
+    
+    const result = await Notification.deleteMany({
+      recipient: userId,
+      recipientModel: userType.charAt(0).toUpperCase() + userType.slice(1)
+    });
+    
+    res.json({ 
+      message: `Deleted ${result.deletedCount} notifications successfully`,
+      deletedCount: result.deletedCount 
+    });
+  } catch (error) {
+    console.error('Error deleting all notifications:', error);
+    res.status(500).json({ message: 'Error deleting all notifications' });
   }
 });
 

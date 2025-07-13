@@ -17,9 +17,9 @@ const Support = () => {
     description: '',
     category: '',
     priority: 'medium',
-    email: company?.email || '',
+    email: company?.contactEmail || '',
     contact: company?.contactPhone || '',
-    username: company?.name || ''
+    userName: company?.name || ''
   });
   const [error, setError] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -27,7 +27,8 @@ const Support = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [closeTicketCode, setCloseTicketCode] = useState("");
   const [closeTicketError, setCloseTicketError] = useState("");
-  const [isClosing, setIsClosing] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);  
+  const [isCreatingTicket, setIsCreatingTicket] = useState(false);
 
   useEffect(() => {
     const companyId = localStorage.getItem('companyId');
@@ -45,7 +46,7 @@ const Support = () => {
 
   const fetchTickets = async (userId) => {
     try {
-      const response = await axios.get(`${apiUrl}/api/company/tickets/${userId}`);
+      const response = await axios.get(`${apiUrl}/api/tickets/company/${userId}`);
       setTickets(response.data.tickets || []);
     } catch (error) {
       // Error handling without console logging
@@ -58,29 +59,32 @@ const Support = () => {
   };
 
   const handleCreateTicket = async () => {
-    if (!newTicket.subject || !newTicket.description || !newTicket.category || !newTicket.email) {
+    if (!newTicket.subject || !newTicket.description || !newTicket.category || !newTicket.email || !newTicket.userName || !newTicket.email || !newTicket.contact){
       alert('Please fill in all required fields.');
       return;
     }
     try {
+      setIsCreatingTicket(true);
       const token = localStorage.getItem('token');
       await axios.post(`${apiUrl}/api/company/tickets`, {
         userId: company?._id,
-        userType: 'company',
+        userType: 'Company',
         subject: newTicket.subject,
         description: newTicket.description,
         category: newTicket.category,
         priority: newTicket.priority,
         email: newTicket.email,
-        userName: newTicket.username,
+        userName: newTicket.userName,
         contact: newTicket.contact
       }, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
       alert('Ticket created successfully!');
+      setIsCreatingTicket(false);
       setIsCreateTicketOpen(false);
-      setNewTicket({ subject: '', description: '', category: '', priority: 'medium', email: company?.email || '', contact: company?.contactPhone || '', username: company?.name || '' });
+      setNewTicket({ subject: '', description: '', category: '', priority: 'medium', email: company?.contactEmail || '', contact: company?.contactPhone || '', userName: company?.name || '' });
       fetchTickets(company?._id);
     } catch (error) {
       alert(error.response?.data?.error || 'Failed to create ticket');
+      setIsCreatingTicket(false);
     }
   };
 
@@ -119,6 +123,7 @@ const Support = () => {
           ticketId: detailsTicket.ticketId,
           secretCode: closeTicketCode,
           userId: company?._id,
+          userType:'Company',
           senderModel: 'Company',
           recipientModel: 'Company',
           title: 'Ticket Closed',
@@ -140,7 +145,12 @@ const Support = () => {
       setCloseTicketCode("");
       fetchTickets(company?._id);
     } catch (error) {
-      setCloseTicketError(error.message || "Failed to close ticket");
+      setCloseTicketError(
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to close ticket"
+      );
     } finally {
       setIsClosing(false);
     }
@@ -325,8 +335,8 @@ const Support = () => {
               <input
                 type="text"
                 placeholder="Name"
-                value={newTicket.username}
-                onChange={e => setNewTicket({ ...newTicket, username: e.target.value })}
+                value={newTicket.userName}
+                onChange={e => setNewTicket({ ...newTicket, userName: e.target.value })}
                 style={{ padding: 8, borderRadius: 6, border: '1px solid #e5e7eb' }}
               />
               <input
@@ -383,7 +393,11 @@ const Support = () => {
               </select>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
                 <button onClick={() => setIsCreateTicketOpen(false)} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#e5e7eb', color: '#374151', cursor: 'pointer' }}>Cancel</button>
-                <button onClick={handleCreateTicket} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer' }}>Create Ticket</button>
+                {isCreatingTicket? 
+                  <button  style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: 'grey', color: '#fff', cursor: 'pointer' }} disabled>Creating...</button>
+                  :<button onClick={handleCreateTicket} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer' }} >Create Ticket</button>
+                }
+                
               </div>
             </div>
           </div>

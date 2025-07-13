@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FaBell, FaTimes, FaCheck, FaExclamationTriangle, FaPlus, FaSearch, FaUser, FaBuilding, FaGraduationCap } from 'react-icons/fa';
 import axios from 'axios';
 import { createNotification, findUserByEmail, searchUsersByName } from '../utils/notificationHelper';
+import { useNavigate } from 'react-router-dom';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -33,6 +34,8 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
   const [loadingSentMessages, setLoadingSentMessages] = useState(false);
   const dropdownRef = useRef(null);
   const searchRef = useRef(null);
+
+  const navigate = useNavigate();
 
   // Fetch notifications
   const fetchNotifications = async () => {
@@ -471,9 +474,15 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
               notifications.map((notification) => (
                 <div
                   key={notification._id}
-                  className={`p-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                  className={`p-3 border-b border-gray-100 transition-colors ${
                     !notification.read ? 'bg-blue-50' : ''
-                  }`}
+                  } ${notification.actionUrl ? 'hover:bg-blue-100 cursor-pointer' : 'hover:bg-gray-50'}`}
+                  onClick={() => {
+                    if (notification.actionUrl) {
+                      navigate(notification.actionUrl);
+                    }
+                  }}
+                  style={notification.actionUrl ? { cursor: 'pointer' } : {}}
                 >
                   <div className="flex items-start gap-3">
                     <div className="mt-1 flex-shrink-0">
@@ -504,7 +513,7 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
                       </p>
                       {!notification.read && (
                         <button
-                          onClick={() => markAsRead(notification._id)}
+                          onClick={e => { e.stopPropagation(); markAsRead(notification._id); }}
                           className="mt-1 text-xs font-medium text-blue-600 hover:text-blue-800"
                         >
                           Mark as read
@@ -1021,9 +1030,15 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
                 notifications.map((notification) => (
                   <div
                     key={notification._id}
-                    className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                    className={`p-4 border-b border-gray-100 transition-colors ${
                       !notification.read ? 'bg-blue-50' : ''
-                    }`}
+                    } ${notification.actionUrl ? 'hover:bg-blue-100 cursor-pointer' : 'hover:bg-gray-50'}`}
+                    onClick={() => {
+                      if (notification.actionUrl) {
+                        navigate(notification.actionUrl);
+                      }
+                    }}
+                    style={notification.actionUrl ? { cursor: 'pointer' } : {}}
                   >
                     <div className="flex items-start gap-3">
                       <div className="mt-1">
@@ -1053,14 +1068,14 @@ const NotificationDropdown = ({ userId, userType = 'college' }) => {
                         <div className="mt-2 flex items-center gap-3">
                           {!notification.read && (
                             <button
-                              onClick={() => markAsRead(notification._id)}
+                              onClick={e => { e.stopPropagation(); markAsRead(notification._id); }}
                               className="text-xs font-medium text-blue-600 hover:text-blue-800"
                             >
                               Mark as read
                             </button>
                           )}
                           <button
-                            onClick={() => deleteNotification(notification._id)}
+                            onClick={e => { e.stopPropagation(); deleteNotification(notification._id); }}
                             className="text-xs font-medium text-red-600 hover:text-red-800"
                           >
                             Delete

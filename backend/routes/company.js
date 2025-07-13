@@ -15,6 +15,7 @@ const Notification = require('../models/Notification');
 const cloudinary = require('../config/cloudinary');
 const {isCompanyAuthenticated,isCompanyHR,isCompanyAdmin,isCompanyOwner} = require('../middleware/auth');
 const {isEmailDisposable} = require('../utils/disposableEmail');
+const { createCompanyNotification } = require('../utils/notificationHelper');
 //INDEX
 // app.get('/api/company/auth') ..... company authentication
 // app.get('/api/company/:companyid/roles') .....get roles by company Id  
@@ -291,6 +292,53 @@ router.post('/register/verify', async (req, res) => {
 
     // Delete the used OTP entry
     await RegistrationOtp.deleteOne({ _id: registrationOtp._id });
+
+    // Create welcome notification for the new company
+    try {
+      await createCompanyNotification(
+        newCompany._id,
+        'Welcome to Campus Admin! 🏢',
+        `Welcome ${newCompany.name}! Start posting jobs, finding talented students, and building your team. Your company dashboard is ready.`,
+        {
+          type: 'success',
+          category: 'general',
+          actionUrl: `/company/${newCompany._id}/dashboard`,
+          actionText: 'View Dashboard',
+          priority: 'high'
+        }
+      );
+
+      // Create a feature introduction notification
+      await createCompanyNotification(
+        newCompany._id,
+        'Start Hiring Today',
+        'Post your first job, browse student profiles, and discover how our platform can help you find the perfect candidates.',
+        {
+          type: 'info',
+          category: 'system',
+          actionUrl: `/company/${newCompany._id}/post-job`,
+          actionText: 'Post Jobs',
+          priority: 'normal'
+        }
+      );
+      //create a manage employee
+      await createCompanyNotification(
+        newCompany._id,
+        'Add Your Employees',
+        'Manage Your Employees, you can add remove or update Admin, Employee, HR for your company',
+        {
+          type: 'info',
+          category: 'system',
+          actionUrl: `/company/${newCompany._id}/employees`,
+          actionText: 'Post Jobs',
+          priority: 'normal'
+        }
+      );
+
+    } catch (notificationError) {
+      console.error('Error creating welcome notifications for company:', notificationError);
+      // Don't fail registration if notification creation fails
+    }
 
     // Prepare response (exclude password)
     const { password: pw, ...companyData } = newCompany.toObject();
@@ -638,6 +686,7 @@ router.get('/:companyId/interviews/complete',isCompanyAuthenticated, async (req,
 // POST /api/company/tickets
 router.post('/tickets', async (req, res) => {
   try {
+    console.log("req.body:",req.body)
     const { userId, userType, subject, description, category, priority, email,contact, userName} = req.body;
     if (!userId || !userType || !subject || !description || !email) {
       return res.status(400).json({ error: 'Missing required fields.' });
@@ -646,7 +695,7 @@ router.post('/tickets', async (req, res) => {
     const newTicket = new SupportTicket({
       ticketId: uuidv4(),
       userId,
-      userType: userType || 'company',
+      userType: userType || 'Company',
       subject,
       description,
       category,
@@ -669,6 +718,9 @@ router.post('/tickets', async (req, res) => {
       recipient:userId,
       recipientModel: 'Company',
       title: "Your issue has been raised",
+      category:'system',
+      actionUrl: `/company/${userId}/support`,
+      actionText: 'Show Ticket',
       message:autoMsg,
       type: 'info',
       priority: 'normal',
@@ -688,15 +740,6 @@ router.post('/tickets', async (req, res) => {
   }
 });
 
-// GET /api/company/tickets/:companyId
-router.get('/tickets/:companyId', async (req, res) => {
-  try {
-    const tickets = await SupportTicket.find({ userId: req.params.companyId, userType: 'company' }).sort({ createdAt: -1 });
-    res.json({ tickets });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch tickets' });
-  }
-});
 
 // Edit company information
 router.put('/:id/edit',isCompanyAuthenticated,isCompanyAdmin, async (req, res) => {
