@@ -37,6 +37,7 @@ interface SupportTicket {
   issuerEmail?: string;
   issuerMobile?: string;
   issuerType?: IssuerType;
+  assignedTo?: string;
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -126,7 +127,8 @@ const Support = () => {
           issuedFor: t.issuedFor,
           issuerEmail: t.issuerEmail,
           issuerMobile: t.issuerMobile,
-          issuerType: t.issuerType
+          issuerType: t.issuerType,
+          assignedTo: t.assignedTo
         })));
       } catch (err) {
         toast.error("Failed to fetch support tickets");
