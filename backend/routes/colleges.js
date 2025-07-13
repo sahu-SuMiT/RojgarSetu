@@ -5,6 +5,7 @@ const College = require('../models/College');
 const Student = require('../models/Student');
 const RegistrationOtp = require('../models/RegistrationOtp');
 const SupportTicket = require('../models/SupportTicket');
+const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
 const {emailTransport,emailSender} = require('../config/email');
 const Notification = require('../models/Notification');
@@ -19,7 +20,18 @@ const { createCollegeNotification } = require('../utils/notificationHelper');
 // app.get('/api/colleges/:id') ..... Get college by Id
 // app.get('/api/colleges') ..... Get all colleges
 // app.get('/api/colleges/email/:email') .....Get college by college official email
-
+assignTicketToSales = async(ticketID) =>{
+  freeSales = await User.findOne({}).sort({workload:1});
+  const ticket = await SupportTicket.findOne({ ticketId: ticketID });
+  if (!ticketID) throw new Error("Ticket ID is required");
+  ticket.assignedTo = freeSales.email; 
+  ticket.salesPerson = freeSales.firstName + " " + freeSales.lastName; // Store the sales person's ID
+  await ticket.save();
+  freeSales.workload += 1; // Increment the workload of the sales person
+  await freeSales.save();
+  //console.log(`Assigned ticket ${ticketID} to ${freeSales.email}`);
+  return ticket;
+}
 
 router.get('/:collegeId/student/:studentId', async (req, res) => {
   try {
@@ -347,7 +359,7 @@ router.put('/:id/edit',isCollegeAuthenticated,isCollegeAdmin, async (req, res) =
 
 router.post('/tickets', async (req, res) => {
   try {
-    console.log("req.body", req.body);
+    //console.log("req.body", req.body);
     const { userId, userType, subject, description, category, priority, email,contact, userName} = req.body;
     if (!userId || !userType || !subject || !description || !email) {
       return res.status(400).json({ error: 'Missing required fields.' });
@@ -368,10 +380,11 @@ router.post('/tickets', async (req, res) => {
       secretCode: Math.floor(1000 + Math.random() * 9000),
       status: 'open'
     });
-    console.log("new Ticket form college:", newTicket);
     await newTicket.save();
-
-    const autoMsg = `Your Ticket No. #${newTicket.ticketId} has been generated for [${newTicket.subject}]. Your issue will be resolved within 3–4 hours. Please use this secret code: ${newTicket.secretCode} to close your complaint after resolution.`;
+    const assignedTicket = await assignTicketToSales(newTicket.ticketId);
+    
+    let autoMsg = `Your Ticket No. #${newTicket.ticketId} has been generated for [${newTicket.subject}]. Your issue will be resolved within 3–4 hours. Please use this secret code: ${newTicket.secretCode} to close your complaint after resolution.`;
+    autoMsg += `\n\nYour ticket was assigned to ${assignedTicket.salesPerson} (${assignedTicket.assignedTo}).`;
     await Notification.create({
       sender:userId,
       senderModel: 'College',

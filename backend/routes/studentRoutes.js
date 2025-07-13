@@ -11,6 +11,7 @@ const {emailTransport, emailSender} = require('../config/email'); // Adjust this
 const jwt = require('jsonwebtoken');
 const SupportTicket = require('../models/SupportTicket');
 const {v4: uuidv4} = require('uuid');
+const User = require('../models/User');
 // Import your Mongoose models
 const RegistrationOtp = require('../models/RegistrationOtp'); // Adjust this path
 const multer = require('multer');
@@ -19,6 +20,19 @@ const Notification = require('../models/Notification');
 const { createStudentNotification } = require('../utils/notificationHelper');
 require('dotenv').config();
 
+
+assignTicketToSales = async(ticketID) =>{
+  freeSales = await User.findOne({}).sort({workload:1});
+  const ticket = await SupportTicket.findOne({ ticketId: ticketID });
+  if (!ticketID) throw new Error("Ticket ID is required");
+  ticket.assignedTo = freeSales.email; 
+  ticket.salesPerson = freeSales.firstName + " " + freeSales.lastName; // Store the sales person's ID
+  await ticket.save();
+  freeSales.workload += 1; // Increment the workload of the sales person
+  await freeSales.save();
+  //console.log(`Assigned ticket ${ticketID} to ${freeSales.email}`);
+  return ticket;
+}
 // Profile routes using /me (token-based auth)
 router.get('/me', authMiddleware, studentController.getOwnProfile);
 router.put('/me', authMiddleware, studentController.updateOwnProfile);
@@ -200,7 +214,7 @@ router.get('/support/tickets', async (req, res) => {
   }
 });
 router.post('/tickets', upload.single('uploadedFile'), async (req, res) => {
-  console.log('req.body from student:', req.body);
+  //console.log('req.body from student:', req.body);
   try {
     const authHeader = req.headers.token || req.headers.authorization;
     let token = null;
@@ -222,7 +236,7 @@ router.post('/tickets', upload.single('uploadedFile'), async (req, res) => {
     if (!userId || !userType) {
       return res.status(401).json({ error: 'Unauthorized: Invalid token payload' });
     }
-    console.log("decoded:", decoded, "reqbody:", req.body)
+    
     let {
       title,
       subject,
@@ -266,9 +280,12 @@ router.post('/tickets', upload.single('uploadedFile'), async (req, res) => {
           }
         : undefined
     });
-    console.log(newTicket);
     await newTicket.save();
-    const autoMsg = `Your Ticket No. #${newTicket.ticketId} has been generated for [${newTicket.subject}]. Your issue will be resolved within 3–4 hours. Please use this secret code: ${newTicket.secretCode} to close your complaint after resolution.`;
+    const assignedTicket = await assignTicketToSales(newTicket.ticketId);
+    //console.log("assignedTicket:",assignedTicket);
+    let autoMsg = `Your Ticket No. #${newTicket.ticketId} has been generated for [${newTicket.subject}]. Your issue will be resolved within 3–4 hours. Please use this secret code: ${newTicket.secretCode} to close your complaint after resolution.`;
+    autoMsg += `\n\nYour ticket was assigned to ${assignedTicket.salesPerson} (${assignedTicket.assignedTo}).`;
+    
     await Notification.create({
       sender:userId,
       senderModel: 'Student',

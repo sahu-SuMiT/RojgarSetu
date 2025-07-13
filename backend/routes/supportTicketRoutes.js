@@ -37,7 +37,7 @@ router.get('/college/:userId', async (req, res) => {
 });
 
 // Close a ticket
-router.patch("/:ticketId/close", supportController.closeTicket);
+router.post("/close", supportController.closeTicket);
 
 // Get details of a single ticket
 router.get("/:ticketId", supportController.getTicketById);
