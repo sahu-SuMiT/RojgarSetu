@@ -174,7 +174,7 @@ exports.closeTicket = async (req, res) => {
       return res.status(404).json({ message: 'Ticket not found' });
     }
     
-    ticket.status = 'closed';
+    ticket.status = 'resolved';
     ticket.closed = true;
     ticket.closedAt = new Date();
     
