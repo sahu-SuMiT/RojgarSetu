@@ -1,13 +1,10 @@
-import React, { useState,useEffect, useCallback, memo, useMemo, useRef } from 'react';
+import React, { useState,useEffect, useCallback, memo, useMemo } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Target, ShieldAlert, Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SidebarContext } from './Sidebar';
-// Remove Loader import
-// import Loader from '../components/Loader';
-import KycDialog from './KycDialog';
-import io from 'socket.io-client';
+import Loader from '../components/Loader';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -109,6 +106,7 @@ const Profile = () => {
     return stored === 'true';
   });
   const [profileData, setProfileData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [profilePicFile, setProfilePicFile] = useState(null);
@@ -122,18 +120,8 @@ const Profile = () => {
   const [isKycPaymentDialogOpen, setIsKycPaymentDialogOpen] = useState(false);
   const [kycPaymentMessage, setKycPaymentMessage] = useState({ text: '', type: '' });
   const [kycPaymentLoading, setKycPaymentLoading] = useState(false);
-  const [kycProcessing, setKycProcessing] = useState(false);
-  const [kycButtonLoading, setKycButtonLoading] = useState(false);
-  const [paymentRedirected, setPaymentRedirected] = useState(() => {
-    // Check localStorage for existing payment redirect state
-    return localStorage.getItem('paymentRedirected') === 'true';
-  });
-  
-  // Countdown and WebSocket states
-  const [isWebSocketConnected, setIsWebSocketConnected] = useState(false);
-  const socketRef = useRef(null);
-  const pollingRef = useRef(null);
-  const paymentTimeoutRef = useRef(null); // New ref for payment timeout
+  const [buttonCountdown, setButtonCountdown] = useState(6);
+  const [isButtonEnabled, setIsButtonEnabled] = useState(false);
 
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
@@ -144,39 +132,6 @@ const Profile = () => {
       window.location.href = '/student-login';
     }
   }, [token]);
-
-  // Clear payment redirected state if payment is already completed
-  useEffect(() => {
-    if (profileData?.payment?.status === 'paid' && paymentRedirected) {
-      setPaymentRedirected(false);
-      localStorage.removeItem('paymentRedirected');
-    }
-  }, [profileData?.payment?.status, paymentRedirected]);
-
-  // Payment timeout effect - reset after 1 minute if no response
-  useEffect(() => {
-    if (paymentRedirected) {
-      // Clear any existing timeout
-      if (paymentTimeoutRef.current) {
-        clearTimeout(paymentTimeoutRef.current);
-      }
-      
-      // Set new timeout for 1 minute (60000ms)
-      paymentTimeoutRef.current = setTimeout(() => {
-        console.log('Payment timeout reached - resetting payment state');
-        setPaymentRedirected(false);
-        localStorage.removeItem('paymentRedirected');
-        toast.info('Payment timeout. Please try again if payment was not completed.');
-      }, 60000); // 1 minute timeout
-      
-      // Cleanup timeout on unmount or when paymentRedirected changes
-      return () => {
-        if (paymentTimeoutRef.current) {
-          clearTimeout(paymentTimeoutRef.current);
-        }
-      };
-    }
-  }, [paymentRedirected]);
 
   // Handle URL parameters and payment success
   useEffect(() => {
@@ -198,6 +153,7 @@ const Profile = () => {
       if (params.get('payment') === 'success') {
         const fetchProfileData = async () => {
           try {
+            setLoading(true);
             setError(null);
             const response = await fetch(`${API_URL}/api/student/me`, {
               method: 'GET',
@@ -214,6 +170,7 @@ const Profile = () => {
             const data = await response.json();
             const profileInfo = data.profile || data;
             setProfileData(profileInfo);
+            setLoading(false);
             
             // Use setTimeout without blocking the main function
 
@@ -227,6 +184,7 @@ const Profile = () => {
 
           } catch (err) {
             setError(err.message || 'Unknown error');
+            setLoading(false);
           }
         };
         fetchProfileData();
@@ -246,7 +204,7 @@ const Profile = () => {
         if (response.ok) {
           const data = await response.json();
           console.log('KYC Status:', data.kycStatus);
-          console.log('verification id:', data.kycData?.verificationId);
+          console.log('verification id:', data.kycData.verificationId);
           
           // If iskycVerified is true, set to approved
           if (data.kycStatus === 'verified' || data.iskycVerified|| data.kycStatus === 'approved') {
@@ -261,16 +219,13 @@ const Profile = () => {
       }
     };
     
-    // Only fetch KYC status if we have a token and haven't already fetched it
-    if (token && kycStatus === 'not started') {
-      fetchKycStatus();
-    }
-  }, [token, kycStatus]);
+    fetchKycStatus();
+  }, [token]);
 
   // Separate useEffect to handle payment status check after profileData is loaded
   useEffect(() => {
-    if (profileData && profileData.payment?.status === 'paid' && kycStep !== 3) {
-      setKycStep(2); // Set to KYC initiation step if payment is already paid and not at step 3
+    if (profileData && profileData.payment?.status === 'paid') {
+      setKycStep(2); // Set to KYC initiation step if payment is already paid
       console.log('Payment already paid, setting KYC step to 2');
     } else if (profileData) {
       console.log('Payment status:', profileData.payment?.status);
@@ -280,6 +235,7 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
+        setLoading(true);
         setError(null);
         const response = await fetch(`${API_URL}/api/student/me`, {
           method: 'GET',
@@ -297,10 +253,12 @@ const Profile = () => {
 
         const profileInfo = data.profile || data;
         setProfileData(profileInfo);
+        setLoading(false);
         
         // Check payment status from profile data and set KYC step accordingly
       } catch (err) {
         setError(err.message || 'Unknown error');
+        setLoading(false);
       }
     };
     fetchProfileData();
@@ -313,183 +271,61 @@ const Profile = () => {
     }
     
     // Check payment status and update KYC step accordingly
-    if (profileData?.payment?.status === 'paid' && kycStep !== 3) {
-      setKycStep(2); // Set to KYC initiation step if payment is paid and not at step 3
+    if (profileData?.payment?.status === 'paid') {
+      setKycStep(2); // Set to KYC initiation step if payment is paid
       console.log('Payment status changed to paid, setting KYC step to 2');
     }
-  }, [profileData,token, kycStep]);
+  }, [profileData,token]);
 
-  // WebSocket connection setup
+  // Countdown effect for button enablement
   useEffect(() => {
-    if (token && profileData?._id) {
-      try {
-        // Connect to WebSocket server with development-friendly configuration
-        const backendUrl = 'http://localhost:5000'; // Use explicit backend URL for localhost
-        socketRef.current = io(backendUrl, {
-          auth: {
-            token: token
-          },
-          transports: ['polling', 'websocket'], // Try polling first, then websocket
-          timeout: 20000,
-          forceNew: true,
-          reconnection: true,
-          reconnectionAttempts: 5,
-          reconnectionDelay: 1000,
-          reconnectionDelayMax: 5000,
-          maxReconnectionAttempts: 5
-        });
-
-        // Join student's room for real-time updates
-        socketRef.current.emit('join', profileData._id);
-
-        // Listen for payment status updates
-        socketRef.current.on('payment-status', (data) => {
-          console.log('Payment status update received:', data);
-          
-          if (data.status === 'success') {
-            // Clear payment timeout since payment was successful
-            if (paymentTimeoutRef.current) {
-              clearTimeout(paymentTimeoutRef.current);
-              paymentTimeoutRef.current = null;
-            }
-            
-            // Update profile data with payment success
-            setProfileData(prev => ({
-              ...prev,
-              payment: {
-                status: 'paid',
-                amount: data.amount,
-                currency: data.currency,
-                date: new Date()
-              }
-            }));
-            
-            // Reset payment redirected state
-            setPaymentRedirected(false);
-            localStorage.removeItem('paymentRedirected');
-            
-            // Show success toast
-            toast.success('Payment successful! You can now proceed with KYC verification.');
-            
-            // Set KYC step to 2 (KYC initiation) only if not at step 3
-            if (kycStep !== 3) {
-              setKycStep(2);
-            }
-            
-          } else if (data.status === 'failed') {
-            // Clear payment timeout since payment failed
-            if (paymentTimeoutRef.current) {
-              clearTimeout(paymentTimeoutRef.current);
-              paymentTimeoutRef.current = null;
-            }
-            
-            // Reset payment redirected state on failure
-            setPaymentRedirected(false);
-            localStorage.removeItem('paymentRedirected');
-            
-            // Show failure toast
-            toast.error(`Payment failed: ${data.message || 'Unknown error'}`);
+    if (profileData && !isButtonEnabled) {
+      const timer = setInterval(() => {
+        setButtonCountdown((prev) => {
+          if (prev <= 1) {
+            setIsButtonEnabled(true);
+            clearInterval(timer);
+            return 0;
           }
+          return prev - 1;
         });
+      }, 1000);
 
-        // Listen for connection events
-        socketRef.current.on('connect', () => {
-          console.log('WebSocket connected successfully');
-          setIsWebSocketConnected(true);
-        });
-
-        socketRef.current.on('connect_error', (error) => {
-          console.log('WebSocket connection error:', error.message);
-          setIsWebSocketConnected(false);
-          // Don't show error to user, just log it
-        });
-
-        socketRef.current.on('reconnect', (attemptNumber) => {
-          console.log('WebSocket reconnected after', attemptNumber, 'attempts');
-          setIsWebSocketConnected(true);
-        });
-
-        socketRef.current.on('reconnect_error', (error) => {
-          console.log('WebSocket reconnection error:', error.message);
-          setIsWebSocketConnected(false);
-        });
-
-        socketRef.current.on('disconnect', (reason) => {
-          console.log('WebSocket disconnected:', reason);
-          setIsWebSocketConnected(false);
-          if (reason === 'io server disconnect') {
-            // the disconnection was initiated by the server, reconnect manually
-            socketRef.current.connect();
-          }
-        });
-
-        // Cleanup on unmount
-        return () => {
-          if (socketRef.current) {
-            socketRef.current.disconnect();
-          }
-          // Clear payment timeout on unmount
-          if (paymentTimeoutRef.current) {
-            clearTimeout(paymentTimeoutRef.current);
-          }
-        };
-      } catch (error) {
-        console.log('WebSocket setup error:', error.message);
-        // Continue without WebSocket - the app will still work
-      }
+      return () => clearInterval(timer);
     }
-  }, [token, profileData?._id]);
+  }, [profileData, isButtonEnabled]);
 
-  // Fallback polling for payment status when WebSocket is not available
+  // Refetch profile data when button gets enabled
   useEffect(() => {
-    if (profileData?._id && !isWebSocketConnected) {
-      const checkPaymentStatus = async () => {
+    if (isButtonEnabled) {
+      const fetchProfileData = async () => {
         try {
+          setLoading(true);
+          setError(null);
           const response = await fetch(`${API_URL}/api/student/me`, {
             method: 'GET',
             headers: { Authorization: `Bearer ${token}` },
             credentials: "include",
           });
-          if (response.ok) {
-            const data = await response.json();
-            const profileInfo = data.profile || data;
-            
-            // Check if payment status changed
-            if (profileInfo.payment?.status === 'paid' && profileData.payment?.status !== 'paid') {
-              // Clear payment timeout since payment was successful
-              if (paymentTimeoutRef.current) {
-                clearTimeout(paymentTimeoutRef.current);
-                paymentTimeoutRef.current = null;
-              }
-              
-              setProfileData(profileInfo);
-              setPaymentRedirected(false);
-              localStorage.removeItem('paymentRedirected');
-              toast.success('Payment successful! You can now proceed with KYC verification.');
-              if (kycStep !== 3) {
-                setKycStep(2);
-              }
-            }
+          if (response.status === 401 || response.status === 403) {
+            window.location.href = '/student-login';
+            return;
           }
+          if (!response.ok) {
+            throw new Error('Failed to fetch profile data');
+          }
+          const data = await response.json();
+          const profileInfo = data.profile || data;
+          setProfileData(profileInfo);
+          setLoading(false);
         } catch (err) {
-          console.log('Payment status check error:', err.message);
+          setError(err.message || 'Unknown error');
+          setLoading(false);
         }
       };
-
-      // Check immediately
-      checkPaymentStatus();
-      
-      // Then check every 10 seconds
-      pollingRef.current = setInterval(checkPaymentStatus, 10000);
-
-      return () => {
-        if (pollingRef.current) {
-          clearInterval(pollingRef.current);
-        }
-      };
+      fetchProfileData();
     }
-  }, [profileData?._id, isWebSocketConnected, token, profileData?.payment?.status]);
-
+  }, [isButtonEnabled, token]);
 
   const handleEdit = () => setIsEditing(true);
   const handleCancel = () => {
@@ -565,18 +401,13 @@ const Profile = () => {
   };
 
   const handleVerification = async () => {
-    // Prevent multiple clicks
-    if (kycButtonLoading) return;
-    
-    setKycButtonLoading(true);
-
     try {
       if (kycStatus === 'verified' || kycStatus === 'approved') {
-        toast.success('KYC is already verified.');
+        alert('KYC is already verified.');
         return;
       }
       
-      // Check payment status and set KYC step accordingly (no API call needed)
+      // Check payment status and set KYC step accordingly
       if (profileData?.payment?.status === 'paid') {
         setKycStep(2); // Go directly to KYC initiation step if payment is paid
         console.log('Payment already paid, setting KYC step to 2');
@@ -587,37 +418,29 @@ const Profile = () => {
       setIsKycDialogOpen(true);
     } catch (error) {
       console.error('KYC verification error:', error);
-      toast.error('Failed to initiate KYC verification');
-    } finally {
-      setKycButtonLoading(false);
+      alert('Failed to initiate KYC verification');
     }
   };
 
   const handleKycNext = () => {
-    if (kycStep === 0 && profileData.payment?.status === 'paid') {
-      // If payment is already paid, skip to step 2 (KYC initiation)
-      setKycStep(2);
-    } else if (kycStep === 2) {
+    if (kycStep === 2) {
       // Set default value for identifier when moving to step 2
       setKycIdentifierValue(kycIdentifierType === 'phone' ? (profileData.phone || '') : (profileData.email || ''));
-      setKycStep(3); // Move to completion step
-    } else {
-      // Normal step increment
-      setKycStep((prev) => prev + 1);
+    } else if(kycStep === 0 && profileData.payment?.status === 'paid'){
+      setKycStep(2);
     }
+    setKycStep((prev) => prev + 1);
   };
 
   const handleKycBack = () => {
     setKycStep((prev) => prev - 1);
   };
 
-  const handleKycClose = () => {
+  const 
+  handleKycClose = () => {
     setIsKycDialogOpen(false);
-    // Reset to appropriate step based on payment status, but preserve step 3
-    if (kycStep === 3) {
-      // If we're at step 3, keep it there so user can see the message
-      // The step will be reset when dialog is opened again
-    } else if (profileData?.payment?.status === 'paid') {
+    // Reset to appropriate step based on payment status
+    if (profileData?.payment?.status === 'paid') {
       setKycStep(2); // Keep at KYC initiation step if payment is paid
     } else {
       setKycStep(0); // Reset to intro step if payment is not paid
@@ -663,16 +486,12 @@ const Profile = () => {
       try { data = await response.json(); } catch {}
 
               if (data && data.success && data.redirectUrl) {
-        // Set payment redirected state in localStorage before redirecting
-        setPaymentRedirected(true);
-        localStorage.setItem('paymentRedirected', 'true');
-        
-        // Redirect to Payomatix payment gateway in the current tab
-        window.location.href = data.redirectUrl;
+          // Redirect to Payomatix payment gateway in the current tab
+          window.location.href = data.redirectUrl;
 
-        // Optionally, move to next KYC step or wait for webhook confirmation
-        setKycStep(2); // Move to confirm step
-      } else {
+          // Optionally, move to next KYC step or wait for webhook confirmation
+          setKycStep(2); // Move to confirm step
+        } else {
         alert('Payment initiation failed: ' + (data?.message || 'No redirect URL received.'));
       }
     } catch (error) {
@@ -683,124 +502,44 @@ const Profile = () => {
   };
 
   const handleKycConfirm = async () => {
-    console.log('🔍 handleKycConfirm called');
-    console.log('🔍 API_URL:', API_URL);
-    console.log('🔍 token:', token ? 'exists' : 'missing');
-    console.log('🔍 profileData:', profileData);
-    console.log('🔍 kycIdentifierType:', kycIdentifierType);
-    console.log('🔍 kycIdentifierValue:', kycIdentifierValue);
-    
-    // Set loading state
-    setKycProcessing(true);
-    
-    // First, check if KYC is already in progress
-    try {
-      const statusResponse = await fetch(`${API_URL}/api/kyc/status`, {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (statusResponse.ok) {
-        const statusData = await statusResponse.json();
-        console.log('🔍 Current KYC status:', statusData);
-        
-        // If KYC is already in progress or completed, show appropriate message
-        if (statusData.kycData?.verificationId) {
-          if (statusData.kycStatus === 'pending' || statusData.kycStatus === 'pending approval') {
-            toast.info('KYC verification is already in progress. Please check your SMS/Email for the verification link.');
-            setKycStep(3); // Show step 3 with existing verification
-            setKycProcessing(false); // Reset loading state
-            return;
-          } else if (statusData.kycStatus === 'verified' || statusData.kycStatus === 'approved') {
-            toast.success('KYC verification is already completed!');
-            setKycStatus('approved');
-            setIsKycDialogOpen(false);
-            setKycProcessing(false); // Reset loading state
-            return;
-          }
-        }
-      }
-    } catch (error) {
-      console.log('🔍 Error checking KYC status:', error);
-      // Continue with KYC initiation if status check fails
-    }
-    
     try {
       const identifier = kycIdentifierType === 'phone' ? { phone: kycIdentifierValue } : { email: kycIdentifierValue };
-      console.log('🔍 identifier:', identifier);
-      
-      const requestBody = {
-        ...identifier,
-        firstName: profileData.firstName,
-        lastName: profileData.lastName,
-        template_name: 'ADHAAR_PAN_MARKSHEET',
-      };
-      console.log('🔍 requestBody:', requestBody);
-      
-      console.log('🔍 Making API call to:', `${API_URL}/api/kyc/verify-digio`);
-      
       const response = await fetch(`${API_URL}/api/kyc/verify-digio`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          ...identifier,
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+          template_name: 'ADHAAR_PAN_MARKSHEET',
+        }),
       });
-      
-      console.log('🔍 Response status:', response.status);
-      console.log('🔍 Response ok:', response.ok);
-      
       if(response.status === 400) {
-        console.log('🔍 400 error - KYC already in progress');
-        const errorData = await response.json();
-        toast.info(errorData.message || 'KYC verification already in progress or completed. Please check your KYC status.');
-        setKycStep(3); // Show step 3 instead of closing
-        setKycProcessing(false); // Reset loading state
+        toast('Kyc verification already in progress or completed. Please check your KYC status.');
+        setIsKycDialogOpen(false);
         return;
       }
-      
-      if(response.status === 403) {
-        console.log('🔍 403 error - Payment required');
-        const errorData = await response.json();
-        toast.error(errorData.message || 'Payment required before KYC verification');
-        setKycStep(1);
-        setKycProcessing(false); // Reset loading state
-        return;
-      }
-      
       if (response.status === 401 || response.status === 403) {
-        console.log('🔍 Auth error - redirecting to login');
         window.location.href = '/student-login';
-        setKycProcessing(false); // Reset loading state
         return;
       }
-      
       if (!response.ok) {
-        console.log('🔍 Response not ok');
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to initiate KYC verification');
+        throw new Error('Failed to initiate KYC verification');
       }
-      
       const data = await response.json();
-      console.log('🔍 Success response:', data);
-      
-      // Success - show step 3 and keep dialog open
-      setKycStep(3);
-      toast.success('KYC verification initiated! Please check your SMS/Email for the verification link.');
-      setKycProcessing(false); // Reset loading state
-      
-      // Don't auto-close the dialog - let user close it manually
-      // setTimeout(() => {
-      //   setIsKycDialogOpen(false);
-      // }, 3000);
-      
+      setKycStep(3); // Done step
+      if (data.digilockerUrl) {
+        setTimeout(() => {
+          window.location.href = data.digilockerUrl;
+        }, 1500);
+      }
     } catch (error) {
-      console.error('❌ KYC verification error:', error);
-      toast.error(error.message || 'Failed to initiate KYC verification');
-      setKycProcessing(false); // Reset loading state
-      // Don't close dialog on error - let user see the error
-      // setIsKycDialogOpen(false);
+      console.error('KYC verification error:', error);
+      alert('Failed to initiate KYC verification');
+      setIsKycDialogOpen(false);
     }
   };
 
@@ -837,8 +576,6 @@ const Profile = () => {
       try { data = await response.json(); } catch {}
       if (response.ok && data && data.success && data.redirectUrl) {
         setKycPaymentMessage({ text: 'Redirecting to payment gateway...', type: 'success' });
-        setPaymentRedirected(true);
-        localStorage.setItem('paymentRedirected', 'true');
         window.location.href = data.redirectUrl;
       } else if (response.ok) {
         setKycPaymentMessage({ text: 'Payment initiated. Please complete the payment.', type: 'success' });
@@ -853,6 +590,10 @@ const Profile = () => {
   };
 
 
+
+  if (loading) {
+    return <div className="p-10 text-center text-lg">Loading...</div>;
+  }
 
   if (!profileData) {
     return <div className="p-10 text-center text-gray-500">No profile data found.</div>;
@@ -902,37 +643,27 @@ const Profile = () => {
               </div>
               <div className="flex space-x-2 items-center">
                 {/* KYC Button at the top */}
-                <button
-                  onClick={handleVerification}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold border transition-colors text-base shadow mr-2 ${
-                    kycButtonLoading ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed' 
-                      : kycStatus === 'pending' ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed' 
-                      : kycStatus === 'approved' ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
-                      : kycStatus === 'verified' ? 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200'
-                      : paymentRedirected ? 'bg-orange-100 text-orange-800 border-orange-200 cursor-not-allowed'
-                      : 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200'
-                  }`}
-                  style={{ outline: 'none' }}
-                  disabled={kycButtonLoading || kycStatus === 'approved' || kycStatus === 'verified' || kycStatus === 'pending' || paymentRedirected}
-                >
-                  {kycButtonLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
-                      Loading...
-                    </>
-                  ) : (
-                    <>
-                      {kycStatus === 'pending' ? <ShieldAlert className="w-5 h-5" /> : "👍"}
-                      {kycStatus === 'approved' ? 'KYC Done' : 
-                       kycStatus === 'verified' ? 'KYC Verified' : 
-                       kycStatus === 'pending' ? 'Pending' : 
-                       kycStatus === 'pending approval' ? 'Pending Approval' : 
-                       paymentRedirected ? 'Wait' :
-                       profileData?.payment?.status === 'paid' ? 'Continue KYC' : 
-                       'Complete Your Verification'}
-                    </>
-                  )}
-                </button>
+                {!isButtonEnabled ? (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-xl font-semibold border border-gray-200 text-base shadow mr-2">
+                    <div className="w-5 h-5 border-2 border-gray-400 border-t-blue-600 rounded-full animate-spin"></div>
+                    <span>Loading... {buttonCountdown}s</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleVerification}
+                    className="flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-xl font-semibold border border-yellow-200 hover:bg-yellow-200 transition-colors text-base shadow mr-2"
+                    style={{ outline: 'none' }}
+                    disabled={kycStatus === 'approved' || kycStatus === 'verified' || kycStatus === 'pending'}
+                  >
+                    {kycStatus === 'pending' ? <ShieldAlert className="w-5 h-5" /> : "👍"}
+                    {kycStatus === 'approved' ? 'KYC Done' : 
+                     kycStatus === 'verified' ? 'KYC Verified' : 
+                     kycStatus === 'pending' ? 'Pending' : 
+                     kycStatus === 'pending approval' ? 'Pending Approval' : 
+                     profileData?.payment?.status === 'paid' ? 'Continue KYC' : 
+                     'Complete Your Verification'}
+                  </button>
+                )}
 
 
                 {/* Edit/Save/Cancel buttons */}
@@ -950,17 +681,22 @@ const Profile = () => {
             </div>
           </div>
           <div className="relative flex-1 bg-gray-50 min-h-full">
-            {error && (
+            {loading && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80">
+                <Loader message="Loading your profile..." />
+              </div>
+            )}
+            {error && !loading && (
               <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
                 <p className="text-red-600 font-medium text-lg">Error: {error}</p>
               </div>
             )}
-            {!error && !profileData && (
+            {!loading && !error && !profileData && (
               <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
                 <p className="text-gray-600 font-medium text-lg">No profile data found.</p>
               </div>
             )}
-            {!error && profileData && (
+            {!loading && !error && profileData && (
           <div className="p-8">
             <div className="bg-white rounded-xl border border-gray-200 p-8 mb-8 shadow-sm">
               <div className="flex items-center space-x-6">
@@ -1300,24 +1036,238 @@ const Profile = () => {
     
 
       {/* KYC Dialog and Backdrop */}
-      <KycDialog
-        isKycDialogOpen={isKycDialogOpen}
-        kycStep={kycStep}
-        setKycStep={setKycStep}
-        kycStatus={kycStatus}
-        paymentProcessing={paymentProcessing}
-        kycProcessing={kycProcessing}
-        profileData={profileData}
-        kycIdentifierType={kycIdentifierType}
-        setKycIdentifierType={setKycIdentifierType}
-        kycIdentifierValue={kycIdentifierValue}
-        setKycIdentifierValue={setKycIdentifierValue}
-        handleKycClose={handleKycClose}
-        handleKycNext={handleKycNext}
-        handleKycBack={handleKycBack}
-        handlePayment={handlePayment}
-        handleKycConfirm={handleKycConfirm}
-      />
+      {isKycDialogOpen && (
+        <>
+          {/* KYC Dialog with Backdrop */}
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
+            onClick={handleKycClose}
+          >
+            <div 
+              className="relative w-full max-w-lg bg-white rounded-xl shadow-2xl border border-gray-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header with gradient background */}
+              <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-xl p-6 text-white relative">
+                <button
+                  onClick={handleKycClose}
+                  className="absolute top-4 right-4 text-white hover:text-gray-200 text-2xl font-bold p-2 rounded-full hover:bg-white hover:bg-opacity-20 transition-all duration-200"
+                  aria-label="Close dialog"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+                <div className="flex items-center space-x-3">
+                  <div className="bg-white bg-opacity-20 p-3 rounded-full">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold">KYC Verification</h1>
+                    <p className="text-indigo-100 text-sm mt-1">Complete your identity verification</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {kycStep === 0 && (
+                  <div className="text-center">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Complete Your Verification</h2>
+                    <p className="text-gray-600 mb-6">
+                      To ensure the security of your profile and get a "Verified" badge, please complete a quick KYC process. This involves a small fee for document verification via our trusted partner.
+                    </p>
+                    <div className="flex justify-center space-x-4">
+                      <button onClick={handleKycClose} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors">Cancel</button>
+                      <button onClick={handleKycNext} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">Continue</button>
+                    </div>
+                  </div>
+                )}
+
+                {kycStep === 1 && (
+                  <>
+                    <div className="mb-6">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-sm font-medium text-gray-600">Step 2 of 3</span>
+                      </div>
+                      <p className="text-gray-700 leading-relaxed mb-4">
+                        To start your KYC verification, please pay the verification fee.
+                      </p>
+                      <div className={`bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-4 border border-green-200 transition-all duration-500 ${
+                        paymentProcessing ? 'animate-pulse border-blue-300 bg-gradient-to-r from-blue-50 to-purple-50' : ''
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <div className={`transition-all duration-500 ${paymentProcessing ? 'animate-bounce' : ''}`}>
+                              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                              </svg>
+                            </div>
+                            <span className={`font-semibold transition-colors duration-500 ${
+                              paymentProcessing ? 'text-blue-700' : 'text-gray-700'
+                            }`}>Verification Fee</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className={`text-2xl font-bold transition-all duration-500 ${
+                              paymentProcessing ? 'text-blue-600 animate-pulse' : 'text-green-600'
+                            }`}>₹1</span>
+                            {paymentProcessing && (
+                              <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <button 
+                        className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-500 transform hover:scale-105 shadow-lg hover:shadow-xl ${
+                          paymentProcessing
+                            ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white cursor-not-allowed animate-pulse'
+                            : 'bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white'
+                        }`}
+                        onClick={handlePayment} 
+                        disabled={paymentProcessing}
+                      >
+                        {paymentProcessing ? (
+                          <div className="flex items-center justify-center space-x-3">
+                            <div className="relative">
+                              <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                              <div className="absolute inset-0 w-6 h-6 border-3 border-blue-200 border-b-transparent rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+                            </div>
+                            <div className="flex flex-col items-start">
+                              <span className="font-semibold">Processing Payment...</span>
+                              <span className="text-xs text-blue-100 animate-pulse">Please wait while we connect to payment gateway</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center space-x-2">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                            </svg>
+                            <span>Pay KYC Fee</span>
+                          </div>
+                        )}
+                      </button>
+                      <button 
+                        className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-300" 
+                        onClick={handleKycBack} 
+                        disabled={paymentProcessing}
+                      >
+                        Back
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                { profileData?.payment?.status === 'paid' && kycStep === 2 && (
+                  <>
+                    <div className="mb-6">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-sm font-medium text-gray-600">Step 3 of 3</span>
+                      </div>
+                      <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
+                        <div className="flex items-center space-x-2">
+                          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="font-semibold text-green-800">
+                            {profileData?.payment?.status === 'paid' ? 'Payment Already Completed!' : 'Payment Successful!'}
+                          </span>
+                        </div>
+                      </div>
+                                              <p className="text-gray-700 leading-relaxed">
+                          {profileData?.payment?.status === 'paid' 
+                            ? 'Your payment has already been completed. Please select an identifier and provide its value to initiate your DigiLocker KYC verification.'
+                            : 'Please select an identifier and provide its value to initiate your DigiLocker KYC verification.'
+                          }
+                        </p>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                          <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                          </svg>
+                          Select Identifier
+                        </label>
+                        <select
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          value={kycIdentifierType}
+                          onChange={e => {
+                            setKycIdentifierType(e.target.value);
+                            setKycIdentifierValue(e.target.value === 'phone' ? (profileData.phone || '') : (profileData.email || ''));
+                          }}
+                        >
+                          <option value="phone">Phone Number</option>
+                          <option value="email">Email Address</option>
+                        </select>
+                      </div>
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                          <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                          </svg>
+                          {kycIdentifierType === 'phone' ? 'Phone Number' : 'Email Address'}
+                        </label>
+                        <input
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          type={kycIdentifierType === 'phone' ? 'tel' : 'email'}
+                          value={kycIdentifierValue}
+                          onChange={e => setKycIdentifierValue(e.target.value)}
+                          placeholder={kycIdentifierType === 'phone' ? 'Enter phone number' : 'Enter email address'}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-3 mt-6">
+                      <button 
+                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl" 
+                        onClick={handleKycConfirm}
+                      >
+                        Initiate KYC Verification
+                      </button>
+                      <button 
+                        className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-300" 
+                        onClick={handleKycClose}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {kycStep === 3 && (
+                  <>
+                    <div className="mb-6">
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                        <div className="flex items-center space-x-2">
+                          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="font-semibold text-blue-800">KYC Initiated Successfully!</span>
+                        </div>
+                      </div>
+                      <p className="text-gray-700 leading-relaxed">
+                        Your KYC verification has been initiated. Please complete the process in the DigiLocker window. You will be redirected if required.
+                      </p>
+                    </div>
+                    <button 
+                      className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl" 
+                      onClick={handleKycClose}
+                    >
+                      Close
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* KYC Payment Dialog Modal */}
       {isKycPaymentDialogOpen && (
         <div

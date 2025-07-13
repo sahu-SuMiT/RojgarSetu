@@ -35,7 +35,5 @@ router.post('/student/reset-password/:token', authController.sendStudentResetPas
 
 router.get('/check-bypass-auth', authController.checkBypassAuth); //or send them back to login page
 
-router.get('/test', authController.testLogin);
-
 
 module.exports = router;

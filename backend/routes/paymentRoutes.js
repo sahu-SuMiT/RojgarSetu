@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 const Student = require('../models/Student');
 const Transaction = require('../models/Transaction');
 const transactionController = require('../controllers/transactionController');
-const io = require('../socket').getIO();
 
 const Campus_INTERNAL_SECRET = process.env.CAMPUS_INTERNAL_SECRET;
 
@@ -106,13 +105,6 @@ router.post('/', async (req, res) => {
               }
             });
             console.log(`✅ Student payment updated to PAID: ${student.name}`);
-            // Emit payment success event
-            io.to(student._id.toString()).emit('payment-status', {
-              status: 'success',
-              message: 'Payment successful',
-              amount: amount,
-              currency: currency
-            });
           } else if (status === 'failed' || status === 'cancelled') {
             await Student.findByIdAndUpdate(student._id, {
               payment: {
@@ -121,12 +113,6 @@ router.post('/', async (req, res) => {
               }
             });
             console.log(`❌ Student payment updated to FAILED: ${student.name}`);
-            // Emit payment failure event
-            io.to(student._id.toString()).emit('payment-status', {
-              status: 'failed',
-              message: message || 'Payment failed',
-              failureReason: message
-            });
           }
         }
       }
@@ -158,4 +144,4 @@ router.get('/transactions/stats/summary', transactionController.getTransactionSt
 router.post('/transactions/:id/retry', transactionController.retryTransaction);
 router.get('/transactions/export', transactionController.exportTransactions);
 
-module.exports = router;
+module.exports = router; 
