@@ -19,42 +19,63 @@ async function getSalesIdByUserName(userName) {
 }
 
 exports.addStudent = async (req, res) => {
+  console.log("Adding student with body:", req.body);
   try {
-    const { name, email, password, userName } = req.body;
-    if (!name || !email || !password || !userName) {
+    const { name, email, password} = req.body;
+    if (!name || !email || !password) {
       return res.status(400).json({ message: "All fields are required." });
     }
-    const salesId = await getSalesIdByUserName(userName);
+    const authHeader = req.headers['authorization']; // or req.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization token missing or malformed' });
+    }
+    const token = authHeader.split(' ')[1]; // Get the token after "Bearer"
+    console.log("Token:", token);
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET);
+    const salesId = decoded.salesId;
     if (!salesId) {
       return res.status(404).json({ message: "Sales ID not found for this user." });
     }
-    const student = new Student({ name, email, password, salesId });
-    await student.save();
+    console.log("Body:", req.body);
+    console.log("Decoded Sales ID:", salesId);
 
     // Send email with credentials
-    await emailTransport.sendMail({
-      from: process.env.EMAIL_SENDER,
-      to: email,
-      subject: 'Your Student Account Credentials',
-      text: `Welcome, ${name}!\nYour login ID: ${email}\nYour password: ${password}\nPlease change your password after first login.`
-    });
-
+    // await emailTransport.sendMail({
+    //     from: process.env.EMAIL_SENDER,
+    //     to: email,
+    //     subject: 'Your Student Account Credentials',
+    //     text: `Welcome, ${name}!\nYour login ID: ${email}\nYour password: ${password}\nPlease change your password after first login.`
+    //   });
+      
+    const student = new Student({ name, email, password, salesId });
+    await student.save();
     res.status(201).json({ message: "Student added successfully", student });
   } catch (error) {
+    console.error("Error adding student:", error);
     res.status(500).json({ message: "Server error", error });
   }
 };
 
 exports.addCollege = async (req, res) => {
+  console.log("Adding college with body:", req.body);
+  console.log("Headers:", req.headers);
   try {
-    const { name, code, contactEmail, contactPhone, userName } = req.body;
-    if (!name || !code || !contactEmail || !contactPhone || !userName) {
+    const { name, code, contactEmail, contactPhone} = req.body;
+    if (!name || !code || !contactEmail || !contactPhone) {
       return res.status(400).json({ message: "All fields are required." });
     }
-    const salesId = await getSalesIdByUserName(userName);
+    
+    const authHeader = req.headers['authorization']; // or req.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization token missing or malformed' });
+    }
+    const token = authHeader.split(' ')[1]; // Get the token after "Bearer"
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET);
+    const salesId = decoded.salesId;
     if (!salesId) {
       return res.status(404).json({ message: "Sales ID not found for this user." });
     }
+
     const college = new College({
       name,
       code,
@@ -66,12 +87,12 @@ exports.addCollege = async (req, res) => {
     await college.save();
 
     // Send email with credentials
-    await emailTransport.sendMail({
-      from: process.env.EMAIL_SENDER,
-      to: contactEmail,
-      subject: 'Your College Account Credentials',
-      text: `Welcome, ${name}!\nYour login ID: ${contactEmail}\nYour password: ${DEFAULT_PASSWORD}\nPlease change your password after first login.`
-    });
+    // await emailTransport.sendMail({
+    //   from: process.env.EMAIL_SENDER,
+    //   to: contactEmail,
+    //   subject: 'Your College Account Credentials',
+    //   text: `Welcome, ${name}!\nYour login ID: ${contactEmail}\nYour password: ${DEFAULT_PASSWORD}\nPlease change your password after first login.`
+    // });
 
     res.status(201).json({ message: "College added successfully", college });
   } catch (error) {
@@ -81,14 +102,22 @@ exports.addCollege = async (req, res) => {
 
 exports.addCompany = async (req, res) => {
   try {
-    const { name, contactEmail, contactPhone, userName } = req.body;
-    if (!name || !contactEmail || !contactPhone || !userName) {
+    const { name, contactEmail, contactPhone} = req.body;
+    if (!name || !contactEmail || !contactPhone) {
       return res.status(400).json({ message: "All fields are required." });
     }
-    const salesId = await getSalesIdByUserName(userName);
+    
+    const authHeader = req.headers['authorization']; // or req.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization token missing or malformed' });
+    }
+    const token = authHeader.split(' ')[1]; // Get the token after "Bearer"
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET);
+    const salesId = decoded.salesId;
     if (!salesId) {
       return res.status(404).json({ message: "Sales ID not found for this user." });
     }
+
     const company = new Company({
       name,
       contactEmail,
@@ -99,12 +128,12 @@ exports.addCompany = async (req, res) => {
     await company.save();
 
     // Send email with credentials
-    await emailTransport.sendMail({
-      from: process.env.EMAIL_SENDER,
-      to: contactEmail,
-      subject: 'Your Company Account Credentials',
-      text: `Welcome, ${name}!\nYour login ID: ${contactEmail}\nYour password: ${DEFAULT_PASSWORD}\nPlease change your password after first login.`
-    });
+    // await emailTransport.sendMail({
+    //   from: process.env.EMAIL_SENDER,
+    //   to: contactEmail,
+    //   subject: 'Your Company Account Credentials',
+    //   text: `Welcome, ${name}!\nYour login ID: ${contactEmail}\nYour password: ${DEFAULT_PASSWORD}\nPlease change your password after first login.`
+    // });
 
     res.status(201).json({ message: "Company added successfully", company });
   } catch (error) {
@@ -115,10 +144,15 @@ exports.addCompany = async (req, res) => {
 // Fetch students for this salesId
 exports.getStudentsBySales = async (req, res) => {
   try {
-    const { userName } = req.query;
-    if (!userName) return res.status(400).json({ message: "userName is required" });
-    const salesId = await getSalesIdByUserName(userName);
-    if (!salesId) return res.status(404).json({ message: "Sales ID not found for this user." });
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization token missing or malformed' });
+    }
+
+    const token = authHeader.split(' ')[1]; // Get the token after "Bearer"
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET);
+    const salesId = decoded.salesId;
+    if (!salesId) return res.status(400).json({ message: "Sales ID not found for this user." });
     const students = await Student.find({ salesId });
     res.json(students);
   } catch (error) {
@@ -129,9 +163,14 @@ exports.getStudentsBySales = async (req, res) => {
 // Fetch colleges for this salesId
 exports.getCollegesBySales = async (req, res) => {
   try {
-    const { userName } = req.query;
-    if (!userName) return res.status(400).json({ message: "userName is required" });
-    const salesId = await getSalesIdByUserName(userName);
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization token missing or malformed' });
+    }
+
+    const token = authHeader.split(' ')[1]; // Get the token after "Bearer"
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET);
+    const salesId = decoded.salesId;
     if (!salesId) return res.status(404).json({ message: "Sales ID not found for this user." });
     const colleges = await College.find({ salesId });
     res.json(colleges);
@@ -143,9 +182,14 @@ exports.getCollegesBySales = async (req, res) => {
 // Fetch companies for this salesId
 exports.getCompaniesBySales = async (req, res) => {
   try {
-    const { userName } = req.query;
-    if (!userName) return res.status(400).json({ message: "userName is required" });
-    const salesId = await getSalesIdByUserName(userName);
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authorization token missing or malformed' });
+    }
+
+    const token = authHeader.split(' ')[1]; // Get the token after "Bearer"
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET);
+    const salesId = decoded.salesId;
     if (!salesId) return res.status(404).json({ message: "Sales ID not found for this user." });
     const companies = await Company.find({ salesId });
     res.json(companies);

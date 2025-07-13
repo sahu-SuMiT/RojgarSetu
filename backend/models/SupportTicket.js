@@ -121,6 +121,10 @@ const SupportTicketSchema = new mongoose.Schema({
   salesPerson:{
     type: String,
     default: null
+  },
+  workload:{
+    type : Number,
+    default: 0
   }
 });
 

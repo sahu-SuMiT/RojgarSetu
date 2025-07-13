@@ -470,6 +470,10 @@ const Support = () => {
                           onClick={async () => {
                             const code = prompt("Enter secret code to mark as resolved:");
                             if (!code) return;
+                            if(code != ticket.secretCode) {
+                              toast.error("Invalid secret code");
+                              return;
+                            }
                             try {
                               const res = await axios.post(`${API_URL}/api/sales/ticket/resolve`, {
                                 ticketId: ticket._id || ticket.id,
