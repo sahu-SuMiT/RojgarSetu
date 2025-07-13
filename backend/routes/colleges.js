@@ -11,6 +11,7 @@ const Notification = require('../models/Notification');
 const cloudinary = require('../config/cloudinary');
 const {isCollegeAuthenticated,isCollegeAdmin} = require('../middleware/auth');
 const {isEmailDisposable}= require('../utils/disposableEmail');
+const { createCollegeNotification } = require('../utils/notificationHelper');
 // app.get('/api/college/:collegeId/student/:studentId') ..... Get a single student by ID and college
 // app.put('/api/college/:collegeId/student/:studentId') .....Put endpoint for updating college student profiles
 // app.post('/api/college/register/initiate') .....Post Initiate college registration: send OTP
@@ -164,6 +165,41 @@ router.post('/register/verify', async (req, res) => {
     // Delete the used OTP entry
     await RegistrationOtp.deleteOne({ _id: registrationOtp._id });
 
+    // Create welcome notification for the new college
+    try {
+      await createCollegeNotification(
+        newCollege._id,
+        'Welcome to Rojgar Setu!',
+        `Welcome ${newCollege.name}! Your college dashboard is ready. Start managing your students, track placements, and access comprehensive analytics.`,
+        {
+          type: 'success',
+          category: 'general',
+          actionUrl: `/college/${newCollege._id}/add-students`,
+          actionText: 'View Dashboard',
+          priority: 'high'
+        }
+      );
+
+      // Create a feature introduction notification
+      await createCollegeNotification(
+        newCollege._id,
+        'Platform Features Overview',
+        'Explore our student management tools, placement tracking, and analytics dashboard to enhance your college\'s placement success.',
+        {
+          type: 'info',
+          category: 'system',
+          actionUrl: `/college/${newCollege._id}/view-jobs`,
+          actionText: 'Explore Features',
+          priority: 'normal'
+        }
+      );
+
+    } catch (notificationError) {
+      console.error('Error creating welcome notifications for college:', notificationError);
+      // Don't fail registration if notification creation fails
+    }
+
+    // Prepare response (exclude password)
     const { password: pw, ...collegeData } = newCollege.toObject();
     res.status(201).json({ message: 'College registered successfully!', college: collegeData });
 
@@ -343,6 +379,9 @@ router.post('/tickets', async (req, res) => {
       recipientModel: 'College',
       title: "Your issue has been raised",
       message:autoMsg,
+      category:'system',
+      actionUrl: `/college/${userId}/support`,
+      actionText: 'Show Ticket',
       type: 'info',
       priority: 'normal',
     })

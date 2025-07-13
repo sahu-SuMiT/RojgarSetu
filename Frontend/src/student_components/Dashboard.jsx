@@ -4,30 +4,10 @@ import Sidebar from './Sidebar';
 import {
   UserCircle, FileText, Star, Bell, TrendingUp, Calendar, MessageSquare, Clock,
   Target, Award, Users, Eye, CheckCircle, AlertCircle, XCircle, PauseCircle,
-  Send, ChevronRight, ShieldAlert, LayoutDashboard, Menu
+  Send, ChevronRight, ShieldAlert, LayoutDashboard, Menu, Briefcase, Megaphone, Book
 } from "lucide-react";
 import { SidebarContext } from './Sidebar';
-
-// Safe fetch helper
-async function safeFetch(url, options) {
-  const mergedOptions = { credentials: 'include', ...(options || {}) };
-  const res = await fetch(url, mergedOptions);
-  const contentType = res.headers.get("content-type");
-  if (!res.ok) {
-    if (contentType && contentType.includes("application/json")) {
-      const j = await res.json();
-      throw new Error(j.error || j.message || "API error");
-    } else {
-      const text = await res.text();
-      throw new Error(
-        text.startsWith("<!doctype") || text.startsWith("<!DOCTYPE")
-          ? "API error: Received HTML instead of JSON. (Check API URL, backend server and proxy/config.)"
-          : `API error: ${res.status} ${text}`
-      );
-    }
-  }
-  return contentType && contentType.includes("application/json") ? res.json() : res.text();
-}
+import safeFetch from '../utils/safeFetch'; // or your fetch helper
 
 function StarRating({ rating }) {
   return (
@@ -94,8 +74,10 @@ const ApplicationStatusIcon = ({ status }) => {
   return <Icon className={`w-4 h-4 text-${config.color}-500`} />;
 };
 
-const NotificationPanel = ({ notifications, onClose }) => {
+/** Modern notification card layout **/
+const NotificationPanel = ({ notifications, onClose, onMarkAsRead, onDelete, onDeleteAll, deletingNotification, deletingAll }) => {
   const panelRef = useRef(null);
+  const navigate = useNavigate();
 
   // Close on outside click
   useEffect(() => {
@@ -108,56 +90,174 @@ const NotificationPanel = ({ notifications, onClose }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
+  const handleDeleteAllClick = () => {
+    onDeleteAll();
+  };
+
+  const handleDeleteClick = (e, id) => {
+    e.stopPropagation();
+    onDelete(id);
+  };
+
+  const handleNotificationClick = (notification) => {
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl);
+    }
+    onMarkAsRead(notification.id);
+  };
+
+  // Utility to strip emoji from title
+  const stripEmoji = (text) =>
+    text
+      ? text.replace(
+          /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu,
+          ""
+        ).trim()
+      : "";
+
+  const getNotificationIcon = (category) => {
+    switch (category) {
+      case "system":
+        return <ShieldAlert className="w-5 h-5 text-blue-500" />;
+      case "placement":
+        return <Briefcase className="w-5 h-5 text-blue-500" />;
+      case "announcement":
+        return <Megaphone className="w-5 h-5 text-blue-500" />;
+      case "academic":
+        return <Book className="w-5 h-5 text-blue-500" />;
+      default:
+        return <Bell className="w-5 h-5 text-blue-500" />;
+    }
+  };
+
+  const getNotificationColor = (type, category) => {
+    if (type === 'alert') {
+      return 'bg-blue-100 text-blue-800';
+    } else if (type === 'system') {
+      return 'bg-purple-100 text-purple-800';
+    } else if (type === 'reminder') {
+      return 'bg-green-100 text-green-800';
+    }
+    return 'bg-gray-100 text-gray-800';
+  };
+
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 top-14 z-50 w-96 max-w-full bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
+      className="absolute right-0 top-14 z-50 w-96 max-w-full bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden"
     >
       <div className="p-4 border-b border-gray-100 flex items-center justify-between">
         <span className="font-bold text-lg text-gray-900 flex items-center gap-2">
           <Bell className="w-5 h-5 text-blue-500" />
-          Notifications
+          Notifications ({notifications.length})
         </span>
-        <button
-          onClick={onClose}
-          className="rounded-full hover:bg-gray-100 p-1 transition"
-          aria-label="Close"
-        >
-          <XCircle className="w-5 h-5 text-gray-500" />
-        </button>
+        <div className="flex items-center gap-2">
+          {notifications.length > 0 && (
+            <button
+              onClick={handleDeleteAllClick}
+              disabled={deletingAll}
+              className={`text-xs px-2 py-1 rounded transition-colors ${
+                deletingAll 
+                  ? 'text-gray-400 cursor-not-allowed' 
+                  : 'text-red-600 hover:text-red-800 hover:bg-red-50'
+              }`}
+              title="Delete all notifications"
+            >
+              {deletingAll ? 'Clearing...' : 'Clear All'}
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="rounded-full hover:bg-gray-100 p-1 transition"
+            aria-label="Close"
+          >
+            <XCircle className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
       </div>
-      <div className="max-h-96 overflow-y-auto p-2">
+      <div className="max-h-96 overflow-y-auto p-2 bg-gray-50">
         {notifications.length === 0 ? (
           <div className="py-8 text-center text-gray-500">
             <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
             All caught up!
           </div>
         ) : (
-          notifications.map((n, i) => (
+          notifications.map((notification, i) => (
             <div
-              key={i}
-              className="flex items-start gap-3 p-3 hover:bg-blue-50/80 rounded-lg border-b last:border-b-0 border-gray-100"
+              key={notification.id || i}
+              className={`relative bg-white shadow-sm hover:shadow-md rounded-lg mb-3 border border-gray-100 cursor-pointer transition-all ${
+                !notification.read ? "ring-2 ring-blue-100" : ""
+              } ${deletingNotification === notification.id ? "opacity-50" : ""}`}
+              onClick={() => handleNotificationClick(notification)}
+              style={{ padding: "0.75rem 1rem" }}
             >
-              <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0" />
-              <div>
-                <p className="font-medium text-gray-900">
-                  {n.text}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">{n.date}</p>
-                {n.type === "alert" && (
-                  <span className="inline-block mt-1 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs">
-                    Internship/Job Alert
+              {/* Header: icon, title, unread dot, delete */}
+              <div className="flex items-center gap-2">
+                <span className="text-lg flex-shrink-0">{getNotificationIcon(notification.category)}</span>
+                <span
+                  className={`font-medium text-gray-900 text-base truncate flex-1 ${
+                    !notification.read ? "font-semibold" : ""
+                  }`}
+                  style={{ lineHeight: "1.2" }}
+                >
+                  {stripEmoji(notification.title) || notification.text}
+                </span>
+                {!notification.read && (
+                  <div className="w-2 h-2 bg-blue-500 rounded-full ml-1" />
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteClick(e, notification.id);
+                  }}
+                  disabled={deletingNotification === notification.id}
+                  className={`ml-2 p-0.5 rounded transition-colors ${
+                    deletingNotification === notification.id
+                      ? "cursor-not-allowed opacity-50"
+                      : "hover:bg-red-100"
+                  }`}
+                  aria-label="Delete notification"
+                  style={{ alignSelf: "flex-start" }}
+                >
+                  {deletingNotification === notification.id ? (
+                    <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-red-500 hover:text-red-700" />
+                  )}
+                </button>
+              </div>
+
+              {/* Message */}
+              {notification.title && (
+                <div className="text-sm text-gray-600 mt-1 mb-1 ml-7">
+                  {notification.text}
+                </div>
+              )}
+
+              {/* Footer: date, badge, action, sender */}
+              <div className="flex items-center gap-2 text-xs text-gray-500 mt-1 ml-7 flex-wrap">
+                <span>{notification.date}</span>
+                {notification.category && notification.category !== "general" && (
+                  <span
+                    className={`px-2 py-0.5 rounded font-medium bg-blue-50 text-blue-700`}
+                  >
+                    {notification.category}
                   </span>
                 )}
-                {n.type === "system" && (
-                  <span className="inline-block mt-1 px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 text-xs">
-                    System Update
-                  </span>
+                {notification.actionText && notification.actionUrl && (
+                  <button
+                    className="ml-2 px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition text-xs"
+                    style={{ marginLeft: 0 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(notification.actionUrl);
+                    }}
+                  >
+                    {notification.actionText} →
+                  </button>
                 )}
-                {n.type === "reminder" && (
-                  <span className="inline-block mt-1 px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs">
-                    Profile Reminder
-                  </span>
+                {notification.sender && notification.sender !== "System" && (
+                  <span className="text-gray-400 ml-2">from {notification.sender}</span>
                 )}
               </div>
             </div>
@@ -188,6 +288,7 @@ const Dashboard = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [kycStatus, setKycStatus] = useState("pending");
   const navigate = useNavigate();
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -312,6 +413,25 @@ const Dashboard = () => {
                       <NotificationPanel
                         notifications={notifications}
                         onClose={() => setShowNotifications(false)}
+                        onMarkAsRead={id =>
+                          setNotifications(prev =>
+                            prev.map(n => n.id === id ? { ...n, read: true } : n)
+                          )
+                        }
+                        onDelete={async id => {
+                          try {
+                            await safeFetch(`${import.meta.env.VITE_API_URL}/api/notifications/${id}`, {
+                              method: 'DELETE',
+                              credentials: 'include'
+                            });
+                            setNotifications(prev => prev.filter(n => n.id !== id));
+                          } catch (err) {
+                            alert('Failed to delete notification.');
+                          }
+                        }}
+                        onDeleteAll={() => setConfirmClearAll(true)}
+                        deletingNotification={null}
+                        deletingAll={false}
                       />
                     )}
                   </div>
@@ -501,6 +621,41 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      {confirmClearAll && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-xs w-full">
+            <h2 className="font-bold text-lg mb-2">Clear All Notifications?</h2>
+            <p className="mb-4 text-gray-600">Are you sure you want to delete all notifications? This action cannot be undone.</p>
+            <div className="flex justify-end gap-2">
+              <button
+                className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200 text-gray-700"
+                onClick={() => setConfirmClearAll(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+                onClick={async () => {
+                  try {
+                    const studentId = localStorage.getItem('studentId');
+                    await safeFetch(`${import.meta.env.VITE_API_URL}/api/notifications/student/${studentId}/all`, {
+                      method: 'DELETE',
+                      credentials: 'include'
+                    });
+                    setNotifications([]);
+                    setConfirmClearAll(false);
+                  } catch (err) {
+                    alert('Failed to clear all notifications.');
+                    setConfirmClearAll(false);
+                  }
+                }}
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </SidebarContext.Provider>
   );
 };

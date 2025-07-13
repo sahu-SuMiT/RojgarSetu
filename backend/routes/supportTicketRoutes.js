@@ -4,7 +4,7 @@ const supportController = require("../controllers/supportControlller");
 const SupportTicket = require("../models/SupportTicket");
 
 // Create a new support ticket
-router.post("/", supportController.createTicket);
+router.post("/", supportController.createSupportTicket);
 
 // Get tickets for a user (user query param)
 router.get("/", supportController.getTickets);
@@ -36,11 +36,10 @@ router.get('/college/:userId', async (req, res) => {
   }
 });
 
-// Close a ticket with secret code
-router.post("/close", supportController.closeTicket);
+// Close a ticket
+router.patch("/:ticketId/close", supportController.closeTicket);
 
 // Get details of a single ticket
 router.get("/:ticketId", supportController.getTicketById);
-
 
 module.exports = router;

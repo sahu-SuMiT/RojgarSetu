@@ -16,6 +16,7 @@ const RegistrationOtp = require('../models/RegistrationOtp'); // Adjust this pat
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const Notification = require('../models/Notification');
+const { createStudentNotification } = require('../utils/notificationHelper');
 require('dotenv').config();
 
 // Profile routes using /me (token-based auth)
@@ -115,6 +116,54 @@ router.post('/register/verify', async (req, res) => {
     await newStudent.save();
     newStudent.id=await Student.findOne({email}).select("_id").lean();
     await RegistrationOtp.deleteOne({ _id: registrationOtp._id });
+    
+    // Create welcome notification for the new student
+    try {
+      await createStudentNotification(
+        newStudent._id,
+        'Welcome to Campus Admin! 🎉',
+        `Hi ${newStudent.name}! Welcome to your student dashboard. Complete your profile to get more opportunities and start your journey towards your dream career.`,
+        {
+          type: 'success',
+          category: 'general',
+          actionUrl: '/studentProfile',
+          actionText: 'Complete Profile',
+          priority: 'high'
+        }
+      );
+
+      // Create a KYC reminder notification
+      await createStudentNotification(
+        newStudent._id,
+        'Complete Your KYC Verification',
+        'To access all features and apply for jobs, please complete your KYC verification. This helps ensure a secure and trusted platform.',
+        {
+          type: 'warning',
+          category: 'system',
+          actionUrl: '/studentProfile?tab=verification',
+          actionText: 'Verify Now',
+          priority: 'normal'
+        }
+      );
+
+      // Create a feature introduction notification
+      await createStudentNotification(
+        newStudent._id,
+        'Discover Our Features',
+        'Explore our AI-powered portfolio builder, job matching system, and comprehensive career tools to enhance your job search.',
+        {
+          type: 'info',
+          category: 'system',
+          actionUrl: '/portfolio',
+          actionText: 'Explore Features',
+          priority: 'normal'
+        }
+      );
+
+    } catch (notificationError) {
+      console.error('Error creating welcome notifications:', notificationError);
+      // Don't fail registration if notification creation fails
+    }
     
     const token = generateStudentToken(newStudent);
     res.cookie('token', token, {
@@ -227,6 +276,9 @@ router.post('/tickets', upload.single('uploadedFile'), async (req, res) => {
       recipientModel: 'Student',
       title: "Your issue has been raised",
       message:autoMsg,
+      category:'system',
+      actionUrl: `/chat`,
+      actionText: 'Show Ticket',
       type: 'info',
       priority: 'normal',
     })

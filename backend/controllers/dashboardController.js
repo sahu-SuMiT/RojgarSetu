@@ -2,6 +2,7 @@ const Job = require('../models/Job');
 const Application = require('../models/Application');
 const Feedback = require('../models/Feedback');
 const Student = require('../models/Student');
+const Notification = require('../models/Notification');
 const jwt = require('jsonwebtoken');
 
 exports.getDashboardData = async (req, res) => {
@@ -53,10 +54,46 @@ exports.getDashboardData = async (req, res) => {
       if (count > 0) applicationsOverview.push({ status, count, color });
     }
 
-    // Notifications (stub, you can replace with real notifications)
-    const notificationsList = [
-      { date: new Date().toLocaleDateString(), text: "Welcome to your dashboard!" }
-    ];
+    // Fetch real notifications from database
+    console.log('Dashboard: Fetching notifications for userId:', userId);
+    
+    // TEMPORARY: Get student by ID first to get email, then fetch notifications
+    const studentForNotifications = await Student.findById(userId).lean();
+    console.log('Dashboard: Found student:', studentForNotifications ? studentForNotifications.email : 'Not found');
+    
+    let notifications = [];
+    if (studentForNotifications) {
+      // Use the same logic as the test endpoint
+      notifications = await Notification.find({
+        recipient: studentForNotifications._id,
+        recipientModel: 'Student'
+      })
+      .populate('sender', 'name email contactEmail')
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
+    }
+
+    console.log('Dashboard: Found notifications:', notifications.length);
+    notifications.forEach((notification, index) => {
+      console.log(`Dashboard: Notification ${index + 1}: ${notification.title}`);
+    });
+
+    // Transform notifications to match frontend expected format
+    const notificationsList = notifications.map(notification => ({
+      id: notification._id,
+      date: new Date(notification.createdAt).toLocaleDateString(),
+      text: notification.message,
+      title: notification.title,
+      type: notification.type,
+      category: notification.category,
+      read: notification.read,
+      sender: notification.sender ? notification.sender.name || notification.sender.email : 'System',
+      actionUrl: notification.actionUrl,
+      actionText: notification.actionText
+    }));
+
+    console.log('Dashboard: Transformed notificationsList length:', notificationsList.length);
 
     // Recent feedback (ensure your Feedback model has student, company, title, rating, message/feedback, date)
     const recentFeedback = await Feedback.find({ student: userId })
