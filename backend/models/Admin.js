@@ -35,6 +35,7 @@ const adminSchema = new mongoose.Schema({
       "Support Panel",
       "Employee Management",
       "Platform Settings",
+      "Payments",
     ]
   }],
   status: {
