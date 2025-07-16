@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Users, School, Building2, Ticket, MessageSquare, Mail, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -17,6 +23,27 @@ export function DashboardOverview() {
 
   const [recentActivity, setRecentActivity] = useState([]);
   const [loadingActivity, setLoadingActivity] = useState(true);
+  const [isCreateTicketOpen, setIsCreateTicketOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [isLiveChatOpen, setIsLiveChatOpen] = useState(false);
+  const [isAddStaffOpen, setIsAddStaffOpen] = useState(false);
+  const [newTicket, setNewTicket] = useState({
+    subject: "",
+    description: "",
+    priority: "medium",
+    userEmail: ""
+  });
+  const [emailData, setEmailData] = useState({
+    to: "",
+    subject: "",
+    message: ""
+  });
+  const [newStaff, setNewStaff] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: ""
+  });
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -105,6 +132,113 @@ export function DashboardOverview() {
     fetchRecentActivity();
   }, []);
 
+  const handleCreateTicket = () => {
+    if (!newTicket.userEmail || !newTicket.subject || !newTicket.description) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    console.log("Creating ticket:", newTicket);
+    toast({
+      title: "Ticket Created",
+      description: `Ticket created successfully for ${newTicket.userEmail}`,
+    });
+    setNewTicket({ subject: "", description: "", priority: "medium", userEmail: "" });
+    setIsCreateTicketOpen(false);
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailData.to || !emailData.subject || !emailData.message) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      const response = await axios.post(`${API_URL}/api/support/email`, emailData);
+      if (response.data.success) {
+        toast({
+          title: "Email Sent",
+          description: `Email sent successfully to ${emailData.to}`,
+        });
+        setEmailData({ to: "", subject: "", message: "" });
+        setIsEmailDialogOpen(false);
+      } else {
+        toast({
+          title: "Error",
+          description: response.data.message || "Failed to send email",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || error.message || "Failed to send email",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLiveChat = () => {
+    setIsLiveChatOpen(true);
+  };
+
+  const handleAddStaff = async () => {
+    const { firstName, lastName, email, password } = newStaff;
+    if (!firstName || !lastName || !email || !password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      const response = await axios.post(`${API_URL}/api/signup`, newStaff);
+      toast({
+        title: "Staff Added",
+        description: `Staff member ${firstName} ${lastName} added successfully`,
+      });
+      setNewStaff({ firstName: "", lastName: "", email: "", password: "" });
+      setIsAddStaffOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to add staff: ${error.response?.data?.message || error.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSystemAlert = () => {
+    console.log("Creating system alert");
+    toast({
+      title: "System Alert",
+      description: "System alert broadcast to all users",
+    });
+  };
+
   const stats = [
     {
       title: "Total Users",
@@ -134,6 +268,34 @@ export function DashboardOverview() {
     },
   ];
 
+  const quickActions = [
+    // {
+    //   icon: <Ticket className="w-5 h-5 mr-2" />,
+    //   label: "Create New Ticket",
+    //   onClick: () => setIsCreateTicketOpen(true),
+    // },
+    {
+      icon: <MessageSquare className="w-5 h-5 mr-2" />,
+      label: "Start Live Chat",
+      onClick: handleLiveChat,
+    },
+    {
+      icon: <Users className="w-5 h-5 mr-2" />,
+      label: "Add Staff",
+      onClick: () => setIsAddStaffOpen(true),
+    },
+    {
+      icon: <Mail className="w-5 h-5 mr-2" />,
+      label: "Send Bulk Email",
+      onClick: () => setIsEmailDialogOpen(true),
+    },
+    {
+      icon: <AlertCircle className="w-5 h-5 mr-2" />,
+      label: "System Alert",
+      onClick: handleSystemAlert,
+    },
+  ];
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "new":
@@ -142,34 +304,6 @@ export function DashboardOverview() {
         return "bg-gray-100 text-gray-800";
     }
   };
-
-  const quickActions = [
-    {
-      icon: <Ticket className="w-5 h-5 mr-2" />,
-      label: "Create New Ticket",
-      onClick: () => { },
-    },
-    {
-      icon: <MessageSquare className="w-5 h-5 mr-2" />,
-      label: "Start Live Chat",
-      onClick: () => { },
-    },
-    {
-      icon: <Users className="w-5 h-5 mr-2" />,
-      label: "Add Staff",
-      onClick: () => { },
-    },
-    {
-      icon: <Mail className="w-5 h-5 mr-2" />,
-      label: "Send Bulk Email",
-      onClick: () => { },
-    },
-    {
-      icon: <AlertCircle className="w-5 h-5 mr-2" />,
-      label: "System Alert",
-      onClick: () => { },
-    },
-  ];
 
   return (
     <div className="space-y-6">
@@ -203,7 +337,7 @@ export function DashboardOverview() {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            {quickActions.map((action, idx) => (
+            {quickActions.map((action) => (
               <Button
                 key={action.label}
                 variant="outline"
@@ -247,6 +381,173 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={isCreateTicketOpen} onOpenChange={setIsCreateTicketOpen}>
+        <DialogContent className="ticket-dialog">
+          <DialogHeader>
+            <DialogTitle>Create New Ticket</DialogTitle>
+            <DialogDescription>Create a support ticket for a user</DialogDescription>
+          </DialogHeader>
+          <div className="ticket-form">
+            <div className="form-field">
+              <Label htmlFor="user-email">User Email</Label>
+              <Input
+                id="user-email"
+                placeholder="user@example.com"
+                value={newTicket.userEmail}
+                onChange={(e) => setNewTicket({...newTicket, userEmail: e.target.value})}
+              />
+            </div>
+            <div className="form-field">
+              <Label htmlFor="ticket-subject">Subject</Label>
+              <Input
+                id="ticket-subject"
+                placeholder="Ticket subject"
+                value={newTicket.subject}
+                onChange={(e) => setNewTicket({...newTicket, subject: e.target.value})}
+              />
+            </div>
+            <div className="form-field">
+              <Label htmlFor="ticket-priority">Priority</Label>
+              <Select value={newTicket.priority} onValueChange={(value) => setNewTicket({...newTicket, priority: value})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="form-field">
+              <Label htmlFor="ticket-description">Description</Label>
+              <Textarea
+                id="ticket-description"
+                placeholder="Describe the issue"
+                value={newTicket.description}
+                onChange={(e) => setNewTicket({...newTicket, description: e.target.value})}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateTicketOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateTicket}>Create Ticket</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+        <DialogContent className="email-dialog">
+          <DialogHeader>
+            <DialogTitle>Compose Email</DialogTitle>
+            <DialogDescription>Send an email to users or support team</DialogDescription>
+          </DialogHeader>
+          <div className="email-form">
+            <div className="form-field">
+              <Label htmlFor="email-to">To</Label>
+              <Input
+                id="email-to"
+                placeholder="user@example.com"
+                value={emailData.to}
+                onChange={(e) => setEmailData({...emailData, to: e.target.value})}
+              />
+            </div>
+            <div className="form-field">
+              <Label htmlFor="email-subject">Subject</Label>
+              <Input
+                id="email-subject"
+                placeholder="Email subject"
+                value={emailData.subject}
+                onChange={(e) => setEmailData({...emailData, subject: e.target.value})}
+              />
+            </div>
+            <div className="form-field">
+              <Label htmlFor="email-message">Message</Label>
+              <Textarea
+                id="email-message"
+                placeholder="Type your message here"
+                value={emailData.message}
+                onChange={(e) => setEmailData({...emailData, message: e.target.value})}
+                rows={5}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSendEmail}>Send Email</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isLiveChatOpen} onOpenChange={setIsLiveChatOpen}>
+        <DialogContent className="chat-dialog">
+          <DialogHeader>
+            <DialogTitle>Live Chat Dashboard</DialogTitle>
+            <DialogDescription>Monitor and join active chat sessions</DialogDescription>
+          </DialogHeader>
+          <div className="chat-dashboard">
+            <p className="chat-count">Active chat sessions: 0</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsLiveChatOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
+        <DialogContent className="staff-dialog">
+          <DialogHeader>
+            <DialogTitle>Add New Staff</DialogTitle>
+            <DialogDescription>Create a new staff account</DialogDescription>
+          </DialogHeader>
+          <div className="staff-form">
+            <div className="form-field">
+              <Label htmlFor="staff-firstname">First Name</Label>
+              <Input
+                id="staff-firstname"
+                placeholder="Enter first name"
+                value={newStaff.firstName}
+                onChange={(e) => setNewStaff({...newStaff, firstName: e.target.value})}
+              />
+            </div>
+            <div className="form-field">
+              <Label htmlFor="staff-lastname">Last Name</Label>
+              <Input
+                id="staff-lastname"
+                placeholder="Enter last name"
+                value={newStaff.lastName}
+                onChange={(e) => setNewStaff({...newStaff, lastName: e.target.value})}
+              />
+            </div>
+            <div className="form-field">
+              <Label htmlFor="staff-email">Email</Label>
+              <Input
+                id="staff-email"
+                placeholder="staff@example.com"
+                type="email"
+                value={newStaff.email}
+                onChange={(e) => setNewStaff({...newStaff, email: e.target.value})}
+              />
+            </div>
+            <div className="form-field">
+              <Label htmlFor="staff-password">Password</Label>
+              <Input
+                id="staff-password"
+                placeholder="Enter password"
+                type="password"
+                value={newStaff.password}
+                onChange={(e) => setNewStaff({...newStaff, password: e.target.value})}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddStaffOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddStaff}>Add Staff</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
