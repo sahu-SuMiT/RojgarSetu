@@ -602,10 +602,10 @@ const Support = () => {
                     <SelectValue placeholder="Select issuer type" />
                   </SelectTrigger>
                   <SelectContent position="popper" align="start" side="bottom" className="w-full z-[1000]">
-                    <SelectItem value="student">Student</SelectItem>
-                    <SelectItem value="faculty">Faculty</SelectItem>
-                    <SelectItem value="staff">Staff</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="Student">Student</SelectItem>
+                    <SelectItem value="College">College</SelectItem>
+                    <SelectItem value="Company">Company</SelectItem>
+                    {/* <SelectItem value="other">Other</SelectItem> */}
                   </SelectContent>
                 </Select>
               </div>
