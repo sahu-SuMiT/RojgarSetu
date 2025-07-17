@@ -284,7 +284,7 @@ router.post('/tickets', upload.single('uploadedFile'), async (req, res) => {
     const assignedTicket = await assignTicketToSales(newTicket.ticketId);
     //console.log("assignedTicket:",assignedTicket);
     let autoMsg = `Your Ticket No. #${newTicket.ticketId} has been generated for [${newTicket.subject}]. Your issue will be resolved within 3–4 hours. Please use this secret code: ${newTicket.secretCode} to close your complaint after resolution.`;
-    autoMsg += `\n\nYour ticket was assigned to ${assignedTicket.salesPerson} (${assignedTicket.assignedTo}).`;
+    autoMsg += `\n\nYour ticket was assigned to ${assignedTicket.salesPerson}.`;
     
     await Notification.create({
       sender:userId,
