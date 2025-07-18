@@ -8,9 +8,23 @@ const Transaction = require('../../models/Transaction');
 // GET all students
 exports.getAllStudents = async (req, res) => {
   try {
-    // Populate only the name field from College
     const students = await Student.find().populate('college', 'name');
-    res.status(200).json({ success: true, data: students });
+
+    const enrichedStudents = await Promise.all(
+      students.map(async (student) => {
+        const code = student.salesId || student.referralCode;
+        const salesUser = code ? await User.findOne({ salesId: code }) : null;
+
+        return {
+          ...student.toObject(),
+          salesPerson: salesUser
+            ? { firstName: salesUser.firstName, lastName: salesUser.lastName }
+            : null,
+        };
+      })
+    );
+
+    res.status(200).json({ success: true, data: enrichedStudents });
   } catch (error) {
     console.error('Error fetching students:', error);
     res.status(500).json({ success: false, message: 'Server error while fetching students' });
@@ -21,7 +35,22 @@ exports.getAllStudents = async (req, res) => {
 exports.getAllColleges = async (req, res) => {
   try {
     const colleges = await College.find();
-    res.status(200).json({ success: true, data: colleges });
+
+    const enrichedColleges = await Promise.all(
+      colleges.map(async (college) => {
+        const code = college.salesId || college.referralCode;
+        const salesUser = code ? await User.findOne({ salesId: code }) : null;
+
+        return {
+          ...college.toObject(),
+          salesPerson: salesUser
+            ? { firstName: salesUser.firstName, lastName: salesUser.lastName }
+            : null,
+        };
+      })
+    );
+
+    res.status(200).json({ success: true, data: enrichedColleges });
   } catch (error) {
     console.error('Error fetching colleges:', error);
     res.status(500).json({ success: false, message: 'Server error while fetching colleges' });
@@ -32,7 +61,22 @@ exports.getAllColleges = async (req, res) => {
 exports.getAllCompanies = async (req, res) => {
   try {
     const companies = await Company.find();
-    res.status(200).json({ success: true, data: companies });
+
+    const enrichedCompanies = await Promise.all(
+      companies.map(async (company) => {
+        const code = company.salesId || company.referralCode;
+        const salesUser = code ? await User.findOne({ salesId: code }) : null;
+
+        return {
+          ...company.toObject(),
+          salesPerson: salesUser
+            ? { firstName: salesUser.firstName, lastName: salesUser.lastName }
+            : null,
+        };
+      })
+    );
+
+    res.status(200).json({ success: true, data: enrichedCompanies });
   } catch (error) {
     console.error('Error fetching companies:', error);
     res.status(500).json({ success: false, message: 'Server error while fetching companies' });

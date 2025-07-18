@@ -875,10 +875,10 @@ useEffect(() => {
             <CardContent className="quick-actions">
               <Dialog open={isCreateTicketOpen} onOpenChange={setIsCreateTicketOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="action-button">
+                  {/* <Button variant="outline" className="action-button">
                     <Ticket className="w-4 h-4 mr-2" />
                     Create New Ticket
-                  </Button>
+                  </Button> */}
                 </DialogTrigger>
                 <DialogContent className="ticket-dialog">
                   <DialogHeader>

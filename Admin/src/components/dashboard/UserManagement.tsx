@@ -6,13 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
-  Users, 
-  School, 
-  Building2, 
-  GraduationCap, 
-  Search, 
-  Filter, 
+import {
+  Users,
+  School,
+  Building2,
+  GraduationCap,
+  Search,
+  Filter,
   MoreHorizontal,
   Check,
   X,
@@ -178,8 +178,8 @@ export function UserManagement() {
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input 
-                  placeholder="Search users..." 
+                <Input
+                  placeholder="Search users..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -208,6 +208,7 @@ export function UserManagement() {
                     <TableHead>Department</TableHead>
                     <TableHead>Batch</TableHead>
                     <TableHead>CGPA</TableHead>
+                    <TableHead>Salesperson</TableHead> {/* NEW */}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -228,11 +229,17 @@ export function UserManagement() {
                       <TableCell>{student.department || "-"}</TableCell>
                       <TableCell>{student.batch || "-"}</TableCell>
                       <TableCell>{student.cgpa || "-"}</TableCell>
+                      <TableCell>
+                        {student.salesPerson
+                          ? `${student.salesPerson.firstName} ${student.salesPerson.lastName}`
+                          : "-"}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </TabsContent>
+
 
             <TabsContent value="colleges" className="space-y-4">
               <Table>
@@ -241,6 +248,7 @@ export function UserManagement() {
                     <TableHead>College Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Location</TableHead>
+                    <TableHead>Salesperson</TableHead> {/* NEW */}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -249,11 +257,17 @@ export function UserManagement() {
                       <TableCell>{college.name}</TableCell>
                       <TableCell>{college.contactEmail}</TableCell>
                       <TableCell>{college.location || "-"}</TableCell>
+                      <TableCell>
+                        {college.salesPerson
+                          ? `${college.salesPerson.firstName} ${college.salesPerson.lastName}`
+                          : "-"}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </TabsContent>
+
 
             <TabsContent value="companies" className="space-y-4">
               <Table>
@@ -262,6 +276,7 @@ export function UserManagement() {
                     <TableHead>Company Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Location</TableHead>
+                    <TableHead>Salesperson</TableHead> {/* NEW */}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -270,11 +285,17 @@ export function UserManagement() {
                       <TableCell>{company.name}</TableCell>
                       <TableCell>{company.contactEmail}</TableCell>
                       <TableCell>{company.location || "-"}</TableCell>
+                      <TableCell>
+                        {company.salesPerson
+                          ? `${company.salesPerson.firstName} ${company.salesPerson.lastName}`
+                          : "-"}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </TabsContent>
+
           </Tabs>
         </CardContent>
       </Card>

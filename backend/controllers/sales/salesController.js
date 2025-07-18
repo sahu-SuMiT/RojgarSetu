@@ -2,7 +2,7 @@ const Student = require('../../models/Student');
 const College = require('../../models/College');
 const Company = require('../../models/Company');
 const User = require('../../models/User');
-const { emailTransport } = require('../../config/email');
+const { emailTransport, emailSender } = require('../../config/email');
 const SupportTicket = require('../../models/SupportTicket');
 const ManagerTicket = require('../../models/manager_ticket'); // Import your manager ticket model
 const jwt = require('jsonwebtoken');
@@ -16,6 +16,22 @@ async function getSalesIdByUserName(userName) {
   const lastName = rest.join(" ");
   const user = await User.findOne({ firstName, lastName });
   return user ? user._id : null; // Use _id as salesId
+}
+function generateOnboardingEmail(fullname, username, password) {
+  return `
+    <div style="font-family: Arial, sans-serif; background-color: #f7f9fc; padding: 30px;">
+      <h2>Welcome to Rojgar Setu!</h2>
+      <p>Hi ${fullname},</p>
+      <p>Here are your login details:</p>
+      <div style="background-color: #eaf0f7; padding: 15px; border-radius: 6px;">
+        <strong>Username:</strong> ${username}<br>
+        <strong>Password:</strong> ${password}
+      </div>
+      <p>Login here: <a href="https://www.rojgarsetu.org">https://www.rojgarsetu.org</a></p>
+      <p>Please change your password after your first login.</p>
+      <p><br/><br/>Warm regards!<br/>Team Rojagar Setu </p>
+    </div>
+  `;
 }
 
 exports.addStudent = async (req, res) => {
@@ -39,16 +55,17 @@ exports.addStudent = async (req, res) => {
     console.log("Body:", req.body);
     console.log("Decoded Sales ID:", salesId);
 
-    // Send email with credentials
-    // await emailTransport.sendMail({
-    //     from: process.env.EMAIL_SENDER,
-    //     to: email,
-    //     subject: 'Your Student Account Credentials',
-    //     text: `Welcome, ${name}!\nYour login ID: ${email}\nYour password: ${password}\nPlease change your password after first login.`
-    //   });
+    await emailTransport.sendMail({
+      from: emailSender,
+      to: email,
+      subject: 'Your Student Account Credentials',
+      html: generateOnboardingEmail(name, email, password)
+    });
       
-    const student = new Student({ name, email, password, salesId });
+    const student = new Student({ name, email, password, salesId }); 
     await student.save();
+
+
     res.status(201).json({ message: "Student added successfully", student });
   } catch (error) {
     console.error("Error adding student:", error);
@@ -57,8 +74,8 @@ exports.addStudent = async (req, res) => {
 };
 
 exports.addCollege = async (req, res) => {
-  console.log("Adding college with body:", req.body);
-  console.log("Headers:", req.headers);
+  // console.log("Adding college with body:", req.body);
+  // console.log("Headers:", req.headers);
   try {
     const { name, code, contactEmail, contactPhone} = req.body;
     if (!name || !code || !contactEmail || !contactPhone) {
@@ -86,17 +103,17 @@ exports.addCollege = async (req, res) => {
     });
     await college.save();
 
-    // Send email with credentials
-    // await emailTransport.sendMail({
-    //   from: process.env.EMAIL_SENDER,
-    //   to: contactEmail,
-    //   subject: 'Your College Account Credentials',
-    //   text: `Welcome, ${name}!\nYour login ID: ${contactEmail}\nYour password: ${DEFAULT_PASSWORD}\nPlease change your password after first login.`
-    // });
+    await emailTransport.sendMail({
+      from: emailSender,
+      to: contactEmail,
+      subject: 'Your College Account Credentials',
+      html: generateOnboardingEmail(name, contactEmail, DEFAULT_PASSWORD)
+    });
 
     res.status(201).json({ message: "College added successfully", college });
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
+    console.log("Error adding college:", error);
   }
 };
 
@@ -127,13 +144,12 @@ exports.addCompany = async (req, res) => {
     });
     await company.save();
 
-    // Send email with credentials
-    // await emailTransport.sendMail({
-    //   from: process.env.EMAIL_SENDER,
-    //   to: contactEmail,
-    //   subject: 'Your Company Account Credentials',
-    //   text: `Welcome, ${name}!\nYour login ID: ${contactEmail}\nYour password: ${DEFAULT_PASSWORD}\nPlease change your password after first login.`
-    // });
+    await emailTransport.sendMail({
+      from: emailSender,
+      to: contactEmail,
+      subject: 'Your Company Account Credentials',
+      html: generateOnboardingEmail(name, contactEmail, DEFAULT_PASSWORD)
+    });
 
     res.status(201).json({ message: "Company added successfully", company });
   } catch (error) {

@@ -115,10 +115,15 @@ const Onboard = () => {
     }
     try {
       const userName = localStorage.getItem("userName");
+      console.log("API_URL", API_URL, 'token', token);
       await axios.post(
         `${API_URL}/api/sales/student`,
         { ...newStudent},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        } },
+        
       );
       toast.success("Student added successfully!");
       setIsAddStudentOpen(false);

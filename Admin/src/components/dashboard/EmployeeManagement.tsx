@@ -43,9 +43,8 @@ const getStatusBadge = (status: string) => {
 
 const ALL_PERMISSIONS = Object.freeze([
   "Dashboard",
-  "Analytics",
+  "Payments",
   "User Management",
-  "Content Moderation",
   "Support Panel",
   "Employee Management",
   "Platform Settings",
